@@ -12,6 +12,7 @@ const {
   noindex = false,
   canonicalPath = "",
   breadcrumbs = [],
+  narrow = false,
   jsonLd = [],
 } = Astro.props;
 
@@ -64,7 +65,7 @@ const structured = graph.length
   <body>
     <a class="skip" href="#main">Skip to content</a>
     <Header />
-    <Breadcrumbs items={breadcrumbs} />
+    <Breadcrumbs items={breadcrumbs} narrow={narrow} />
     <main id="main">
       <slot />
     </main>

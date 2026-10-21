@@ -55,7 +55,7 @@ a:hover { color: var(--stamp); }
   width: min(72rem, calc(100% - 2rem));
   margin-inline: auto;
 }
-.prose { max-width: 42rem; }
+.prose, .narrow { max-width: 42rem; }
 .muted { color: var(--muted); }
 .small { font-size: 0.92rem; }
 .num { font-variant-numeric: tabular-nums; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
@@ -129,8 +129,10 @@ a:hover { color: var(--stamp); }
 .footer-grid a { text-decoration: none; }
 .footer-grid a:hover { text-decoration: underline; }
 
-.crumbs { margin: 1rem 0 0.5rem; font-size: 0.92rem; }
-.crumbs ol { display: flex; flex-wrap: wrap; gap: 0.35rem; list-style: none; padding: 0; margin: 0; }
+/* Horizontal margins stay on .wrap. A margin shorthand here cancels the auto centering. */
+.crumbs { margin-block: 1rem 0.5rem; font-size: 0.92rem; }
+.crumbs ol { display: flex; flex-wrap: wrap; gap: 0.35rem; list-style: none; padding: 0; margin: 0; min-width: 0; }
+.crumbs li { min-width: 0; overflow-wrap: anywhere; }
 .crumbs li:not(:last-child)::after { content: "/"; margin-left: 0.35rem; color: var(--muted); }
 
 .hero { padding: 1.6rem 0 0.4rem; }
@@ -244,7 +246,14 @@ a:hover { color: var(--stamp); }
   margin: 1rem 0;
 }
 .filters label, .filter-row label, .decoder-form label { display: grid; gap: 0.3rem; font-size: 0.92rem; font-weight: 650; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--paper-2); }
+.table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--paper-2);
+}
 table { width: 100%; border-collapse: collapse; }
 caption { text-align: left; padding: 0.8rem 0.8rem 0; font-weight: 650; }
 th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line); vertical-align: top; }

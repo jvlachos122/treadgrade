@@ -1,12 +1,14 @@
 ---
 import { catalog } from "../lib/catalog.js";
 import { formatVerified } from "../lib/format.js";
+import { site } from "../lib/site.js";
 
 const verified = formatVerified(catalog.meta.verifiedAt);
 ---
 
 <footer class="site-footer">
-  <div class="wrap footer-grid">
+  <div class="wrap">
+    <div class="footer-grid">
     <div>
       <h2>About the data</h2>
       <p class="small">
@@ -40,5 +42,7 @@ const verified = formatVerified(catalog.meta.verifiedAt);
         <li><a href="/affiliate-disclosure/">Affiliate disclosure</a></li>
       </ul>
     </div>
+    </div>
+    <p class="small operator">Operated by <a href="/about/#who-runs-this-site">{site.legalName}</a></p>
   </div>
 </footer>

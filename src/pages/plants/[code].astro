@@ -25,7 +25,7 @@ const shared = plant.oldCodeSharedWith
 
 <Base title={`DOT plant code ${plant.code}`} description={description} breadcrumbs={crumbs}>
   <div class="wrap">
-    <h1>DOT plant code {plant.code}</h1>
+    <h1>DOT plant code <span class="code">{plant.code}</span></h1>
     <p class="lede">
       {plant.name}{place ? `, ${place}` : ""}. NHTSA's record names the company on this plant code. It does not list brands, and the status field is not a finding that the plant is operating.
     </p>
@@ -33,11 +33,11 @@ const shared = plant.oldCodeSharedWith
     <dl class="facts">
       <div>
         <dt>Current plant code</dt>
-        <dd class="num">{plant.code}</dd>
+        <dd class="num code">{plant.code}</dd>
       </div>
       <div>
         <dt>Former code</dt>
-        <dd class="num">{plant.oldCode || "None in this record"}</dd>
+        <dd class="num code">{plant.oldCode || "None in this record"}</dd>
       </div>
       <div>
         <dt>Plant name</dt>

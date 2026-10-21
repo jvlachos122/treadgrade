@@ -1,10 +1,10 @@
 ---
-const { items = [] } = Astro.props;
+const { items = [], narrow = false } = Astro.props;
 ---
 
 {
   items.length ? (
-    <nav class="wrap crumbs" aria-label="Breadcrumb">
+    <nav class:list={["wrap", "crumbs", narrow && "narrow"]} aria-label="Breadcrumb">
       <ol>
         {items.map((item, index) => (
           <li>

@@ -82,7 +82,22 @@ for (const [file, html] of htmlByFile) {
   }
 }
 
-for (const required of ["data/ratings.json", "data/plants.json", "data/search.json", "favicon.svg", "robots.txt", "CNAME"]) {
+for (const required of [
+  "data/ratings.json",
+  "data/plants.json",
+  "data/search.json",
+  "favicon.svg",
+  "favicon.ico",
+  "apple-touch-icon.png",
+  "icon-192.png",
+  "icon-512.png",
+  "icon-maskable-512.png",
+  "site.webmanifest",
+  "og-image.png",
+  "brand/treadgrade-logo.svg",
+  "robots.txt",
+  "CNAME",
+]) {
   if (!existsSync(join(dist, required))) errors.push(`missing dist/${required}`);
 }
 

@@ -1,14 +1,14 @@
 ---
 import Base from "../layouts/Base.astro";
 import { affiliatesConfigured } from "../lib/affiliates.js";
-import { contactEmail } from "../lib/site.js";
+import { contactEmail, site } from "../lib/site.js";
 
 const email = contactEmail();
 
 const enabled = affiliatesConfigured();
 const description = enabled
-  ? "TreadGrade may earn a commission when a configured retailer link is used. Grade pages are not ordered by that commission."
-  : "TreadGrade's affiliate links are turned off. No retailer buttons are shown, and the site earns no commission from them.";
+  ? `${site.legalName} may earn a commission when a configured retailer link on TreadGrade is used. Grade pages are not ordered by that commission.`
+  : `Affiliate links are turned off. No retailer buttons are shown, and ${site.legalName} earns no commission from them.`;
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/affiliate-disclosure/", label: "Affiliate disclosure" },
@@ -18,15 +18,16 @@ const crumbs = [
 <Base title="Affiliate disclosure" description={description} breadcrumbs={crumbs}>
   <div class="wrap prose">
     <h1>Affiliate disclosure</h1>
+    <p>TreadGrade is operated by {site.legalName}, {site.operatorPlace}.</p>
     {
       enabled ? (
         <p>
           Some tire-line pages show "check price" buttons. Those links go to a retailer and include an affiliate id from the site configuration.
-          If you buy through one, the site may earn a commission. The price, if any, is on the retailer's site. This site does not display a price of its own.
+          If you buy through one, {site.legalName} may earn a commission. The price, if any, is on the retailer's site. This site does not display a price of its own.
         </p>
       ) : (
         <p>
-          Affiliate buttons are not configured. Tire-line pages do not show retailer links, and this site does not earn a commission from them.
+          Affiliate buttons are not configured. Tire-line pages do not show retailer links, and {site.legalName} does not earn a commission from them.
           The slots for Tire Rack, SimpleTire, and Amazon exist in the site configuration and stay empty until an id and an https link template are added.
         </p>
       )

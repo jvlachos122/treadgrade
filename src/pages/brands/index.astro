@@ -1,0 +1,83 @@
+---
+import Base from "../../layouts/Base.astro";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber, wearRange } from "../../lib/format.js";
+import { clampText } from "../../lib/text.js";
+
+const groups = new Map();
+for (const brand of catalog.brands) {
+  const letter = brand.name.slice(0, 1).toUpperCase();
+  const key = /[A-Z]/.test(letter) ? letter : "#";
+  if (!groups.has(key)) groups.set(key, []);
+  groups.get(key).push(brand);
+}
+const letters = [...groups.keys()];
+const description = clampText(
+  `Index of ${formatNumber(catalog.stats.brands)} tire brands in the NHTSA UTQG ratings file, with line counts and treadwear ranges.`,
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/brands/", label: "Brands" },
+];
+---
+
+<Base title="Tire brands" description={description} breadcrumbs={crumbs}>
+  <div class="wrap">
+    <h1>Tire brands</h1>
+    <p class="lede">
+      {formatNumber(catalog.stats.brands)} brands after merging spellings that differ only by capitalization. Each link opens the tire lines stored under that brand string in NHTSA's list.
+      A shared line name is not a rebadge. Light-truck, deep-tread winter, and temporary spare tires are outside the UTQG rule and may be missing.
+      <a href="/methodology/#data-quality">Data-quality notes</a>.
+    </p>
+    <nav class="letter-nav" aria-label="Brand letters">
+      {letters.map((letter) => <a href={`#letter-${letter}`}>{letter}</a>)}
+    </nav>
+    <label>
+      Filter brands
+      <input id="brand-filter" type="search" autocomplete="off" />
+    </label>
+    <p class="status small" id="brand-filter-status" aria-live="polite"></p>
+    {
+      letters.map((letter) => (
+        <section>
+          <h2 id={`letter-${letter}`}>{letter}</h2>
+          <ul class="brand-list" data-brand-list>
+            {groups.get(letter).map((brand) => (
+              <li data-search={`${brand.name}`.toLowerCase()}>
+                <a href={brand.url}>
+                  <span>{brand.name}</span>
+                  <span class="muted">
+                    {formatNumber(brand.lineCount)} lines · treadwear {wearRange(brand.wearMin, brand.wearMax)}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</Base>
+
+<script>
+  const input = document.querySelector("#brand-filter");
+  const lists = [...document.querySelectorAll("[data-brand-list]")];
+  const status = document.querySelector("#brand-filter-status");
+  if (input && status && lists.length) {
+    const items = lists.flatMap((list) => [...list.children]);
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const item of items) {
+        const visible = !query || item.dataset.search.includes(query);
+        item.hidden = !visible;
+        if (visible) shown += 1;
+      }
+      for (const list of lists) {
+        const section = list.closest("section");
+        if (section) section.hidden = ![...list.children].some((item) => !item.hidden);
+      }
+      status.textContent = `${shown.toLocaleString("en-US")} of ${items.length.toLocaleString("en-US")} brands shown.`;
+    });
+  }
+</script>

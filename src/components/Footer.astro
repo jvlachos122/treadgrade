@@ -1,0 +1,44 @@
+---
+import { catalog } from "../lib/catalog.js";
+import { formatVerified } from "../lib/format.js";
+
+const verified = formatVerified(catalog.meta.verifiedAt);
+---
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div>
+      <h2>About the data</h2>
+      <p class="small">
+        Grades and plant codes come from NHTSA public files. A listing does not mean a tire is still sold.
+        Data last verified {verified} (UTC).
+      </p>
+    </div>
+    <div>
+      <h2>Reference</h2>
+      <ul>
+        <li><a href="/ratings/">All UTQG grades</a></li>
+        <li><a href="/brands/">Brands</a></li>
+        <li><a href="/plants/">Plant codes</a></li>
+        <li><a href="/decoder/">DOT decoder</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Guides</h2>
+      <ul>
+        <li><a href="/guides/utqg-grades/">What UTQG grades mean</a></li>
+        <li><a href="/guides/dot-code/">How to read a DOT code</a></li>
+        <li><a href="/methodology/">Data sources</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Site</h2>
+      <ul>
+        <li><a href="/about/">About</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="/contact/">Contact</a></li>
+        <li><a href="/affiliate-disclosure/">Affiliate disclosure</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>

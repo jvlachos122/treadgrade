@@ -1,0 +1,138 @@
+---
+import Base from "../layouts/Base.astro";
+import { catalog } from "../lib/catalog.js";
+import { formatNumber, formatVerified } from "../lib/format.js";
+import { site } from "../lib/site.js";
+
+const verified = formatVerified(catalog.meta.verifiedAt);
+const description =
+  "Where TreadGrade's UTQG grades and DOT plant codes come from, which NHTSA fields are shown, and what the site does not claim.";
+const advanLines = catalog.lines
+  .filter((line) => line.line.trim().toUpperCase() === "ADVAN A048")
+  .sort((a, b) => a.brand.localeCompare(b.brand, "en"));
+const yokohamaHasA048 = advanLines.some((line) => line.brand.toLowerCase() === "yokohama");
+const advanText = advanLines.length
+  ? `In this verified file the line name ADVAN A048 is stored under ${advanLines.map((line) => line.brand).join(", ")}.${
+      yokohamaHasA048 ? "" : " It is not stored under Yokohama."
+    } Those rows are published under the brand strings NHTSA stored. This site does not relabel them, and it does not treat the repeated name as a rebadge.`
+  : "This verified file does not contain a line named ADVAN A048. Repeated line names are still name matches only.";
+const statusExamples = catalog.plants
+  .filter((plant) => /phillips petroleum company|gates rubber/i.test(plant.name) && plant.status === "Active")
+  .sort((a, b) => a.code.localeCompare(b.code));
+const statusExampleText = statusExamples.length
+  ? `Records marked Active in this pull include ${statusExamples
+      .map((plant) => `${plant.name} (${plant.code})`)
+      .join(", ")}. Active is left as published. It is not rewritten, and it is not shown as a current-operations flag.`
+  : "No Phillips Petroleum Company or Gates Rubber record is marked Active in this pull. Whatever the field says, it is still not shown as a current-operations flag.";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/methodology/", label: "Data sources" },
+];
+const jsonLd = [
+  {
+    "@type": "Dataset",
+    name: "NHTSA UTQG ratings and tire plant codes as presented by TreadGrade",
+    description:
+      "Passenger-tire UTQG grades from NHTSA's public tire ratings API, plus NHTSA vPIC equipment plant codes used to decode DOT plant codes.",
+    url: `${site.url}/methodology/`,
+    creator: { "@type": "Organization", name: "TreadGrade", url: `${site.url}/` },
+    isBasedOn: catalog.meta.ratings.source,
+    dateModified: catalog.meta.verifiedAt,
+    license: "https://www.usa.gov/government-works",
+    keywords: ["UTQG", "tires", "NHTSA", "DOT plant code"],
+  },
+];
+---
+
+<Base title="Data sources and method" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>Data sources and method</h1>
+    <p>Data last verified {verified} (UTC). The pages were built from that pull. Grade numbers and plant records are copied from the files. They are not retyped, and a brand string is not corrected by hand.</p>
+    <h2>UTQG ratings</h2>
+    <p>
+      Source: <a href={catalog.meta.ratings.source}>{catalog.meta.ratings.source}</a>.
+      The request uses <span class="num">dataSet=ratings</span> and <span class="num">data=none</span>.
+      The API reports a total and pages with <span class="num">max</span> and <span class="num">offset</span>. A request for more than 100 rows still returns 100, so the refresh walks pages of 100 until the unique id count matches the reported total.
+    </p>
+    <p>
+      This pull stored {formatNumber(catalog.meta.ratings.rows)} source rows and shows {formatNumber(catalog.stats.rows)} after dropping exact duplicate grade rows.
+      Fields kept from each row: id, brand, tireline, size, const, wear, trac, temp, active, and the four issue counts (complaints, recalls, investigations, manufacturer communications).
+      The nested <span class="num">safetyIssues</span> arrays are not stored.
+    </p>
+    <p>
+      Brand spellings that differ only by letter case and spacing are one brand. The spelling with the most rows is the one shown. Tire lines under a brand are grouped when a stable web address would be the same, so "Pilot Sport 4" and "PILOT SPORT 4" share a page, while a line whose name adds a plus sign stays separate.
+      Size text is trimmed and otherwise left as published. "Radial" and "RADIAL" are both shown as Radial.
+    </p>
+    <p>
+      The <span class="num">active</span> flag is not shown as "discontinued" or "for sale." In this verified file it is true on {formatNumber(catalog.stats.activeRows)} of {formatNumber(catalog.stats.rows)} grade rows.
+      Complaint, recall, investigation, and manufacturer-communication counts are printed on a tire-line page only when a row in that line is above zero. This file has {formatNumber(catalog.stats.safetyRows)} rows with any of those counts above zero. A zero is not shown as a clean bill of health. Confirm recalls at <a href="https://www.nhtsa.gov/recalls">NHTSA</a>.
+    </p>
+    <p>
+      When the same tire-line name appears under more than one brand string, the page says so and links the others. That is a match of the name string. It is not a finding that one tire is a rebadge of another, and it is not a finding that the brand string is the company a buyer would expect.
+    </p>
+    <h2>Plant codes</h2>
+    <p>
+      Source: <a href={catalog.meta.plants.source}>{catalog.meta.plants.source}</a>.
+      Search criteria returned with this pull: {catalog.meta.plants.searchCriteria || "not stated"}.
+      The endpoint takes a year, an equipment type, and a report type. Equipment type 1 is tires. This refresh asks for the current calendar year, then the previous year, then 2016, and keeps the first response that passes validation.
+      A check on October 21, 2026 found the same 1,244 records for 2016, 2020, 2024, 2025, and 2026.
+    </p>
+    <p>
+      Each page is one <span class="num">DOTCode</span> from that response. <span class="num">OldDotCode</span> is the former two-symbol code when NHTSA sent one. Names and addresses that arrive in all capitals are sentence-cased so they can be read; the spelling is not corrected, including source typos. Mixed-case names are left as published.
+      The <span class="num">Status</span> value is shown as Active, Closed, or "not included" when the field is empty. It is not relabeled, and it is not treated as proof the plant is operating.
+    </p>
+    <h2 id="data-quality">Data-quality limits</h2>
+    <h3>Brand strings and repeated line names</h3>
+    <p>
+      The ratings file has a brand string and a line string. It has no category field, and it is not a complete list of tires on sale. This site does not correct a brand that looks wrong, and it does not call a repeated line name a rebadge.
+    </p>
+    <p>
+      {advanText}
+    </p>
+    <h3>Tires the grading rule does not cover</h3>
+    <p>
+      49 CFR 575.104 applies to new pneumatic tires for passenger cars. It does not apply to deep-tread, winter-type snow tires, space-saver or temporary-use spare tires, tires with nominal rim diameters of 12 inches or less, or limited-production tires.
+      Light-truck tires are outside that section because they are not passenger-car tires. NHTSA's 2017 consumer guide describes the same passenger-car scope
+      (<a href="https://www.nhtsa.gov/sites/nhtsa.gov/files/documents/812459_2017uniformtirequalitygradingconsumerguide_0.pdf">DOT HS 812 459</a>).
+      NHTSA has said the winter exception is a deep tread that makes year-round use inadvisable, not an all-season tire
+      (<a href="https://www.nhtsa.gov/interpretations/86-249">interpretation</a>, citing 44 FR 30140, May 24, 1979).
+    </p>
+    <p>
+      Because the file has no category, a page cannot say "this row is an LT tire" or "this line is missing because it is exempt." A shopper who does not find a light-truck, winter, or spare tire should read that as a limit of the list. The same is true of a current passenger-car line the file does not contain.
+      Nothing on this site is phrased as the best or highest tire. A sort from high to low orders the values in NHTSA's list. The word "highest" in the <a href="/guides/utqg-grades/">UTQG guide</a> appears inside the regulation's own ordering of the grade letters.
+    </p>
+    <h3>Plant name and status</h3>
+    <p>
+      49 CFR 574.6 says an applicant for a plant code submits its name, the name of each plant, and the corporate owner, plus the type of tires made at each plant.
+      The vPIC response used here has one name and one address per code. It has no brand field. A plant page therefore names the company on the record and never says which brands the plant makes.
+    </p>
+    <p>
+      The status field is especially easy to over-read. In this pull it is Active on {formatNumber(catalog.plants.filter((plant) => plant.status === "Active").length)} records, Closed on {formatNumber(catalog.plants.filter((plant) => plant.status === "Closed").length)}, and empty on {formatNumber(catalog.plants.filter((plant) => !plant.status).length)}.
+      {statusExampleText}
+    </p>
+    <h3>No third-party plant lists</h3>
+    <p>
+      Plant codes come only from the NHTSA vPIC response above. Other published plant-code tables are not consulted and are not merged in.
+      On October 21, 2026, the plant-code table at wfirm.com included a row with codes XXXX and XXXXXX for Wetherington Law Firm and www.wfirm.com. That row is not in the NHTSA file. This site does not use that table.
+    </p>
+    <h2>What the refresh refuses to publish</h2>
+    <p>
+      The weekly job replaces the saved files only when the new row counts are within 25 percent of the previous files, the ratings total matches the number of unique ids, and plant codes are present and unique. A short or broken response does not overwrite the site. The tolerance can be widened with <span class="num">FETCH_COUNT_TOLERANCE</span>, or the relative check skipped with <span class="num">FETCH_ALLOW_ANY_COUNT=1</span>. Counts still have to clear a hard minimum.
+    </p>
+    <h2>What this site does not do</h2>
+    <ul>
+      <li>It does not show prices, reviews, or test results of its own.</li>
+      <li>It does not decide whether a tire is safe, in stock, or appropriate for a vehicle.</li>
+      <li>It does not call any row the best or highest tire. Comparisons stay inside NHTSA's list.</li>
+      <li>It does not treat a repeated line name as a rebadge, and it does not repair brand strings.</li>
+      <li>It does not claim that a plant makes a particular brand, and it does not treat the vPIC status field as proof a plant is operating.</li>
+      <li>It does not use plant-code lists other than the NHTSA vPIC response.</li>
+      <li>It does not decode the manufacturer's six-symbol code. NHTSA does not publish that legend.</li>
+      <li>It is not affiliated with NHTSA or the U.S. Department of Transportation. The federal data is U.S. government work. See <a href="https://www.usa.gov/government-works">USA.gov</a>.</li>
+    </ul>
+    <p>
+      NHTSA's dataset index: <a href="https://www.nhtsa.gov/nhtsa-datasets-and-apis">NHTSA datasets and APIs</a>.
+      The plant list is also searchable in <a href="https://vpic.nhtsa.dot.gov/mid/">vPIC</a>.
+    </p>
+  </div>
+</Base>

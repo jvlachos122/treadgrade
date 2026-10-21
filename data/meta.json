@@ -1,0 +1,42 @@
+{
+  "verifiedAt": "2026-10-21T14:29:03.370Z",
+  "ratings": {
+    "source": "https://api.nhtsa.gov/tires?dataSet=ratings",
+    "rows": 7628,
+    "totalReported": 7628,
+    "pageSize": 100,
+    "fields": [
+      "id",
+      "brand",
+      "tireline",
+      "size",
+      "const",
+      "wear",
+      "trac",
+      "temp",
+      "active",
+      "complaintsCount",
+      "recallsCount",
+      "investigationsCount",
+      "manufacturerCommunicationsCount"
+    ]
+  },
+  "plants": {
+    "source": "https://vpic.nhtsa.dot.gov/api/vehicles/GetEquipmentPlantCodes?year=2026&equipmentType=1&reportType=All&format=json",
+    "yearRequested": 2026,
+    "rows": 1244,
+    "countReported": 1244,
+    "searchCriteria": "Year:2026 | Equipment Type:1 | Report Type: All",
+    "fields": [
+      "dotCode",
+      "oldDotCode",
+      "name",
+      "address",
+      "city",
+      "stateProvince",
+      "postalCode",
+      "country",
+      "status"
+    ]
+  }
+}

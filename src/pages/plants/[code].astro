@@ -1,0 +1,105 @@
+---
+import Base from "../../layouts/Base.astro";
+import PlantNote from "../../components/PlantNote.astro";
+import { catalog } from "../../lib/catalog.js";
+import { clampText } from "../../lib/text.js";
+
+export function getStaticPaths() {
+  return catalog.plants.map((plant) => ({ params: { code: plant.slug } }));
+}
+
+const plant = catalog.getPlant(Astro.params.code);
+const place = [plant.city, plant.state, plant.country].filter(Boolean).join(", ");
+const description = clampText(
+  `DOT plant code ${plant.code} is the NHTSA record for ${plant.name}${place ? `, ${place}` : ""}. The record names that company, not the brands made there.${plant.oldCode ? ` Former code ${plant.oldCode}.` : ""}`,
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/plants/", label: "Plant codes" },
+  { href: plant.url, label: plant.code },
+];
+const shared = plant.oldCodeSharedWith
+  .map((code) => catalog.getPlant(code.toLowerCase()))
+  .filter(Boolean);
+---
+
+<Base title={`DOT plant code ${plant.code}`} description={description} breadcrumbs={crumbs}>
+  <div class="wrap">
+    <h1>DOT plant code {plant.code}</h1>
+    <p class="lede">
+      {plant.name}{place ? `, ${place}` : ""}. NHTSA's record names the company on this plant code. It does not list brands, and the status field is not a finding that the plant is operating.
+    </p>
+    <PlantNote />
+    <dl class="facts">
+      <div>
+        <dt>Current plant code</dt>
+        <dd class="num">{plant.code}</dd>
+      </div>
+      <div>
+        <dt>Former code</dt>
+        <dd class="num">{plant.oldCode || "None in this record"}</dd>
+      </div>
+      <div>
+        <dt>Plant name</dt>
+        <dd>{plant.name}</dd>
+      </div>
+      <div>
+        <dt>Address</dt>
+        <dd>{plant.address || "Not included in the NHTSA record"}</dd>
+      </div>
+      <div>
+        <dt>City and region</dt>
+        <dd>{[plant.city, plant.state, plant.postal].filter(Boolean).join(", ") || "Not included in the NHTSA record"}</dd>
+      </div>
+      <div>
+        <dt>Country</dt>
+        <dd>{plant.country || "Not included in the NHTSA record"}</dd>
+      </div>
+      <div>
+        <dt>Status field</dt>
+        <dd>
+          {plant.status || "Not included in the NHTSA record"}. This is the value stored in vPIC, not a finding that the company or plant is operating today.
+        </dd>
+      </div>
+    </dl>
+    {
+      plant.oldCode ? (
+        <p>
+          Tires molded with the older two-symbol code {plant.oldCode} point at this same plant record
+          {shared.length ? ", and that former code is also listed on another plant record" : ""}.
+        </p>
+      ) : null
+    }
+    {
+      shared.length ? (
+        <ul>
+          {shared.map((other) => (
+            <li>
+              Former code {plant.oldCode} is also on <a href={other.url}>{other.code}</a>, {other.name}.
+            </li>
+          ))}
+        </ul>
+      ) : null
+    }
+    {
+      plant.sameName.length ? (
+        <>
+          <h2>Other records with this plant name</h2>
+          <ul>
+            {plant.sameName.map((other) => (
+              <li>
+                <a href={other.url}>{other.code}</a>
+                {other.city || other.country ? ` — ${[other.city, other.country].filter(Boolean).join(", ")}` : ""}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null
+    }
+    <p>
+      <a href={`/decoder/?tin=${plant.code}`}>Decode a code that starts with {plant.code}</a>
+      · <a href="/guides/dot-code/">How to read a DOT code</a>
+      · <a href="/plants/">All plant codes</a>
+    </p>
+  </div>
+</Base>

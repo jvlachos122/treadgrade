@@ -1,0 +1,96 @@
+---
+import Base from "../../layouts/Base.astro";
+import Disclaimer from "../../components/Disclaimer.astro";
+import Grade from "../../components/Grade.astro";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber, wearRange } from "../../lib/format.js";
+import { clampText } from "../../lib/text.js";
+
+export function getStaticPaths() {
+  return catalog.brands.map((brand) => ({ params: { brand: brand.slug } }));
+}
+
+const brand = catalog.getBrand(Astro.params.brand);
+const lines = catalog.getBrandLines(brand.slug);
+const description = clampText(
+  `${brand.name} in the NHTSA UTQG file: ${formatNumber(brand.lineCount)} tire lines and treadwear ${wearRange(brand.wearMin, brand.wearMax)}. The file does not say which lines are still sold.`,
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/brands/", label: "Brands" },
+  { href: brand.url, label: brand.name },
+];
+---
+
+<Base title={`${brand.name} UTQG grades`} description={description} breadcrumbs={crumbs}>
+  <div class="wrap">
+    <h1>{brand.name}</h1>
+    <p class="lede">
+      {formatNumber(brand.lineCount)} tire lines and {formatNumber(brand.rowCount)} grade rows in the NHTSA ratings file.
+      Treadwear spans {wearRange(brand.wearMin, brand.wearMax)}.
+    </p>
+    <Disclaimer />
+    <label>
+      Filter lines
+      <input id="line-filter" type="search" autocomplete="off" />
+    </label>
+    <p class="status small" id="line-filter-status" aria-live="polite"></p>
+    <div class="table-wrap">
+      <table>
+        <caption>{brand.name} tire lines</caption>
+        <thead>
+          <tr>
+            <th scope="col">Tire line</th>
+            <th scope="col">Size rows</th>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Traction</th>
+            <th scope="col">Temperature</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            lines.map((line) => (
+              <tr data-search={`${line.line}`.toLowerCase()}>
+                <td>
+                  <a href={line.url}>{line.line}</a>
+                </td>
+                <td class="num">{line.rows.length}</td>
+                <td class="num">{wearRange(line.wearMin, line.wearMax)}</td>
+                <td>
+                  {line.traction.map((grade) => (
+                    <Grade value={grade} kind="trac" />
+                  ))}
+                </td>
+                <td>
+                  {line.temperature.map((grade) => (
+                    <Grade value={grade} kind="temp" />
+                  ))}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p><a href="/ratings/">Search all brands</a></p>
+  </div>
+</Base>
+
+<script>
+  const input = document.querySelector("#line-filter");
+  const body = document.querySelector("tbody");
+  const status = document.querySelector("#line-filter-status");
+  if (input && body && status) {
+    const rows = [...body.rows];
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const row of rows) {
+        const visible = !query || row.dataset.search.includes(query);
+        row.hidden = !visible;
+        if (visible) shown += 1;
+      }
+      status.textContent = `${shown.toLocaleString("en-US")} of ${rows.length.toLocaleString("en-US")} lines shown.`;
+    });
+  }
+</script>

@@ -1,0 +1,92 @@
+---
+import Base from "../../layouts/Base.astro";
+import PlantNote from "../../components/PlantNote.astro";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber } from "../../lib/format.js";
+import { clampText } from "../../lib/text.js";
+
+const description = clampText(
+  `Search ${formatNumber(catalog.stats.plants)} NHTSA tire plant codes. Each code links to the company name, location, and former code in the equipment plant list. The list does not name brands.`,
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/plants/", label: "Plant codes" },
+];
+const statuses = ["Active", "Closed", "Not stated"];
+---
+
+<Base title="DOT tire plant codes" description={description} breadcrumbs={crumbs}>
+  <div class="wrap" data-plants>
+    <h1>DOT tire plant codes</h1>
+    <p class="lede">
+      {formatNumber(catalog.stats.plants)} plant records from NHTSA's equipment plant-code list.
+      Search by code, a former two-symbol code, the company name, or the city.
+      The status field can be filtered as stored. Active is not a list of plants operating today.
+    </p>
+    <PlantNote />
+    <div class="filter-row">
+      <label>
+        Code, name, or city
+        <input type="search" data-filter-q autocomplete="off" />
+      </label>
+      <label>
+        Country
+        <select data-filter-country>
+          <option value="">Any</option>
+          {catalog.countries.map((country) => <option value={country.key}>{country.label} ({formatNumber(country.count)})</option>)}
+        </select>
+      </label>
+      <label>
+        Status field
+        <select data-filter-status>
+          <option value="">Any</option>
+          {statuses.map((status) => <option value={status}>{status}</option>)}
+        </select>
+      </label>
+    </div>
+    <p class="status" data-filter-status-text aria-live="polite">{formatNumber(catalog.stats.plants)} plants.</p>
+    <div class="table-wrap">
+      <table>
+        <caption>NHTSA equipment plant codes</caption>
+        <thead>
+          <tr>
+            <th scope="col">Code</th>
+            <th scope="col">Former code</th>
+            <th scope="col">Plant</th>
+            <th scope="col">Location</th>
+            <th scope="col">Status field</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            catalog.plants.map((plant) => (
+              <tr
+                data-search={`${plant.code} ${plant.oldCode} ${plant.name} ${plant.city} ${plant.country}`.toLowerCase()}
+                data-country={plant.countryKey}
+                data-status={plant.status || "Not stated"}
+              >
+                <td class="num">
+                  <a href={plant.url}>{plant.code}</a>
+                </td>
+                <td class="num">{plant.oldCode || "—"}</td>
+                <td>{plant.name}</td>
+                <td>{[plant.city, plant.state, plant.country].filter(Boolean).join(", ")}</td>
+                <td>{plant.status || "Not stated"}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="small">
+      Former codes are not separate pages. They are listed on the plant record that carries that code, and in this table.
+      <a href="/guides/dot-code/">How a plant code fits into a DOT number</a>.
+    </p>
+  </div>
+</Base>
+
+<script>
+  import { initTableFilter } from "../../scripts/table-filter.js";
+  const root = document.querySelector("[data-plants]");
+  if (root) initTableFilter(root);
+</script>

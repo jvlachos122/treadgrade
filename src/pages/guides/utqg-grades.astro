@@ -1,0 +1,164 @@
+---
+import Base from "../../layouts/Base.astro";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber, percent } from "../../lib/format.js";
+
+const { traction, temperature, wearBuckets, rows } = catalog.stats;
+const description =
+  "What NHTSA UTQG treadwear, traction, and temperature grades mean, in the words of 49 CFR 575.104, plus how those grades are distributed in the public ratings file.";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: "/guides/utqg-grades/", label: "UTQG grades" },
+];
+const wearRows = [
+  ["Below 200", wearBuckets.under200],
+  ["200–300", wearBuckets.from200to300],
+  ["301–400", wearBuckets.from301to400],
+  ["401–500", wearBuckets.from401to500],
+  ["501–600", wearBuckets.from501to600],
+  ["Above 600", wearBuckets.over600],
+  ["Not reported", wearBuckets.missing],
+];
+---
+
+<Base title="What UTQG tire grades mean" description={description} breadcrumbs={crumbs}>
+  <div class="wrap prose">
+    <h1>What UTQG tire grades mean</h1>
+    <p>
+      UTQG is the Uniform Tire Quality Grading system. 49 CFR 575.104 requires tire makers and brand owners to grade new passenger-car tires for treadwear, traction, and temperature resistance so buyers can compare them.
+      The rule's stated purpose is to help a consumer choose among passenger-car tires.
+    </p>
+    <p>
+      It applies to new pneumatic tires for passenger cars. It does not apply to deep-tread, winter-type snow tires, space-saver or temporary-use spare tires, tires with nominal rim diameters of 12 inches or less, or limited-production tires as the regulation defines them.
+      Source: <a href="https://www.law.cornell.edu/cfr/text/49/575.104">49 CFR 575.104</a>
+      (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104">eCFR</a>).
+      NHTSA's 2017 consumer guide uses the same scope: passenger-car tires, with those exceptions
+      (<a href="https://www.nhtsa.gov/sites/nhtsa.gov/files/documents/812459_2017uniformtirequalitygradingconsumerguide_0.pdf">DOT HS 812 459</a>).
+    </p>
+    <h2 id="not-in-the-list">If you are looking for a light-truck, winter, or spare tire</h2>
+    <p>
+      Light-truck tires are outside this rule because it applies to passenger-car tires, not because the ratings file has an "LT" switch. The file has no category field, so this site cannot label a row as light truck, winter, or spare.
+    </p>
+    <p>
+      Deep-tread, winter-type snow tires and space-saver or temporary-use spare tires are named exceptions in 49 CFR 575.104(c)(1).
+      NHTSA has said the winter exception is a deep tread and tread design that makes year-round use on a passenger car inadvisable. All-season tires are not that exception
+      (<a href="https://www.nhtsa.gov/interpretations/86-249">NHTSA interpretation, 1986</a>, citing 44 FR 30140, May 24, 1979).
+    </p>
+    <p>
+      A line that is missing may be outside the rule, or it may be a passenger-car tire NHTSA's list simply does not contain. Absence is not a grade, and it does not say the tire is unsold. A number that is high inside the list is a high number in NHTSA's list, not "the best tire."
+    </p>
+    <h2>The grades, as the regulation tells buyers to read them</h2>
+    <p>
+      Figure 2 of the regulation is the explanation that has to be available to tire buyers. The three passages below are that text.
+      Where the quotation says a grade is the highest, that is the regulation's ordering of the grade letters. It is not a claim that any row on this site is the best tire in NHTSA's list or on the market.
+    </p>
+    <h3>Treadwear</h3>
+    <blockquote class="quote">
+      <p>
+        The treadwear grade is a comparative rating based on the wear rate of the tire when tested under controlled conditions on a specified government test course. For example, a tire graded 150 would wear one and one-half (1 1/2) times as well on the government course as a tire graded 100. The relative performance of tires depends upon the actual conditions of their use, however, and may depart significantly from the norm due to variations in driving habits, service practices and differences in road characteristics and climate.
+      </p>
+    </blockquote>
+    <p>
+      The grade is a whole number in multiples of 20, such as 80, 120, or 160, expressed as a percentage of the NHTSA nominal treadwear value on that course. A higher number means a slower wear rate on the course. It is not a promised mileage.
+    </p>
+    <h3>Traction</h3>
+    <blockquote class="quote">
+      <p>
+        The traction grades, from highest to lowest, are AA, A, B, and C. Those grades represent the tire's ability to stop on wet pavement as measured under controlled conditions on specified government test surfaces of asphalt and concrete. A tire marked C may have poor traction performance. Warning: The traction grade assigned to this tire is based on straight-ahead braking traction tests, and does not include acceleration, cornering, hydroplaning, or peak traction characteristics.
+      </p>
+    </blockquote>
+    <h3>Temperature</h3>
+    <blockquote class="quote">
+      <p>
+        The temperature grades are A (the highest), B, and C, representing the tire's resistance to the generation of heat and its ability to dissipate heat when tested under controlled conditions on a specified indoor laboratory test wheel. Sustained high temperature can cause the material of the tire to degenerate and reduce tire life, and excessive temperature can lead to sudden tire failure. The grade C corresponds to a level of performance which all passenger car tires must meet under the Federal Motor Vehicle Safety Standard No. 109. Grades B and A represent higher levels of performance on the laboratory test wheel than the minimum required by law.
+      </p>
+      <p>
+        Warning: The temperature grade for this tire is established for a tire that is properly inflated and not overloaded. Excessive speed, underinflation, or excessive loading, either separately or in combination, can cause heat buildup and possible tire failure.
+      </p>
+    </blockquote>
+    <h2>How the rows in this site's file are distributed</h2>
+    <p>
+      These shares are of the {formatNumber(rows)} grade rows in NHTSA's list as this site last verified it. They are not shares of tires currently for sale, and they are not the "of current tires" figures NHTSA has published elsewhere.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>Treadwear rows</caption>
+        <thead>
+          <tr>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Rows</th>
+            <th scope="col">Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            wearRows.map(([label, count]) => (
+              <tr>
+                <td>{label}</td>
+                <td class="num">{formatNumber(count)}</td>
+                <td class="num">{percent(count, rows)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Traction rows</caption>
+        <thead>
+          <tr>
+            <th scope="col">Grade</th>
+            <th scope="col">Rows</th>
+            <th scope="col">Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            ["AA", "A", "B", "C", "other"].map((grade) => (
+              <tr>
+                <td>{grade === "other" ? "Outside AA–C" : grade}</td>
+                <td class="num">{formatNumber(traction[grade])}</td>
+                <td class="num">{percent(traction[grade], rows)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Temperature rows</caption>
+        <thead>
+          <tr>
+            <th scope="col">Grade</th>
+            <th scope="col">Rows</th>
+            <th scope="col">Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            ["A", "B", "C", "other"].map((grade) => (
+              <tr>
+                <td>{grade === "other" ? "Outside A–C" : grade}</td>
+                <td class="num">{formatNumber(temperature[grade])}</td>
+                <td class="num">{percent(temperature[grade], rows)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <a href="/ratings/?traction=AA">Rows graded traction AA</a>
+      · <a href="/ratings/?temp=A">Rows graded temperature A</a>
+      · <a href="/ratings/?wearMin=600">Rows with treadwear of at least 600</a>
+    </p>
+    <h2>What a grade page on this site is not</h2>
+    <p>
+      A tire-line page repeats the size series and grades NHTSA published. It does not say the tire is still sold, does not estimate street mileage, and does not rank a tire as the best or highest in the list. NHTSA's own tire page is a useful companion:
+      <a href="https://www.nhtsa.gov/vehicle-safety/tires">TireWise</a>.
+    </p>
+  </div>
+</Base>

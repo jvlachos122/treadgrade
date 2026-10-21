@@ -1,0 +1,46 @@
+---
+import Base from "../layouts/Base.astro";
+import { affiliatesConfigured } from "../lib/affiliates.js";
+import { contactEmail } from "../lib/site.js";
+
+const email = contactEmail();
+
+const enabled = affiliatesConfigured();
+const description = enabled
+  ? "TreadGrade may earn a commission when a configured retailer link is used. Grade pages are not ordered by that commission."
+  : "TreadGrade's affiliate links are turned off. No retailer buttons are shown, and the site earns no commission from them.";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/affiliate-disclosure/", label: "Affiliate disclosure" },
+];
+---
+
+<Base title="Affiliate disclosure" description={description} breadcrumbs={crumbs}>
+  <div class="wrap prose">
+    <h1>Affiliate disclosure</h1>
+    {
+      enabled ? (
+        <p>
+          Some tire-line pages show "check price" buttons. Those links go to a retailer and include an affiliate id from the site configuration.
+          If you buy through one, the site may earn a commission. The price, if any, is on the retailer's site. This site does not display a price of its own.
+        </p>
+      ) : (
+        <p>
+          Affiliate buttons are not configured. Tire-line pages do not show retailer links, and this site does not earn a commission from them.
+          The slots for Tire Rack, SimpleTire, and Amazon exist in the site configuration and stay empty until an id and an https link template are added.
+        </p>
+      )
+    }
+    <p>
+      Grades, sort order, and which lines appear come from the NHTSA file. They are not arranged to favor a retailer. When a button is shown, the page says so next to the button and links here.
+    </p>
+    <p>See also the <a href="/privacy/">privacy</a> page.</p>
+    {
+      email ? (
+        <p>
+          Questions about this disclosure: <a href={`mailto:${email}`}>{email}</a>.
+        </p>
+      ) : null
+    }
+  </div>
+</Base>

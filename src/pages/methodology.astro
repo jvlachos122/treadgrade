@@ -35,7 +35,12 @@ const jsonLd = [
     description:
       "Passenger-tire UTQG grades from NHTSA's public tire ratings API, plus NHTSA vPIC equipment plant codes used to decode DOT plant codes.",
     url: `${site.url}/methodology/`,
-    creator: { "@type": "Organization", name: "TreadGrade", url: `${site.url}/` },
+    creator: {
+      "@type": "Organization",
+      name: "TreadGrade",
+      legalName: site.legalName,
+      url: `${site.url}/`,
+    },
     isBasedOn: catalog.meta.ratings.source,
     dateModified: catalog.meta.verifiedAt,
     license: "https://www.usa.gov/government-works",

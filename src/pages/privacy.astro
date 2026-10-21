@@ -1,11 +1,11 @@
 ---
 import Base from "../layouts/Base.astro";
-import { analyticsSnippet, contactEmail } from "../lib/site.js";
+import { analyticsSnippet, contactEmail, site } from "../lib/site.js";
 
 const email = contactEmail();
 
 const description =
-  "What TreadGrade stores: a static site with no accounts, no cookies of its own, and no analytics unless the owner adds a snippet.";
+  "What TreadGrade stores: a static site with no accounts, no cookies of its own, and no analytics unless Three Pines Company LLC adds a snippet.";
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/privacy/", label: "Privacy" },
@@ -15,6 +15,7 @@ const crumbs = [
 <Base title="Privacy" description={description} breadcrumbs={crumbs}>
   <div class="wrap prose">
     <h1>Privacy</h1>
+    <p>TreadGrade is operated by {site.legalName}, {site.operatorPlace}.</p>
     <p>
       TreadGrade is a static website. There are no accounts, no search logs kept by this site, and no forms that send a message to a server here. The ratings search, the plant directory filter, and the DOT decoder run in your browser.
     </p>
@@ -24,13 +25,13 @@ const crumbs = [
     </p>
     {
       analyticsSnippet() ? (
-        <p>The site owner has added an analytics snippet in the site configuration. That snippet loads from this page's head. Review the vendor named in that configuration for what it collects.</p>
+        <p>{site.legalName} has added an analytics snippet in the site configuration. That snippet loads from this page's head. Review the vendor named in that configuration for what it collects.</p>
       ) : (
         <p>No analytics snippet is configured. This site does not load a third-party analytics script.</p>
       )
     }
     <p>
-      If the owner later turns on affiliate buttons, a click leaves this site for the retailer's site, and that retailer has its own policy. Those buttons are off unless an affiliate id is configured. See the <a href="/affiliate-disclosure/">affiliate disclosure</a>.
+      If {site.legalName} later turns on affiliate buttons, a click leaves this site for the retailer's site, and that retailer has its own policy. Those buttons are off unless an affiliate id is configured. See the <a href="/affiliate-disclosure/">affiliate disclosure</a>.
     </p>
     {
       email ? (

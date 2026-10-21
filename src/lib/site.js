@@ -4,6 +4,8 @@
  */
 export const site = {
   name: "TreadGrade",
+  legalName: "Three Pines Company LLC",
+  operatorPlace: "Frankfort, Illinois",
   url: "https://treadgrade.com",
   locale: "en_US",
   description:

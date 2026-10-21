@@ -15,6 +15,24 @@ function paragraph(text) {
   return p;
 }
 
+function dotCode(result) {
+  const row = document.createElement("p");
+  row.className = "dot-code";
+  const parts = [
+    result.plantCode ? { text: result.plantCode, decoded: true } : null,
+    result.middle ? { text: result.middle, decoded: false } : null,
+    result.date?.raw ? { text: result.date.raw, decoded: true } : null,
+  ].filter(Boolean);
+  if (!parts.length && result.normalized) parts.push({ text: result.normalized, decoded: false });
+  for (const part of parts) {
+    const span = document.createElement("span");
+    if (part.decoded) span.className = "is-decoded";
+    span.textContent = part.text;
+    row.append(span);
+  }
+  return parts.length ? row : null;
+}
+
 export function initDecoder(root) {
   const form = root.querySelector("form");
   const input = form.elements.namedItem("tin");
@@ -30,7 +48,19 @@ export function initDecoder(root) {
   function render(result) {
     output.replaceChildren();
     const summary = section("Reading");
-    summary.append(paragraph(result.normalized ? `Symbols used: ${result.normalized}` : "Nothing usable was left after cleaning the entry."));
+    const chips = dotCode(result);
+    if (chips) summary.append(chips);
+    if (result.normalized) {
+      const symbols = document.createElement("p");
+      symbols.append(document.createTextNode("Symbols used: "));
+      const code = document.createElement("span");
+      code.className = "code";
+      code.textContent = result.normalized;
+      symbols.append(code);
+      summary.append(symbols);
+    } else {
+      summary.append(paragraph("Nothing usable was left after cleaning the entry."));
+    }
     output.append(summary);
 
     const plantSection = section("Plant");
@@ -42,7 +72,11 @@ export function initDecoder(root) {
         const item = document.createElement("li");
         const link = document.createElement("a");
         link.href = plant.url;
-        link.textContent = `${plant.code}${plant.matchedOn === "old" ? ` (matched former code ${result.plantCode})` : ""}`;
+        const code = document.createElement("span");
+        code.className = "code";
+        code.textContent = plant.code;
+        link.append(code);
+        if (plant.matchedOn === "old") link.append(document.createTextNode(` (matched former code ${result.plantCode})`));
         item.append(link, document.createTextNode(` — ${plant.name}. ${place(plant)}.`));
         if (plant.status) item.append(document.createTextNode(` Status field: ${plant.status}.`));
         list.append(item);

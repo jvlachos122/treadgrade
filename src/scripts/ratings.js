@@ -95,7 +95,7 @@ export function initRatings(root) {
   function grade(value) {
     const span = document.createElement("span");
     const known = ["AA", "A", "B", "C"].includes(value);
-    span.className = `grade grade-${known ? value.toLowerCase() : "other"}`;
+    span.className = `grade utqg grade-${known ? value.toLowerCase() : "other"}`;
     span.textContent = value || "—";
     return span;
   }
@@ -115,16 +115,17 @@ export function initRatings(root) {
       const name = document.createElement("td");
       name.append(cellLink(line.u, line.l));
       const size = document.createElement("td");
+      size.className = "tire-size";
       size.textContent = row[1];
       const wear = document.createElement("td");
-      wear.className = "num";
+      wear.className = "num utqg";
       wear.textContent = row[2] == null ? "—" : String(row[2]);
       const trac = document.createElement("td");
       trac.append(grade(row[3]));
       const temp = document.createElement("td");
       const tempKnown = ["A", "B", "C"].includes(row[4]);
       const tempBadge = grade(row[4]);
-      if (!tempKnown) tempBadge.className = "grade grade-other";
+      if (!tempKnown) tempBadge.className = "grade utqg grade-other";
       temp.append(tempBadge);
       tr.append(brand, name, size, wear, trac, temp);
       body.append(tr);

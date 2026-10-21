@@ -65,10 +65,10 @@ const statuses = ["Active", "Closed", "Not stated"];
                 data-country={plant.countryKey}
                 data-status={plant.status || "Not stated"}
               >
-                <td class="num">
+                <td class="num code">
                   <a href={plant.url}>{plant.code}</a>
                 </td>
-                <td class="num">{plant.oldCode || "—"}</td>
+                <td class="num code">{plant.oldCode || "—"}</td>
                 <td>{plant.name}</td>
                 <td>{[plant.city, plant.state, plant.country].filter(Boolean).join(", ")}</td>
                 <td>{plant.status || "Not stated"}</td>

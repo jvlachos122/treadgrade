@@ -77,9 +77,12 @@ const crumbs = [
     }
     {
       line.nonstandard ? (
-        <p class="notice">
-          At least one value is outside the usual UTQG letters (traction AA, A, B, C and temperature A, B, C). It is shown as NHTSA published it.
-        </p>
+        <div class="notice">
+          <p class="data-note-label">About this data</p>
+          <p>
+            At least one value is outside the usual UTQG letters (traction AA, A, B, C and temperature A, B, C). It is shown as NHTSA published it.
+          </p>
+        </div>
       ) : null
     }
     <div class="table-wrap">
@@ -98,8 +101,8 @@ const crumbs = [
           {
             line.rows.map((row) => (
               <tr>
-                <td>{row.size}</td>
-                <td class="num">{row.wear ?? "Not reported"}</td>
+                <td class="tire-size">{row.size}</td>
+                <td class="num utqg">{row.wear ?? "Not reported"}</td>
                 <td>
                   <Grade value={row.trac} kind="trac" />
                 </td>

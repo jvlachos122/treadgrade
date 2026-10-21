@@ -1,0 +1,12 @@
+---
+import { catalog } from "../lib/catalog.js";
+import { formatVerified } from "../lib/format.js";
+
+const verified = formatVerified(catalog.meta.verifiedAt);
+---
+
+<p class="notice">
+  The name is the company on NHTSA's plant-code record. The record does not list tire brands, and this site does not claim a plant makes a given brand.
+  The status field is the value vPIC stored. Active is not a finding that the company or the plant is operating.
+  Data last verified {verified} (UTC). <a href="/methodology/#data-quality">Data-quality notes</a>.
+</p>

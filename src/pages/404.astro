@@ -1,0 +1,17 @@
+---
+import Base from "../layouts/Base.astro";
+
+const description = "That page is not on TreadGrade. Search UTQG grades, browse brands, or decode a DOT tire code from the home page.";
+---
+
+<Base title="Page not found" description={description} noindex={true} canonicalPath="/404.html">
+  <div class="wrap prose">
+    <h1>Page not found</h1>
+    <p>That address is not on this site. The grades and plant pages are generated from the NHTSA files, so a mistyped line name will land here.</p>
+    <div class="actions">
+      <a class="button" href="/">Home</a>
+      <a class="button button-ghost" href="/ratings/">All grades</a>
+      <a class="button button-ghost" href="/decoder/">DOT decoder</a>
+    </div>
+  </div>
+</Base>

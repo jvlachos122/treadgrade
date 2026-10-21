@@ -1,0 +1,116 @@
+---
+import Base from "../layouts/Base.astro";
+import Disclaimer from "../components/Disclaimer.astro";
+import { catalog } from "../lib/catalog.js";
+import { site } from "../lib/site.js";
+import { formatNumber } from "../lib/format.js";
+
+const biggest = [...catalog.brands].sort((a, b) => b.rowCount - a.rowCount || a.name.localeCompare(b.name)).slice(0, 8);
+const description = site.description;
+const jsonLd = [
+  {
+    "@type": "WebSite",
+    name: site.name,
+    url: site.url,
+    description,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${site.url}/?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  },
+];
+---
+
+<Base title="TreadGrade · UTQG tire grades and DOT code decoder" description={description} home={true} jsonLd={jsonLd}>
+  <div class="wrap hero">
+    <p class="eyebrow">U.S. tire reference</p>
+    <h1>UTQG grades and DOT codes, from the public NHTSA files.</h1>
+    <p class="lede">
+      Look up treadwear, traction, and temperature grades for a tire line, or decode the plant and manufacture week in a sidewall DOT code.
+    </p>
+    <div class="search" data-search>
+      <form role="search" action="/" method="get">
+        <label>
+          Search tire lines, brands, or a plant code
+          <input
+            id="q"
+            name="q"
+            type="search"
+            autocomplete="off"
+            role="combobox"
+            aria-expanded="false"
+            aria-controls="search-results"
+            aria-autocomplete="list"
+            placeholder="Michelin Pilot Sport, or 00T"
+          />
+        </label>
+        <button type="submit">Search</button>
+      </form>
+      <ul id="search-results" class="results" role="listbox" hidden></ul>
+      <p class="status small" data-status aria-live="polite"></p>
+    </div>
+    <div class="actions">
+      <a class="button" href="/ratings/">Browse all grades</a>
+      <a class="button button-ghost" href="/decoder/">Decode a DOT code</a>
+    </div>
+    <Disclaimer />
+    <dl class="stats">
+      <div class="stat">
+        <b>{formatNumber(catalog.stats.brands)}</b>
+        <span>brands</span>
+      </div>
+      <div class="stat">
+        <b>{formatNumber(catalog.stats.lines)}</b>
+        <span>tire lines</span>
+      </div>
+      <div class="stat">
+        <b>{formatNumber(catalog.stats.rows)}</b>
+        <span>grade rows</span>
+      </div>
+      <div class="stat">
+        <b>{formatNumber(catalog.stats.plants)}</b>
+        <span>plant codes</span>
+      </div>
+    </dl>
+  </div>
+  <div class="wrap grid-3">
+    <article class="card">
+      <h2>Compare grades</h2>
+      <p>Every UTQG row in NHTSA's list, grouped into one page per tire line. Sizes stay written the way the file has them. The list is not a ranking of the best tire.</p>
+      <p><a href="/guides/utqg-grades/">What treadwear, traction, and temperature mean</a></p>
+    </article>
+    <article class="card">
+      <h2>Read a DOT code</h2>
+      <p>A plant code looks up the company name NHTSA stored for that code. It does not list brands. A date code becomes a manufacture week, including pre-2000 three-digit dates.</p>
+      <p><a href="/guides/dot-code/">How the tire identification number is laid out</a></p>
+    </article>
+    <article class="card">
+      <h2>Look up a plant code</h2>
+      <p>Search {formatNumber(catalog.stats.plants)} equipment plant codes, including former two-symbol codes. The record is the registered company, not a list of brands made there.</p>
+      <p><a href="/plants/">Open the plant directory</a></p>
+    </article>
+  </div>
+  <div class="wrap">
+    <h2>Brands with the most rows in NHTSA's list</h2>
+    <p class="muted">This counts rows in the ratings file. It is not a quality ranking, not a list of the best tires, and not a list of what is on sale.</p>
+    <ul class="brand-list">
+      {
+        biggest.map((brand) => (
+          <li>
+            <a href={brand.url}>
+              <span>{brand.name}</span>
+              <span class="muted">{formatNumber(brand.rowCount)} rows</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Base>
+
+<script>
+  import { initSearch } from "../scripts/home-search.js";
+  const root = document.querySelector("[data-search]");
+  if (root) initSearch(root);
+</script>

@@ -1,0 +1,30 @@
+---
+const path = Astro.url.pathname;
+const links = [
+  { href: "/ratings/", label: "Grades" },
+  { href: "/brands/", label: "Brands" },
+  { href: "/plants/", label: "Plants" },
+  { href: "/decoder/", label: "DOT decoder" },
+];
+function current(href) {
+  return path === href || (href !== "/" && path.startsWith(href));
+}
+---
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="wordmark" href="/">
+      <span class="stamp" aria-hidden="true">TG</span>
+      TreadGrade
+    </a>
+    <nav class="nav" aria-label="Primary">
+      {
+        links.map((link) => (
+          <a href={link.href} aria-current={current(link.href) ? "page" : undefined}>
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>

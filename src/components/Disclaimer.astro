@@ -1,0 +1,13 @@
+---
+import { catalog } from "../lib/catalog.js";
+import { formatVerified } from "../lib/format.js";
+
+const verified = formatVerified(catalog.meta.verifiedAt);
+---
+
+<p class="notice">
+  These are rows in NHTSA's ratings list, under the brand string that list stores. The list does not say whether a tire is still sold, and it has no category field.
+  Light-truck tires, deep-tread winter-type snow tires, and temporary spare tires are outside the UTQG rule, so a missing line is not a grade.
+  Sorting these rows is an ordering of NHTSA's list, not a ranking of the best tire.
+  Data last verified {verified} (UTC). <a href="/methodology/#data-quality">Data-quality notes</a>.
+</p>

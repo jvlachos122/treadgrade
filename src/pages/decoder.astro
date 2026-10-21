@@ -1,0 +1,62 @@
+---
+import Base from "../layouts/Base.astro";
+import { site } from "../lib/site.js";
+import { clampText } from "../lib/text.js";
+
+const description = clampText(
+  "Decode a DOT tire identification number: plant code to the NHTSA plant record, and the date code to a manufacture week. Includes pre-2000 three-digit dates.",
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/decoder/", label: "DOT decoder" },
+];
+const jsonLd = [
+  {
+    "@type": "WebApplication",
+    name: "TreadGrade DOT tire code decoder",
+    applicationCategory: "ReferenceApplication",
+    operatingSystem: "Any",
+    url: `${site.url}/decoder/`,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    description,
+  },
+];
+---
+
+<Base title="DOT tire code decoder" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap" data-decoder>
+    <h1>DOT tire code decoder</h1>
+    <p class="lede">
+      Enter a full tire identification number, a plant code, or just the date code. The plant lookup uses only NHTSA's equipment plant list.
+      A match names the company on that record, not the brands made there, and the status field is not a finding that the plant is operating.
+      The week follows the Sunday–Saturday rule in 49 CFR 574.5.
+      Light-truck, winter, and temporary spare tires can still carry a DOT code even when they have no UTQG grade.
+    </p>
+    <form class="decoder-form" action="/decoder/" method="get">
+      <label>
+        DOT code or TIN
+        <input name="tin" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" inputmode="text" />
+      </label>
+      <button type="submit">Decode</button>
+    </form>
+    <div class="button-row">
+      <button type="button" class="button-ghost" data-example="00T">Example: plant code 00T</button>
+      <button type="button" class="button-ghost" data-example="0109">Example: date code 0109</button>
+      <button type="button" class="button-ghost" data-example="329">Example: pre-2000 date 329</button>
+    </div>
+    <p class="small muted">
+      0109 is the week in the regulation's example (the first full week of 2009), not a claim about a specific tire.
+      329 shows how a three-digit date stays ambiguous. <a href="/guides/dot-code/">Read the layout first</a>.
+    </p>
+    <noscript>
+      <p>Decoding runs in your browser and needs JavaScript. The <a href="/plants/">plant directory</a> and the <a href="/guides/dot-code/">DOT guide</a> work without it.</p>
+    </noscript>
+    <div data-output aria-live="polite"></div>
+  </div>
+</Base>
+
+<script>
+  import { initDecoder } from "../scripts/decoder.js";
+  const root = document.querySelector("[data-decoder]");
+  if (root) initDecoder(root);
+</script>

@@ -1,0 +1,26 @@
+---
+import Base from "../layouts/Base.astro";
+
+const description =
+  "TreadGrade is an independent reference for NHTSA UTQG tire grades and DOT plant codes. It is not a tire seller and it is not a government site.";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/about/", label: "About" },
+];
+---
+
+<Base title="About TreadGrade" description={description} breadcrumbs={crumbs}>
+  <div class="wrap prose">
+    <h1>About TreadGrade</h1>
+    <p>
+      TreadGrade is a reference for two public U.S. tire files: NHTSA's UTQG ratings, and NHTSA's tire plant codes. It is for someone comparing a grade molded on a sidewall, or reading the DOT code to see which plant and which manufacture week it names.
+    </p>
+    <p>
+      It is not NHTSA, not the Department of Transportation, and not a tire dealer. It does not sell tires. It does not publish original tests, reviews, or prices. Grade and plant pages repeat the official records, with the preparation described on the <a href="/methodology/">data sources</a> page.
+    </p>
+    <p>
+      If affiliate links are turned on later, they are labeled and disclosed. None are turned on in the default configuration. Sorts order the grades in NHTSA's list. They are not a ranking of the best tire, and they are not ordered by a commission.
+    </p>
+    <p><a href="/contact/">Contact</a> · <a href="/privacy/">Privacy</a> · <a href="/affiliate-disclosure/">Affiliate disclosure</a></p>
+  </div>
+</Base>

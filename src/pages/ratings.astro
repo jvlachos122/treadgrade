@@ -1,0 +1,102 @@
+---
+import Base from "../layouts/Base.astro";
+import Disclaimer from "../components/Disclaimer.astro";
+import { catalog } from "../lib/catalog.js";
+import { formatNumber } from "../lib/format.js";
+import { clampText } from "../lib/text.js";
+
+const description = clampText(
+  `Search and sort ${formatNumber(catalog.stats.rows)} NHTSA UTQG grade rows by brand, tire line, treadwear, traction, and temperature.`,
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/ratings/", label: "UTQG grades" },
+];
+---
+
+<Base title="UTQG tire grades" description={description} breadcrumbs={crumbs}>
+  <div class="wrap" data-ratings>
+    <h1>UTQG tire grades</h1>
+    <p class="lede">
+      {formatNumber(catalog.stats.rows)} grade rows across {formatNumber(catalog.stats.lines)} tire lines in NHTSA's list.
+      Filter by the brand or line string, traction, temperature, and a minimum treadwear number.
+      High-to-low follows the grade letters and numbers in that list. It is not a ranking of the best tire.
+    </p>
+    <Disclaimer />
+    <form class="filters" action="/ratings/" method="get">
+      <label>
+        Brand or tire line
+        <input type="search" name="q" autocomplete="off" />
+      </label>
+      <label>
+        Traction
+        <select name="traction">
+          <option value="">Any</option>
+          <option value="AA">AA</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </label>
+      <label>
+        Temperature
+        <select name="temp">
+          <option value="">Any</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </label>
+      <label>
+        Minimum treadwear
+        <input type="number" name="wearMin" min="0" inputmode="numeric" />
+      </label>
+      <label>
+        Sort
+        <select name="sort">
+          <option value="brand">Brand A–Z</option>
+          <option value="wear-desc">Treadwear high–low</option>
+          <option value="wear-asc">Treadwear low–high</option>
+          <option value="traction">Traction high–low</option>
+          <option value="temp">Temperature high–low</option>
+        </select>
+      </label>
+      <button type="submit">Apply</button>
+    </form>
+    <p class="status" data-status aria-live="polite">Loading the ratings table…</p>
+    <noscript>
+      <p>The combined table needs JavaScript. Every brand is linked from the <a href="/brands/">brand index</a>.</p>
+    </noscript>
+    <div class="table-wrap">
+      <table>
+        <caption>NHTSA UTQG ratings</caption>
+        <thead>
+          <tr>
+            <th scope="col">Brand</th>
+            <th scope="col">Tire line</th>
+            <th scope="col">Size series</th>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Traction</th>
+            <th scope="col">Temperature</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button type="button" class="button-ghost" data-prev>Previous</button>
+      <span data-page>Page 1</span>
+      <button type="button" class="button-ghost" data-next>Next</button>
+    </div>
+    <p class="small muted">
+      Values outside AA, A, B, and C for traction, or A, B, and C for temperature, are shown as published.
+      <a href="/guides/utqg-grades/">Grade definitions</a>.
+    </p>
+  </div>
+</Base>
+
+<script>
+  import { initRatings } from "../scripts/ratings.js";
+  const root = document.querySelector("[data-ratings]");
+  if (root) initRatings(root);
+</script>

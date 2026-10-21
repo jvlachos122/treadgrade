@@ -1,0 +1,73 @@
+---
+import Base from "../../layouts/Base.astro";
+
+const description =
+  "How to read a DOT tire identification number: the plant code, the manufacturer code, the four-digit date, and the older three-digit date used before 2000.";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: "/guides/dot-code/", label: "DOT code" },
+];
+---
+
+<Base title="How to read a DOT tire code" description={description} breadcrumbs={crumbs}>
+  <div class="wrap prose">
+    <h1>How to read a DOT tire code</h1>
+    <p>
+      The tire identification number, or TIN, is molded into the sidewall. The letters DOT in front of it are a certification mark: the tire conforms to an applicable Federal Motor Vehicle Safety Standard. DOT is not the plant code.
+      The rules are in <a href="https://www.law.cornell.edu/cfr/text/49/574.5">49 CFR 574.5</a>
+      (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">eCFR</a>).
+    </p>
+    <p>
+      NHTSA says to look on both sidewalls. The full TIN may not be on both sides.
+      See <a href="https://www.nhtsa.gov/vehicle-safety/tires">NHTSA's TireWise page</a>.
+    </p>
+    <h2>Current new-tire number</h2>
+    <p>A new tire's TIN is 13 symbols:</p>
+    <ol>
+      <li>Plant code, 3 symbols. NHTSA assigns it. The vPIC record used here is a company name and address, not a list of brands. <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.6">49 CFR 574.6</a> is the application for a code. The status value on that record is not a finding that the plant is operating.</li>
+      <li>Manufacturer's code, 6 symbols. The maker can use it to describe the tire or the brand owner. NHTSA does not publish a legend for those symbols.</li>
+      <li>Date code, 4 digits. The first two are the week, the last two are the year.</li>
+    </ol>
+    <p>
+      A retreaded tire's TIN is 7 symbols: the 3-symbol plant code and the 4-digit date, with no manufacturer's code. A separate letter R marks a retread and is not part of the TIN. Matching that 7-symbol length does not, by itself, prove a tire was retreaded.
+    </p>
+    <h2>The date code</h2>
+    <p>
+      Week 01 is the first full calendar week of the year. The week runs Sunday through Saturday, and the last week of a year may include up to six days of the next year.
+      The regulation's example: 0109 means the first full calendar week of 2009, Sunday, January 4 through Saturday, January 10, 2009.
+    </p>
+    <p>
+      This site's decoder uses that Sunday-start rule for every four-digit date and reads the year as 2000–2099. Age is counted from the Sunday that opens the week, because the code identifies a week rather than a day. If that Sunday is still in the future, the decoder says so instead of guessing that the year was in the 1900s.
+    </p>
+    <h2>Older two-symbol plant codes</h2>
+    <p>
+      Plants that already had a two-symbol code could keep using the older layout until April 13, 2025: two symbols for the plant, up to two for the size, up to four optional descriptive symbols, then the four-digit date.
+      Tires made before that date can still show the older code. The plant list includes a former code when NHTSA published one. The <a href="/plants/">plant directory</a> searches both.
+    </p>
+    <p>
+      The 2015 final rule that lengthened the plant code is in the
+      <a href="https://www.federalregister.gov/documents/2015/04/13/2015-08418/tire-identification-and-recordkeeping">Federal Register</a>.
+      That preamble also notes the TIN was adopted in 1971.
+    </p>
+    <h2>Three-digit dates from before 2000</h2>
+    <p>
+      Before 2000 the date code was three digits: two for the week and one for the year. The decade was not encoded. A code ending in 329 is week 32 of a year ending in 9. From the 1971 adoption through 1999, that could be 1979, 1989, or 1999. The decoder lists each of those years. It does not pick one.
+    </p>
+    <h2>Symbols that are allowed</h2>
+    <p>
+      49 CFR 574.5 allows A, B, C, D, E, F, H, J, K, L, M, N, P, R, T, U, V, W, X, Y, and the digits 0–9. G, I, O, Q, S, and Z are not in that set. The decoder drops anything outside the set and says so, because a photo or a worn sidewall is easy to misread.
+    </p>
+    <h2>Age is not a safety verdict</h2>
+    <blockquote class="quote">
+      <p>
+        As tires age, they are more prone to failure. Some vehicle and tire manufacturers recommend replacing tires that are six to 10 years old, regardless of treadwear.
+      </p>
+    </blockquote>
+    <p>
+      That is NHTSA's description of manufacturer recommendations, not a calculation this site can make for a particular tire. NHTSA also says a full-size spare should not be used as a replacement for worn tires except in an emergency such as a flat. You cannot see aging just by looking at the tread. The source is the aging section of
+      <a href="https://www.nhtsa.gov/vehicle-safety/tires">NHTSA TireWise</a>.
+    </p>
+    <p><a class="button" href="/decoder/">Open the decoder</a></p>
+  </div>
+</Base>

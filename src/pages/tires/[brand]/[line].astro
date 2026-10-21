@@ -1,0 +1,155 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Disclaimer from "../../../components/Disclaimer.astro";
+import CheckPrice from "../../../components/CheckPrice.astro";
+import Grade from "../../../components/Grade.astro";
+import { catalog } from "../../../lib/catalog.js";
+import { wearRange } from "../../../lib/format.js";
+import { clampText } from "../../../lib/text.js";
+
+export function getStaticPaths() {
+  return catalog.lines.map((line) => ({
+    params: { brand: line.brandSlug, line: line.lineSlug },
+  }));
+}
+
+const line = catalog.getLine(Astro.params.brand, Astro.params.line);
+const sameGrades =
+  line.rows.length > 1 &&
+  line.rows.every(
+    (row) => row.wear === line.rows[0].wear && row.trac === line.rows[0].trac && row.temp === line.rows[0].temp,
+  );
+const constructions = [...new Set(line.rows.map((row) => row.construction).filter(Boolean))];
+const safety = line.rows.reduce(
+  (sum, row) => ({
+    complaints: sum.complaints + row.complaintsCount,
+    recalls: sum.recalls + row.recallsCount,
+    investigations: sum.investigations + row.investigationsCount,
+    communications: sum.communications + row.manufacturerCommunicationsCount,
+  }),
+  { complaints: 0, recalls: 0, investigations: 0, communications: 0 },
+);
+const safetyTotal = safety.complaints + safety.recalls + safety.investigations + safety.communications;
+const activeMixed = line.rows.some((row) => row.active) && line.rows.some((row) => !row.active);
+const sameName = line.sameName.slice(0, 12);
+const description = clampText(
+  `NHTSA UTQG grades for the ${line.brand} ${line.line}: treadwear ${wearRange(line.wearMin, line.wearMax)}, traction ${line.traction.join(", ") || "not reported"}, temperature ${line.temperature.join(", ") || "not reported"}. The ratings file does not say if this tire is still sold.`,
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/brands/", label: "Brands" },
+  { href: `/brands/${line.brandSlug}/`, label: line.brand },
+  { href: line.url, label: line.line },
+];
+---
+
+<Base title={`${line.brand} ${line.line} UTQG grades`} description={description} breadcrumbs={crumbs}>
+  <div class="wrap">
+    <h1>{line.brand} {line.line}</h1>
+    <p class="lede">
+      Treadwear {wearRange(line.wearMin, line.wearMax)}.
+      Traction {line.traction.join(", ") || "not reported"}.
+      Temperature {line.temperature.join(", ") || "not reported"}.
+      {constructions.length ? ` Construction: ${constructions.join(", ")}.` : ""}
+    </p>
+    <Disclaimer />
+    {
+      sameGrades ? (
+        <p>Every size series for this line carries the same grades in the NHTSA file. The size strings below are unchanged from that file.</p>
+      ) : (
+        <p>Grades can differ by the size series NHTSA published. Size text is shown as published, not converted into a standard size code.</p>
+      )
+    }
+    {
+      activeMixed ? (
+        <p>
+          The ratings API marks some size rows for this line active and others not. This site does not treat that flag as proof a tire is, or is not, still sold.
+        </p>
+      ) : null
+    }
+    {
+      safetyTotal > 0 ? (
+        <p>
+          The ratings API included non-zero counts on rows in this line: {safety.complaints} complaints, {safety.recalls} recalls, {safety.investigations} investigations, and {safety.communications} manufacturer communications.
+          Confirm any recall on <a href="https://www.nhtsa.gov/recalls">NHTSA's recall search</a> before relying on it.
+        </p>
+      ) : null
+    }
+    {
+      line.nonstandard ? (
+        <p class="notice">
+          At least one value is outside the usual UTQG letters (traction AA, A, B, C and temperature A, B, C). It is shown as NHTSA published it.
+        </p>
+      ) : null
+    }
+    <div class="table-wrap">
+      <table>
+        <caption>Grades by size series</caption>
+        <thead>
+          <tr>
+            <th scope="col">Size series</th>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Traction</th>
+            <th scope="col">Temperature</th>
+            <th scope="col">Construction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            line.rows.map((row) => (
+              <tr>
+                <td>{row.size}</td>
+                <td class="num">{row.wear ?? "Not reported"}</td>
+                <td>
+                  <Grade value={row.trac} kind="trac" />
+                </td>
+                <td>
+                  <Grade value={row.temp} kind="temp" />
+                </td>
+                <td>{row.construction || "Not reported"}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    {
+      line.sameName.length ? (
+        <>
+          <h2>Same line name under other brands</h2>
+          <p>
+            NHTSA stored this same line name under {line.sameName.length === 1 ? "another brand string" : `${line.sameName.length} other brand strings`}.
+            A matching name is not evidence of rebadging, and it is not evidence the tires are the same product.
+            The brand at the top of this page is the brand string in the file. The ratings list mispairs some line names with brands.
+            <a href="/methodology/#data-quality">See the data-quality note</a>.
+          </p>
+          <ul>
+            {sameName.map((other) => (
+              <li>
+                <a href={other.url}>
+                  {other.brand} {other.line}
+                </a>
+              </li>
+            ))}
+          </ul>
+          {line.sameName.length > sameName.length ? <p>And {line.sameName.length - sameName.length} more with this name.</p> : null}
+        </>
+      ) : null
+    }
+    <CheckPrice query={`${line.brand} ${line.line}`} />
+    <h2>Read the grades</h2>
+    <p>
+      <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
+      The numbers compare tires on a government test. They are not a mileage warranty.
+    </p>
+    <p>
+      <a href={`/brands/${line.brandSlug}/`}>All {line.brand} lines</a>
+      · <a href="/ratings/">Full ratings table</a>
+      · <a href="/decoder/">DOT code decoder</a>
+    </p>
+    <details>
+      <summary>NHTSA record ids in this line</summary>
+      <p class="num">{line.rows.map((row) => row.id).join(", ")}</p>
+    </details>
+  </div>
+</Base>

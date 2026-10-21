@@ -1,0 +1,34 @@
+---
+import Base from "../layouts/Base.astro";
+import { contactEmail } from "../lib/site.js";
+
+const email = contactEmail();
+const description = email
+  ? `Contact TreadGrade at ${email} about a data error or a correction to a grade or plant page.`
+  : "TreadGrade does not publish a contact email yet. The address is still a placeholder in the site configuration.";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/contact/", label: "Contact" },
+];
+---
+
+<Base title="Contact" description={description} breadcrumbs={crumbs}>
+  <div class="wrap prose">
+    <h1>Contact</h1>
+    {
+      email ? (
+        <p>
+          Email <a href={`mailto:${email}`}>{email}</a> about a data error. Include the page address and the NHTSA record id if you have one.
+        </p>
+      ) : (
+        <p>
+          A contact email has not been set. The site configuration still has a placeholder marked TODO, so this page does not publish an address.
+        </p>
+      )
+    }
+    <p>
+      For a recall or a safety complaint about a tire, use NHTSA rather than this site:
+      <a href="https://www.nhtsa.gov/recalls">NHTSA recalls</a>.
+    </p>
+  </div>
+</Base>

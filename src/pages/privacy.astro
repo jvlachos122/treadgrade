@@ -1,0 +1,43 @@
+---
+import Base from "../layouts/Base.astro";
+import { analyticsSnippet, contactEmail } from "../lib/site.js";
+
+const email = contactEmail();
+
+const description =
+  "What TreadGrade stores: a static site with no accounts, no cookies of its own, and no analytics unless the owner adds a snippet.";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/privacy/", label: "Privacy" },
+];
+---
+
+<Base title="Privacy" description={description} breadcrumbs={crumbs}>
+  <div class="wrap prose">
+    <h1>Privacy</h1>
+    <p>
+      TreadGrade is a static website. There are no accounts, no search logs kept by this site, and no forms that send a message to a server here. The ratings search, the plant directory filter, and the DOT decoder run in your browser.
+    </p>
+    <p>
+      The site is published with GitHub Pages. GitHub receives ordinary web-server data such as IP address and the page requested when your browser loads a page. Their policy is the
+      <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.
+    </p>
+    {
+      analyticsSnippet() ? (
+        <p>The site owner has added an analytics snippet in the site configuration. That snippet loads from this page's head. Review the vendor named in that configuration for what it collects.</p>
+      ) : (
+        <p>No analytics snippet is configured. This site does not load a third-party analytics script.</p>
+      )
+    }
+    <p>
+      If the owner later turns on affiliate buttons, a click leaves this site for the retailer's site, and that retailer has its own policy. Those buttons are off unless an affiliate id is configured. See the <a href="/affiliate-disclosure/">affiliate disclosure</a>.
+    </p>
+    {
+      email ? (
+        <p>
+          Questions about this page: <a href={`mailto:${email}`}>{email}</a>.
+        </p>
+      ) : null
+    }
+  </div>
+</Base>

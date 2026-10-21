@@ -1,0 +1,25 @@
+---
+import { affiliateLinks } from "../lib/affiliates.js";
+
+const { query } = Astro.props;
+const links = affiliateLinks(query);
+---
+
+{
+  links.length ? (
+    <aside class="card" aria-labelledby="price-heading">
+      <h2 id="price-heading">Check a price</h2>
+      <p>
+        Some of these go to retailers through affiliate links. If you buy after using one, the site may earn a commission.
+        Grades on this page are not sorted by commission. <a href="/affiliate-disclosure/">Affiliate disclosure</a>.
+      </p>
+      <div class="button-row">
+        {links.map((link) => (
+          <a class="button" href={link.href} rel="sponsored nofollow noopener">
+            Check price at {link.name}
+          </a>
+        ))}
+      </div>
+    </aside>
+  ) : null
+}

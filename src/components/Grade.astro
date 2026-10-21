@@ -1,0 +1,8 @@
+---
+const { value, kind = "trac" } = Astro.props;
+const standard = kind === "temp" ? ["A", "B", "C"] : ["AA", "A", "B", "C"];
+const known = standard.includes(value);
+const cls = known ? String(value).toLowerCase() : "other";
+---
+
+<span class={`grade grade-${cls}`}>{value || "—"}</span>

@@ -441,6 +441,24 @@ td a { font-weight: 600; }
   .decoder-form { display: grid; grid-template-columns: 1fr auto; gap: 0.7rem; align-items: end; }
 }
 
+.decoder-form label.decoder-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-weight: 400;
+  grid-column: 1 / -1;
+  margin: 0.2rem 0 0;
+}
+.decoder-form input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  min-height: 1.15rem;
+  margin-top: 0.2rem;
+  padding: 0;
+  accent-color: var(--pine);
+  flex: 0 0 auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   * { transition: none !important; }

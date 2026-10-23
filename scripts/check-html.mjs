@@ -28,6 +28,17 @@ function expectedCanonical(file) {
 
 const validator = new HtmlValidate({
   extends: ["html-validate:recommended"],
+  elements: [
+    "html5",
+    {
+      // Impact.com's site-verification tag uses value=, which is not a standard meta attribute.
+      meta: {
+        attributes: {
+          value: {},
+        },
+      },
+    },
+  ],
   rules: {
     "long-title": "off",
     "no-trailing-whitespace": "off",

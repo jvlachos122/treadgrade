@@ -9,6 +9,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write
 
 concurrency:
   group: treadgrade-pages
@@ -33,6 +34,13 @@ jobs:
       - run: npm run build
       - run: npm run check:links
       - run: npm run check:html
+      - name: Write IndexNow manifest
+        run: node scripts/indexnow.mjs --write-manifest .indexnow/manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: indexnow-manifest
+          path: .indexnow/manifest.json
+          retention-days: 30
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -47,3 +55,28 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  indexnow:
+    if: github.actor != 'github-actions[bot]'
+    needs: deploy
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore previous IndexNow manifest
+        uses: actions/cache@v4
+        with:
+          path: .indexnow/previous-manifest.json
+          key: indexnow-manifest-${{ github.run_id }}
+          restore-keys: |
+            indexnow-manifest-
+      - uses: actions/download-artifact@v4
+        with:
+          name: indexnow-manifest
+          path: .indexnow
+      - name: Submit changed URLs to IndexNow
+        run: |
+          node scripts/indexnow.mjs --submit \
+            --manifest .indexnow/manifest.json \
+            --previous .indexnow/previous-manifest.json
+          cp .indexnow/manifest.json .indexnow/previous-manifest.json

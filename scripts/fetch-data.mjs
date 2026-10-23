@@ -1,6 +1,10 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { collectTireRecalls, RECALL_LAYOUT_URL, RECALL_ZIP_URL, summarizeRecallRows } from "../src/lib/recalls.js";
+import { openZipTextLines } from "./zip-text.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dataDir = join(root, "data");
@@ -11,30 +15,65 @@ const TOLERANCE = Number(process.env.FETCH_COUNT_TOLERANCE ?? 0.25);
 const ALLOW_ANY = process.env.FETCH_ALLOW_ANY_COUNT === "1";
 const HARD_MIN_RATINGS = 1000;
 const HARD_MIN_PLANTS = 200;
+const HARD_MIN_TIRE_CAMPAIGNS = 50;
+const HARD_MIN_TIRE_ROWS = 500;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function getJson(url, attempt = 1) {
+async function getResponse(url, accept, timeoutMs, attempt = 1) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        accept: "application/json",
+        accept,
         "user-agent": "TreadGrade/1.0 (+https://treadgrade.com/methodology/)",
       },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
-    return await response.json();
+    return response;
   } catch (error) {
     if (attempt >= 4) throw error;
     await sleep(400 * 2 ** attempt);
-    return getJson(url, attempt + 1);
+    return getResponse(url, accept, timeoutMs, attempt + 1);
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function getJson(url) {
+  const response = await getResponse(url, "application/json", 60000);
+  return response.json();
+}
+
+async function fetchTireRecalls() {
+  const response = await getResponse(RECALL_ZIP_URL, "application/zip, application/octet-stream", 120000);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (bytes.length < 4 || bytes.readUInt32LE(0) !== 0x04034b50) {
+    throw new Error(`Recall download is not a ZIP (${bytes.length} bytes).`);
+  }
+  const directory = await mkdtemp(join(tmpdir(), "treadgrade-rcl-"));
+  const zipPath = join(directory, "FLAT_RCL_POST_2010.zip");
+  try {
+    await writeFile(zipPath, bytes);
+    const lines = await openZipTextLines(zipPath);
+    const collected = await collectTireRecalls(lines);
+    if (collected.campaigns < HARD_MIN_TIRE_CAMPAIGNS || collected.tireRows < HARD_MIN_TIRE_ROWS) {
+      throw new Error(`Tire recall file has ${collected.campaigns} campaigns and ${collected.tireRows} tire rows.`);
+    }
+    if (collected.rows.length < HARD_MIN_TIRE_CAMPAIGNS) {
+      throw new Error(`Tire recall table has ${collected.rows.length} lines.`);
+    }
+    const summary = summarizeRecallRows(collected.rows);
+    console.log(
+      `Tire recalls: ${collected.tireRows} source rows, ${summary.campaigns} campaigns, ${summary.brands} brands, ${summary.lines} lines, ${summary.brandsWithDifferentFiler} brands with a different filer name.`,
+    );
+    return { rows: collected.rows, summary, tireRows: collected.tireRows };
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 }
 
@@ -178,14 +217,51 @@ function writeJson(path, value) {
   renameSync(temporary, path);
 }
 
+function previousRecallCampaigns(path) {
+  if (!existsSync(path)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    return Number.isInteger(parsed?.recalls?.campaigns) ? parsed.recalls.campaigns : null;
+  } catch {
+    return null;
+  }
+}
+
+function recallMeta(recalls, retrievedAt) {
+  return {
+    source: RECALL_ZIP_URL,
+    layout: RECALL_LAYOUT_URL,
+    retrievedAt,
+    tireRows: recalls.tireRows,
+    campaigns: recalls.summary.campaigns,
+    brands: recalls.summary.brands,
+    lines: recalls.summary.lines,
+    brandsWithDifferentFiler: recalls.summary.brandsWithDifferentFiler,
+    fields: ["brand", "line", "filer", "manufacturers", "campaign", "reportDate", "units"],
+  };
+}
+
 async function main() {
   mkdirSync(dataDir, { recursive: true });
+  const recallsOnly = process.env.FETCH_ONLY === "recalls";
+  const recalls = await fetchTireRecalls();
+  assertNear("Tire recall campaigns", recalls.summary.campaigns, previousRecallCampaigns(join(dataDir, "meta.json")));
+  assertNear("Tire recall lines", recalls.rows.length, previousCount(join(dataDir, "recalls.json")));
+  if (recallsOnly) {
+    const existing = JSON.parse(readFileSync(join(dataDir, "meta.json"), "utf8"));
+    existing.recalls = recallMeta(recalls, new Date().toISOString());
+    writeJson(join(dataDir, "recalls.json"), recalls.rows);
+    writeJson(join(dataDir, "meta.json"), existing);
+    console.log(`Wrote tire recalls retrieved at ${existing.recalls.retrievedAt}. Ratings and plants were left as saved.`);
+    return;
+  }
   const ratings = await fetchRatings();
   const plants = await fetchPlants();
   assertNear("Ratings", ratings.rows.length, previousCount(join(dataDir, "ratings.json")));
   assertNear("Plants", plants.rows.length, previousCount(join(dataDir, "plants.json")));
+  const verifiedAt = new Date().toISOString();
   const meta = {
-    verifiedAt: new Date().toISOString(),
+    verifiedAt,
     ratings: {
       source: RATINGS_SOURCE,
       rows: ratings.rows.length,
@@ -201,9 +277,11 @@ async function main() {
       searchCriteria: plants.searchCriteria,
       fields: ["dotCode", "oldDotCode", "name", "address", "city", "stateProvince", "postalCode", "country", "status"],
     },
+    recalls: recallMeta(recalls, verifiedAt),
   };
   writeJson(join(dataDir, "ratings.json"), ratings.rows);
   writeJson(join(dataDir, "plants.json"), plants.rows);
+  writeJson(join(dataDir, "recalls.json"), recalls.rows);
   writeJson(join(dataDir, "meta.json"), meta);
   console.log(`Wrote data verified at ${meta.verifiedAt}.`);
 }

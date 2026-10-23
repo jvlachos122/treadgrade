@@ -38,5 +38,24 @@
       "country",
       "status"
     ]
+  },
+  "recalls": {
+    "source": "https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip",
+    "layout": "https://static.nhtsa.gov/odi/ffdd/rcl/RCL.txt",
+    "retrievedAt": "2026-10-23T07:22:28.532Z",
+    "tireRows": 20282,
+    "campaigns": 200,
+    "brands": 112,
+    "lines": 436,
+    "brandsWithDifferentFiler": 90,
+    "fields": [
+      "brand",
+      "line",
+      "filer",
+      "manufacturers",
+      "campaign",
+      "reportDate",
+      "units"
+    ]
   }
 }

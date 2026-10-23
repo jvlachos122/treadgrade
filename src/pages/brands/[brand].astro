@@ -4,6 +4,9 @@ import Disclaimer from "../../components/Disclaimer.astro";
 import Grade from "../../components/Grade.astro";
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber, wearRange } from "../../lib/format.js";
+import { nameKey } from "../../lib/normalize.js";
+import { recallSummary } from "../../lib/recall-catalog.js";
+import { formatNameList } from "../../lib/recalls.js";
 import { clampText } from "../../lib/text.js";
 
 export function getStaticPaths() {
@@ -12,6 +15,7 @@ export function getStaticPaths() {
 
 const brand = catalog.getBrand(Astro.params.brand);
 const lines = catalog.getBrandLines(brand.slug);
+const filings = recallSummary.byBrand.get(nameKey(brand.name)) || null;
 const description = clampText(
   `${brand.name} in the NHTSA UTQG file: ${formatNumber(brand.lineCount)} tire lines and treadwear ${wearRange(brand.wearMin, brand.wearMax)}. The file does not say which lines are still sold.`,
 );
@@ -30,6 +34,20 @@ const crumbs = [
       Treadwear spans {wearRange(brand.wearMin, brand.wearMax)}.
     </p>
     <Disclaimer />
+    {
+      filings ? (
+        <div class="notice">
+          <p class="data-note-label">Data-quality note</p>
+          <p>
+            NHTSA's tire-recall file names {brand.name} on {formatNumber(filings.rows.length)} recalled {filings.rows.length === 1 ? "line" : "lines"}
+            across {formatNumber(filings.campaigns)} {filings.campaigns === 1 ? "campaign" : "campaigns"}.
+            The filing {filings.filers.length === 1 ? "company is" : "companies are"} {formatNameList(filings.filers)}.
+            <a href={`/who-makes-it/#${filings.anchor}`}>Those filings are on Who makes it?</a>
+            A filing covers the recalled line in that campaign. It does not say who makes every {brand.name} tire.
+          </p>
+        </div>
+      ) : null
+    }
     <label>
       Filter lines
       <input id="line-filter" type="search" autocomplete="off" />

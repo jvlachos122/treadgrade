@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import { catalog } from "../lib/catalog.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
+import { recallMeta, recallSummary } from "../lib/recall-catalog.js";
 import { site } from "../lib/site.js";
 
 const verified = formatVerified(catalog.meta.verifiedAt);
@@ -120,9 +121,27 @@ const jsonLd = [
       Plant codes come only from the NHTSA vPIC response above. Other published plant-code tables are not consulted and are not merged in.
       On October 21, 2026, the plant-code table at wfirm.com included a row with codes XXXX and XXXXXX for Wetherington Law Firm and www.wfirm.com. That row is not in the NHTSA file. This site does not use that table.
     </p>
+    <h2 id="recall-filings">Tire recall filings</h2>
+    <p>
+      Source: <a href={recallMeta.source}>{recallMeta.source}</a>.
+      The field layout is <a href={recallMeta.layout}>{recallMeta.layout}</a>.
+      The refresh downloads the ZIP, keeps rows whose RCLTYPECD is T, and stores MAKETXT, MODELTXT, MFGNAME, MFGTXT, CAMPNO, RCDATE, and POTAFF.
+      Repeated rows for the same campaign, brand, and line are collapsed. In this pull that is {formatNumber(recallMeta.tireRows)} tire rows, {formatNumber(recallSummary.campaigns)} campaigns, {formatNumber(recallSummary.brands)} brand strings, and {formatNumber(recallSummary.lines)} table rows.
+      The recall file was retrieved {formatVerified(recallMeta.retrievedAt)} (UTC). The <a href="/who-makes-it/">Who makes it?</a> page is built from that snapshot.
+    </p>
+    <p>
+      MFGNAME is the company that filed the Part 573 report. MFGTXT is the file's manufacturer field for the recalled tires. Units are the campaign total, so the same POTAFF value is repeated on every line of a campaign.
+      A row says "made by" the filer only when MFGTXT names that same company and the filer's name contains tire, tyre, or rubber. Tireco, Harbor Freight Tools, TBC, and Discount Tire stay "recall filed by" because they are importers or brand owners. Every other row says "recall filed by."
+      The wording covers that recalled line. It is not a claim about the rest of the brand. A shared UTQG line name is not used. Plant codes are not used. No other brand-owner list is used.
+    </p>
+    <p>
+      Letter case and punctuation are ignored when a filer name is compared with a brand. A brand counts as a different name when it is not the same phrase and is not contained in the filing company's name.
+      In this pull, {formatNumber(recallSummary.brandsWithDifferentFiler)} of {formatNumber(recallSummary.brands)} brand strings have at least one filer counted as a different name.
+      Brand pages link to the table when the recall brand matches a UTQG brand after the same capitalization-and-spacing normalization used for the ratings.
+    </p>
     <h2>What the refresh refuses to publish</h2>
     <p>
-      The weekly job replaces the saved files only when the new row counts are within 25 percent of the previous files, the ratings total matches the number of unique ids, and plant codes are present and unique. A short or broken response does not overwrite the site. The tolerance can be widened with <span class="num">FETCH_COUNT_TOLERANCE</span>, or the relative check skipped with <span class="num">FETCH_ALLOW_ANY_COUNT=1</span>. Counts still have to clear a hard minimum.
+      The weekly job replaces the saved files only when the new row counts are within 25 percent of the previous files, the ratings total matches the number of unique ids, plant codes are present and unique, and each tire campaign has one filer, one report date, and one units figure. A short or broken response does not overwrite the site. The tolerance can be widened with <span class="num">FETCH_COUNT_TOLERANCE</span>, or the relative check skipped with <span class="num">FETCH_ALLOW_ANY_COUNT=1</span>. Counts still have to clear a hard minimum. Tire-recall campaigns also have to clear that minimum before the snapshot is replaced.
     </p>
     <h2>What this site does not do</h2>
     <ul>
@@ -131,7 +150,8 @@ const jsonLd = [
       <li>It does not call any row the best or highest tire. Comparisons stay inside NHTSA's list.</li>
       <li>It does not treat a repeated line name as a rebadge, and it does not repair brand strings.</li>
       <li>It does not claim that a plant makes a particular brand, and it does not treat the vPIC status field as proof a plant is operating.</li>
-      <li>It does not use plant-code lists other than the NHTSA vPIC response.</li>
+      <li>It does not use plant-code lists other than the NHTSA vPIC response, and it does not use a third-party brand-owner list to say who makes a tire.</li>
+      <li>It does not treat a recall filer as the factory for a whole brand. "Made by" is limited to a recalled line when the report's manufacturer field names the filer and that wording rule is met.</li>
       <li>It does not decode the manufacturer's six-symbol code. NHTSA does not publish that legend.</li>
       <li>It is not affiliated with NHTSA or the U.S. Department of Transportation. The federal data is U.S. government work. See <a href="https://www.usa.gov/government-works">USA.gov</a>.</li>
     </ul>

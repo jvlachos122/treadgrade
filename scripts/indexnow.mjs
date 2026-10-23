@@ -5,12 +5,19 @@
  * previous manifest, and POSTs added/changed URLs to api.indexnow.org.
  * Always exits 0 so a failed ping cannot block deploy.
  *
+ * The current manifest is copied to the previous path only when every batch
+ * returned HTTP 200 or 202. Any other status leaves the previous manifest
+ * (or its absence) alone so the next run retries that URL set. An empty
+ * submission is success: there is nothing left to retry.
+ *
  * Usage:
  *   node scripts/indexnow.mjs --write-manifest <path> [--dist dist]
- *   node scripts/indexnow.mjs --submit --manifest <path> [--previous <path>] [--dry-run]
+ *   node scripts/indexnow.mjs --submit --manifest <path> [--previous <path>] [--promote-to <path>] [--dry-run]
  */
 import { createHash } from "node:crypto";
 import {
+  appendFileSync,
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -18,7 +25,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, normalize } from "node:path";
+import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -33,6 +40,7 @@ function parseArgs(argv) {
     submit: false,
     manifest: null,
     previous: null,
+    promoteTo: null,
     dist: join(root, "dist"),
     dryRun: false,
   };
@@ -42,6 +50,7 @@ function parseArgs(argv) {
     else if (a === "--submit") args.submit = true;
     else if (a === "--manifest") args.manifest = argv[++i];
     else if (a === "--previous") args.previous = argv[++i];
+    else if (a === "--promote-to") args.promoteTo = argv[++i];
     else if (a === "--dist") args.dist = argv[++i];
     else if (a === "--dry-run") args.dryRun = true;
     else {
@@ -116,13 +125,30 @@ function chunk(list, size) {
   return batches;
 }
 
-async function submitUrls(key, urlList, dryRun) {
+/**
+ * True when every batch was accepted by IndexNow. No batches (nothing to
+ * submit) is acceptance: the current manifest can become the previous one.
+ * 200 and 202 are the only success statuses. Network failures are recorded
+ * as 0 and are not acceptance.
+ */
+export function submissionAccepted(statuses) {
+  return statuses.every((status) => status === 200 || status === 202);
+}
+
+/** Dry runs never promote, even when there is nothing to submit. */
+export function shouldSavePreviousManifest(statuses, { dryRun = false } = {}) {
+  if (dryRun) return false;
+  return submissionAccepted(statuses);
+}
+
+export async function submitUrls(key, urlList, { dryRun = false, fetchImpl = fetch, batchSize = MAX_URLS } = {}) {
+  const statuses = [];
   if (urlList.length === 0) {
     console.log("IndexNow: nothing to submit (no added or changed URLs).");
-    return;
+    return statuses;
   }
   const keyLocation = `${SITE}/${key}.txt`;
-  const batches = chunk(urlList, MAX_URLS);
+  const batches = chunk(urlList, batchSize);
   console.log(
     `IndexNow: submitting ${urlList.length} URL(s) in ${batches.length} request(s)` +
       (dryRun ? " [dry-run]" : ""),
@@ -141,12 +167,13 @@ async function submitUrls(key, urlList, dryRun) {
       continue;
     }
     try {
-      const res = await fetch(ENDPOINT, {
+      const res = await fetchImpl(ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify(body),
       });
       const text = (await res.text()).slice(0, 500);
+      statuses.push(res.status);
       if (res.status === 200 || res.status === 202) {
         console.log(
           `IndexNow batch ${i + 1}/${batches.length}: HTTP ${res.status} (ok) — ${batches[i].length} URLs`,
@@ -157,9 +184,46 @@ async function submitUrls(key, urlList, dryRun) {
         );
       }
     } catch (err) {
+      statuses.push(0);
       console.warn(`IndexNow batch ${i + 1}/${batches.length}: request failed (warning only) — ${err}`);
     }
   }
+  return statuses;
+}
+
+function writeGithubOutput(name, value) {
+  const file = process.env.GITHUB_OUTPUT;
+  if (!file) return;
+  appendFileSync(file, `${name}=${value}\n`);
+}
+
+function promoteManifest(from, to) {
+  mkdirSync(dirname(to), { recursive: true });
+  copyFileSync(from, to);
+  console.log(`IndexNow: promoted manifest to ${to}`);
+}
+
+async function runSubmit(args) {
+  if (!args.manifest) throw new Error("--submit requires --manifest <path>");
+  const current = readManifest(args.manifest);
+  const previous = args.previous && existsSync(args.previous) ? readManifest(args.previous) : null;
+  const urls = changedUrls(current, previous);
+  if (!previous) {
+    console.log(`IndexNow: no previous manifest; submitting full set (${urls.length} URLs).`);
+  } else {
+    console.log(`IndexNow: previous=${previous.count} current=${current.count} changed=${urls.length}`);
+  }
+  const key = loadKey();
+  const statuses = await submitUrls(key, urls, { dryRun: args.dryRun });
+  const accepted = shouldSavePreviousManifest(statuses, { dryRun: args.dryRun });
+  if (accepted && args.promoteTo) {
+    promoteManifest(args.manifest, args.promoteTo);
+  } else if (args.promoteTo) {
+    console.warn(
+      "IndexNow: leaving the previous manifest unchanged so the next run retries this URL set.",
+    );
+  }
+  writeGithubOutput("accepted", accepted ? "true" : "false");
 }
 
 async function main() {
@@ -174,29 +238,21 @@ async function main() {
     }
 
     if (args.submit) {
-      if (!args.manifest) throw new Error("--submit requires --manifest <path>");
-      const current = readManifest(args.manifest);
-      const previous = args.previous && existsSync(args.previous) ? readManifest(args.previous) : null;
-      const urls = changedUrls(current, previous);
-      if (!previous) {
-        console.log(
-          `IndexNow: no previous manifest; submitting full set (${urls.length} URLs).`,
-        );
-      } else {
-        console.log(
-          `IndexNow: previous=${previous.count} current=${current.count} changed=${urls.length}`,
-        );
-      }
-      const key = loadKey();
-      await submitUrls(key, urls, args.dryRun);
+      await runSubmit(args);
       return;
     }
 
     throw new Error("Specify --write-manifest <path> or --submit --manifest <path>");
   } catch (err) {
     console.warn(`IndexNow: ${err?.message || err} (warning only; exiting 0)`);
+    writeGithubOutput("accepted", "false");
   }
 }
 
-await main();
-process.exit(0);
+const isDirectRun =
+  Boolean(process.argv[1]) && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectRun) {
+  await main();
+  process.exit(0);
+}

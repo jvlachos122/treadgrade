@@ -1,10 +1,13 @@
 ---
 import Base from "../layouts/Base.astro";
+import { catalog } from "../lib/catalog.js";
+import { formatNumber, formatVerified } from "../lib/format.js";
 import { site } from "../lib/site.js";
 import { clampText } from "../lib/text.js";
+import { plantRecordCaveat } from "../lib/tin.js";
 
 const description = clampText(
-  "Decode a DOT tire identification number: plant code to the NHTSA plant record, and the date code to a manufacture week. Includes pre-2000 three-digit dates.",
+  "Decode a full or partial DOT tire identification number: plant code, former two-symbol codes, manufacture week, and three-digit dates.",
 );
 const crumbs = [
   { href: "/", label: "Home" },
@@ -21,15 +24,21 @@ const jsonLd = [
     description,
   },
 ];
+const shirakawa = catalog.getPlant("1u2");
+const formerCount = catalog.plants.filter((plant) => plant.oldCode).length;
+const verified = formatVerified(catalog.meta.verifiedAt);
+const shirakawaPlace = shirakawa
+  ? [shirakawa.city, shirakawa.state, shirakawa.country].filter(Boolean).join(", ")
+  : "";
 ---
 
 <Base title="DOT tire code decoder" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap" data-decoder>
     <h1>DOT tire code decoder</h1>
     <p class="lede">
-      Enter a full tire identification number, a plant code, or just the date code. The plant lookup uses only NHTSA's equipment plant list.
-      A match names the company on that record, not the brands made there, and the status field is not a finding that the plant is operating.
-      The week follows the Sunday–Saturday rule in 49 CFR 574.5.
+      Enter a full tire identification number, or only the part you can read. The plant lookup uses NHTSA's vPIC equipment plant list, including former two-symbol codes.
+      A match names the registrant on that record, not the brands made there, and the status field is not a finding that the plant is currently operating.
+      The manufacture week follows the Sunday–Saturday rule in 49 CFR 574.5.
       Light-truck, winter, and temporary spare tires can still carry a DOT code even when they have no UTQG grade.
     </p>
     <form class="decoder-form" action="/decoder/" method="get">
@@ -38,20 +47,117 @@ const jsonLd = [
         <input name="tin" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" inputmode="text" />
       </label>
       <button type="submit">Decode</button>
+      <label class="decoder-check">
+        <input name="triangle" type="checkbox" />
+        <span>A triangle is molded after a three-digit date</span>
+      </label>
     </form>
     <div class="button-row">
-      <button type="button" class="button-ghost" data-example="00T">Example: plant code 00T</button>
+      <button type="button" class="button-ghost" data-example="1U2">Example: plant code 1U2</button>
+      <button type="button" class="button-ghost" data-example="U2">Example: former code U2</button>
+      <button type="button" class="button-ghost" data-example="1U2HD">Example: partial code 1U2HD</button>
       <button type="button" class="button-ghost" data-example="0109">Example: date code 0109</button>
-      <button type="button" class="button-ghost" data-example="329">Example: pre-2000 date 329</button>
+      <button type="button" class="button-ghost" data-example="329">Example: three-digit date 329</button>
+      <button type="button" class="button-ghost" data-example="329" data-triangle="1">Example: 329 with a triangle</button>
     </div>
     <p class="small muted">
       0109 is the week in the regulation's example (the first full week of 2009), not a claim about a specific tire.
-      329 shows how a three-digit date stays ambiguous. <a href="/guides/dot-code/">Read the layout first</a>.
+      329 shows a three-digit date. The triangle box uses the 1990s mark described below. <a href="/guides/dot-code/">Read the layout</a>.
     </p>
     <noscript>
-      <p>Decoding runs in your browser and needs JavaScript. The <a href="/plants/">plant directory</a> and the <a href="/guides/dot-code/">DOT guide</a> work without it.</p>
+      <p>
+        Looking up the code you type runs in your browser and needs JavaScript. The format on this page, the plant record below, and the
+        <a href="/guides/dot-code/">DOT guide</a> do not.
+      </p>
     </noscript>
     <div data-output aria-live="polite"></div>
+
+    <h2>How the number is laid out</h2>
+    <p>
+      The letters DOT in front of the number are a certification mark. They are not the plant code.
+      The symbol rules are in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>.
+      The April 13, 2015 final rule set the current lengths
+      (<a href="https://www.federalregister.gov/documents/2015/04/13/2015-08418/tire-identification-and-recordkeeping">80 FR 19553</a>).
+    </p>
+    <h3>New tire, 13 symbols</h3>
+    <p class="dot-code">
+      <span class="is-decoded">1U2</span>
+      <span>ABCDEF</span>
+      <span class="is-decoded">0109</span>
+    </p>
+    <p>
+      Three symbols for the plant code NHTSA assigned, six for the manufacturer's code, and four digits for the date.
+      The chips above are that layout: plant code 1U2 from this list, a stand-in manufacturer code, and the regulation's date example. They are not one tire's number.
+      The date is the week, then the year: 0109 is the week of Sunday, January 4, 2009 through Saturday, January 10, 2009.
+      Week 01 is the first Sunday–Saturday week that falls entirely in that year. NHTSA does not publish what the six middle symbols mean.
+    </p>
+    <h3>Retreaded tire, 7 symbols</h3>
+    <p class="dot-code">
+      <span class="is-decoded">1U2</span>
+      <span class="is-decoded">0109</span>
+    </p>
+    <p>
+      49 CFR 574.5(a)(2) is a 3-symbol plant code and the 4-digit date, with no manufacturer's code.
+      The chips use the same plant code and date example. They are not a tire known to be a retread.
+      A separate letter R marks a retread and is not part of the TIN. A 7-symbol length matches that rule. It does not, by itself, prove the tire was retreaded.
+    </p>
+    <h3>Former two-symbol plant code</h3>
+    <p>
+      {formatNumber(formerCount)} records in this list include a former two-symbol code (<span class="code">OldDotCode</span>).
+      The decoder maps that code to the current three-symbol code on the same record.
+      49 CFR 574.5(a)(5) and 574.5(g), in the April 13, 2015 final rule, let a manufacturer keep using a previously assigned two-symbol plant code until April 13, 2025.
+      The older grouping is up to two size symbols, up to four optional descriptive symbols, then the four-digit date. Tires made earlier can still show it.
+    </p>
+    <h3>Three-digit dates, and the triangle</h3>
+    <p>
+      Before the four-digit date, the code was two digits for the week and one digit for the year. The decade is not in those digits.
+      Four digits are required for tires produced or retreaded on and after July 2, 2000, with optional early use from the July 8, 1999 publication of that rule
+      (<a href="https://www.govinfo.gov/content/pkg/FR-1999-07-08/html/99-17402.htm">64 FR 36807</a>).
+      The decoder lists each year from 1971, when the TIN was adopted, through 1999 that ends in the year digit.
+      When the digit is 0, it also lists weeks 01 through 26 of 2000, because those weeks start before July 2. Week 27 of 2000 starts on July 2, so 2000 is not listed for that week or later.
+    </p>
+    <p>
+      Some 1990s tires have a small triangle after the three digits. On May 2, 1990, NHTSA told Goodyear that an isosceles right triangle after the TIN, meant to mark 1990 through 1999, was not prohibited
+      (interpretation nht90-2.39, in <a href="https://www.nhtsa.gov/nhtsa-interpretation-file-search">NHTSA's interpretation file</a>).
+      The triangle is not a symbol in 49 CFR 574.5, and the letter did not require it.
+      If the triangle is there, check the box or type the word "triangle" with the code. The decoder marks the 1990s year and still lists the other years the digits match.
+      A missing triangle does not by itself place the tire before 1990.
+    </p>
+    <h3>Part of a code, or a code the list does not have</h3>
+    <p>
+      49 CFR 574.5 requires the full TIN on one sidewall. For radial tires covered by FMVSS No. 139, the other sidewall carries either the full TIN or a partial TIN that leaves off the date code. Retreaded tires are excepted.
+      See <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-571/subpart-B/section-571.139">49 CFR 571.139 S5.5.1</a>.
+      If the date is missing from what you entered, the decoder says to check the other sidewall.
+    </p>
+    <p>
+      A plant code that is not in the vPIC list is reported as not in NHTSA's list. That is a gap in the list this site loaded. It is not a finding that the code was molded wrong.
+      Allowed TIN symbols are A, B, C, D, E, F, H, J, K, L, M, N, P, R, T, U, V, W, X, Y, and the digits. G, I, O, Q, S, and Z are left out, and the decoder says so.
+    </p>
+    <div class="notice">
+      <p class="data-note-label">Data-quality note</p>
+      <p>
+        {plantRecordCaveat}
+        Plant data last verified {verified} (UTC). <a href="/methodology/#data-quality">Data-quality notes</a>.
+      </p>
+    </div>
+    {
+      shirakawa ? (
+        <>
+          <h2>One record from the list: 1U2</h2>
+          <p>
+            Plant code <a href={shirakawa.url}><span class="code">{shirakawa.code}</span></a> is {shirakawa.name}{shirakawaPlace ? `, ${shirakawaPlace}` : ""}.{shirakawa.oldCode ? (
+              <>
+                {" "}Former code <span class="code">{shirakawa.oldCode}</span> is on the same record.
+              </>
+            ) : null}{" "}
+            The vPIC status field on this record is {shirakawa.status || "empty"}. That value is not a finding that the plant is currently operating.
+          </p>
+          <p>
+            <a href={shirakawa.url}>Open the {shirakawa.code} plant page</a> · <a href="/guides/dot-code/">How to read a DOT code</a> · <a href="/plants/">All plant codes</a>
+          </p>
+        </>
+      ) : null
+    }
   </div>
 </Base>
 

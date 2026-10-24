@@ -1,10 +1,13 @@
 ---
 import Base from "../../../layouts/Base.astro";
+import Answer from "../../../components/Answer.astro";
 import Disclaimer from "../../../components/Disclaimer.astro";
 import CheckPrice from "../../../components/CheckPrice.astro";
 import Grade from "../../../components/Grade.astro";
+import SourceLine from "../../../components/SourceLine.astro";
+import { lineAnswer, sourceEntries } from "../../../lib/answers.js";
 import { catalog } from "../../../lib/catalog.js";
-import { wearRange } from "../../../lib/format.js";
+import { dataset } from "../../../lib/structured.js";
 import { clampText } from "../../../lib/text.js";
 
 export function getStaticPaths() {
@@ -19,7 +22,6 @@ const sameGrades =
   line.rows.every(
     (row) => row.wear === line.rows[0].wear && row.trac === line.rows[0].trac && row.temp === line.rows[0].temp,
   );
-const constructions = [...new Set(line.rows.map((row) => row.construction).filter(Boolean))];
 const safety = line.rows.reduce(
   (sum, row) => ({
     complaints: sum.complaints + row.complaintsCount,
@@ -32,9 +34,18 @@ const safety = line.rows.reduce(
 const safetyTotal = safety.complaints + safety.recalls + safety.investigations + safety.communications;
 const activeMixed = line.rows.some((row) => row.active) && line.rows.some((row) => !row.active);
 const sameName = line.sameName.slice(0, 12);
-const description = clampText(
-  `NHTSA UTQG grades for the ${line.brand} ${line.line}: treadwear ${wearRange(line.wearMin, line.wearMax)}, traction ${line.traction.join(", ") || "not reported"}, temperature ${line.temperature.join(", ") || "not reported"}. The ratings file does not say if this tire is still sold.`,
-);
+const answers = lineAnswer(line);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  dataset({
+    name: `UTQG grades for ${line.brand} ${line.line}`,
+    description: answers.join(" "),
+    path: line.url,
+    dateModified: catalog.meta.verifiedAt,
+    isBasedOn: catalog.meta.ratings.source,
+    keywords: ["UTQG", "treadwear", "NHTSA"],
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/brands/", label: "Brands" },
@@ -43,15 +54,11 @@ const crumbs = [
 ];
 ---
 
-<Base title={`${line.brand} ${line.line} UTQG grades`} description={description} breadcrumbs={crumbs}>
+<Base title={`${line.brand} ${line.line} UTQG grades`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
     <h1>{line.brand} {line.line}</h1>
-    <p class="lede">
-      Treadwear {wearRange(line.wearMin, line.wearMax)}.
-      Traction {line.traction.join(", ") || "not reported"}.
-      Temperature {line.temperature.join(", ") || "not reported"}.
-      {constructions.length ? ` Construction: ${constructions.join(", ")}.` : ""}
-    </p>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <Disclaimer />
     {
       sameGrades ? (

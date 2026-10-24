@@ -1,11 +1,14 @@
 ---
 import Base from "../layouts/Base.astro";
+import Answer from "../components/Answer.astro";
+import SourceLine from "../components/SourceLine.astro";
+import { sourceEntries, whoMakesAnswer } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { formatNumber, formatUtcDate, formatVerified } from "../lib/format.js";
 import { nameKey } from "../lib/normalize.js";
 import { recallMeta, recallRows, recallSummary } from "../lib/recall-catalog.js";
 import { formatNameList, nhtsaCampaignUrl, recallStatement } from "../lib/recalls.js";
-import { site } from "../lib/site.js";
+import { dataset } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
 
 const retrieved = formatVerified(recallMeta.retrievedAt);
@@ -36,41 +39,29 @@ const unanswered = ["Kirkland", "Douglas"]
   .filter((item) => !item.inRecalls);
 const sameExample = recallSummary.sameExample;
 const differExample = recallSummary.differExample;
-const description = clampText(
-  "The company that filed each NHTSA tire recall since 2010, by brand and recalled line. The filer may be the factory, an importer, or the brand owner.",
-);
+const answers = whoMakesAnswer(recallSummary);
+const description = clampText(answers.join(" "));
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/who-makes-it/", label: "Who makes it?" },
 ];
 const jsonLd = [
-  {
-    "@type": "Dataset",
+  dataset({
     name: "NHTSA tire recall filers as presented by TreadGrade",
-    description:
-      "Tire recall campaigns from NHTSA's flat recall file since 2010, with the brand, recalled line, Part 573 filer, campaign number, report date, and potential units affected.",
-    url: `${site.url}/who-makes-it/`,
-    creator: {
-      "@type": "Organization",
-      name: "TreadGrade",
-      legalName: site.legalName,
-      url: `${site.url}/`,
-    },
-    isBasedOn: recallMeta.source,
+    description: answers.join(" "),
+    path: "/who-makes-it/",
     dateModified: recallMeta.retrievedAt,
-    license: "https://www.usa.gov/government-works",
+    isBasedOn: recallMeta.source,
     keywords: ["tires", "NHTSA", "recalls", "Part 573"],
-  },
+  }),
 ];
 ---
 
 <Base title="Who makes it?" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
     <h1>Who makes it?</h1>
-    <p class="lede">
-      The company that filed each NHTSA tire recall since 2010, for {formatNumber(recallSummary.brands)} brand strings and {formatNumber(recallSummary.lines)} recalled lines.
-      The filing company is the company legally responsible for the recall. It may be the factory, an importer, or the brand owner.
-    </p>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["recalls"])} />
     <div class="notice">
       <p class="data-note-label">About this data</p>
       <p>

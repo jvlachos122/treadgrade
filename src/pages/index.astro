@@ -1,11 +1,15 @@
 ---
 import Base from "../layouts/Base.astro";
+import Answer from "../components/Answer.astro";
 import Disclaimer from "../components/Disclaimer.astro";
+import SourceLine from "../components/SourceLine.astro";
+import { homeAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { site } from "../lib/site.js";
 import { formatNumber } from "../lib/format.js";
 
 const biggest = [...catalog.brands].sort((a, b) => b.rowCount - a.rowCount || a.name.localeCompare(b.name)).slice(0, 8);
+const answers = homeAnswer(catalog);
 const description = site.description;
 const jsonLd = [
   {
@@ -26,6 +30,8 @@ const jsonLd = [
   <div class="wrap hero">
     <p class="eyebrow">U.S. tire reference</p>
     <h1>UTQG grades and DOT codes, from the public NHTSA files.</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants"])} />
     <p class="lede">
       Look up treadwear, traction, and temperature grades for a tire line, or decode the plant and manufacture week in a sidewall DOT code.
     </p>

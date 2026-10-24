@@ -1,27 +1,36 @@
 ---
 import Base from "../layouts/Base.astro";
+import Answer from "../components/Answer.astro";
 import Disclaimer from "../components/Disclaimer.astro";
+import SourceLine from "../components/SourceLine.astro";
+import { ratingsAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
-import { formatNumber } from "../lib/format.js";
+import { dataset } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
 
-const description = clampText(
-  `Search and sort ${formatNumber(catalog.stats.rows)} NHTSA UTQG grade rows by brand, tire line, treadwear, traction, and temperature.`,
-);
+const answers = ratingsAnswer(catalog);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  dataset({
+    name: "NHTSA UTQG tire ratings",
+    description: answers.join(" "),
+    path: "/ratings/",
+    dateModified: catalog.meta.verifiedAt,
+    isBasedOn: catalog.meta.ratings.source,
+    keywords: ["UTQG", "treadwear", "traction", "temperature", "NHTSA"],
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/ratings/", label: "UTQG grades" },
 ];
 ---
 
-<Base title="UTQG tire grades" description={description} breadcrumbs={crumbs}>
+<Base title="UTQG tire grades" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap" data-ratings>
     <h1>UTQG tire grades</h1>
-    <p class="lede">
-      {formatNumber(catalog.stats.rows)} grade rows across {formatNumber(catalog.stats.lines)} tire lines in NHTSA's list.
-      Filter by the brand or line string, traction, temperature, and a minimum treadwear number.
-      High-to-low follows the grade letters and numbers in that list. It is not a ranking of the best tire.
-    </p>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <Disclaimer />
     <form class="filters" action="/ratings/" method="get">
       <label>

@@ -4,7 +4,7 @@ import { cleanSpace, softenCaps } from "./format.js";
 const TRACTION = ["AA", "A", "B", "C"];
 const TEMPERATURE = ["A", "B", "C"];
 
-function nameKey(value) {
+export function nameKey(value) {
   return cleanSpace(value).toLowerCase();
 }
 

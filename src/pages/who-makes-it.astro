@@ -1,0 +1,220 @@
+---
+import Base from "../layouts/Base.astro";
+import { catalog } from "../lib/catalog.js";
+import { formatNumber, formatUtcDate, formatVerified } from "../lib/format.js";
+import { nameKey } from "../lib/normalize.js";
+import { recallMeta, recallRows, recallSummary } from "../lib/recall-catalog.js";
+import { formatNameList, nhtsaCampaignUrl, recallStatement } from "../lib/recalls.js";
+import { site } from "../lib/site.js";
+import { clampText } from "../lib/text.js";
+
+const retrieved = formatVerified(recallMeta.retrievedAt);
+const catalogByKey = new Map(catalog.brands.map((brand) => [nameKey(brand.name), brand]));
+const seenAnchors = new Set();
+const tableRows = recallRows.map((row) => {
+  const key = nameKey(row.brand);
+  const anchor = recallSummary.byBrand.get(key).anchor;
+  const isFirst = !seenAnchors.has(anchor);
+  seenAnchors.add(anchor);
+  const statement = recallStatement(row);
+  return {
+    ...row,
+    anchor,
+    isFirst,
+    statement,
+    catalogBrand: catalogByKey.get(key) || null,
+    search: [row.brand, row.line, row.filer, ...(row.manufacturers || []), row.campaign, statement.text].join(" ").toLowerCase(),
+  };
+});
+const linkedBrands = tableRows.filter((row) => row.isFirst && row.catalogBrand).length;
+const unanswered = ["Kirkland", "Douglas"]
+  .map((name) => ({
+    name,
+    inRecalls: recallSummary.byBrand.has(nameKey(name)),
+    brand: catalogByKey.get(nameKey(name)) || null,
+  }))
+  .filter((item) => !item.inRecalls);
+const sameExample = recallSummary.sameExample;
+const differExample = recallSummary.differExample;
+const description = clampText(
+  "The company that filed each NHTSA tire recall since 2010, by brand and recalled line. The filer may be the factory, an importer, or the brand owner.",
+);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/who-makes-it/", label: "Who makes it?" },
+];
+const jsonLd = [
+  {
+    "@type": "Dataset",
+    name: "NHTSA tire recall filers as presented by TreadGrade",
+    description:
+      "Tire recall campaigns from NHTSA's flat recall file since 2010, with the brand, recalled line, Part 573 filer, campaign number, report date, and potential units affected.",
+    url: `${site.url}/who-makes-it/`,
+    creator: {
+      "@type": "Organization",
+      name: "TreadGrade",
+      legalName: site.legalName,
+      url: `${site.url}/`,
+    },
+    isBasedOn: recallMeta.source,
+    dateModified: recallMeta.retrievedAt,
+    license: "https://www.usa.gov/government-works",
+    keywords: ["tires", "NHTSA", "recalls", "Part 573"],
+  },
+];
+---
+
+<Base title="Who makes it?" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <h1>Who makes it?</h1>
+    <p class="lede">
+      The company that filed each NHTSA tire recall since 2010, for {formatNumber(recallSummary.brands)} brand strings and {formatNumber(recallSummary.lines)} recalled lines.
+      The filing company is the company legally responsible for the recall. It may be the factory, an importer, or the brand owner.
+    </p>
+    <div class="notice">
+      <p class="data-note-label">About this data</p>
+      <p>
+        Source: <a href={recallMeta.source}>FLAT_RCL_POST_2010.zip</a>, with fields defined in <a href={recallMeta.layout}>RCL.txt</a>.
+        Only tire campaigns are included (RCLTYPECD T). Brand is MAKETXT, the recalled line is MODELTXT, and the filing company is MFGNAME, the company that submitted the Part 573 report.
+        The file has {formatNumber(recallMeta.tireRows)} tire rows. Repeated rows for the same campaign, brand, and line are one table row, so the table has {formatNumber(recallSummary.lines)} rows and {formatNumber(recallSummary.campaigns)} campaigns.
+        Units affected is the campaign total from POTAFF. That number is repeated on every line in the campaign. It is not a count for one line.
+        Report dates are RCDATE, the date NHTSA received the Part 573 report.
+        File retrieved {retrieved} (UTC). <a href="/methodology/#recall-filings">How this file is prepared</a>.
+      </p>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <b>{formatNumber(recallSummary.campaigns)}</b>
+        <span>tire campaigns</span>
+      </div>
+      <div class="stat">
+        <b>{formatNumber(recallSummary.brands)}</b>
+        <span>brand strings</span>
+      </div>
+      <div class="stat">
+        <b>{formatNumber(recallSummary.lines)}</b>
+        <span>recalled lines</span>
+      </div>
+      <div class="stat">
+        <b>{formatNumber(recallSummary.brandsWithDifferentFiler)}</b>
+        <span>brands with a different filer name</span>
+      </div>
+    </div>
+
+    <div class="prose">
+      <h2>How a row is worded</h2>
+      <p>
+        Each row names the filing company and then says either “made by” that company or “recall filed by” that company, for that recalled line only.
+        Tireco, Harbor Freight Tools, TBC, and Discount Tire are importers or brand owners. When one of them is the filer, the row says “recall filed by,” including when the report’s manufacturer field repeats their name.
+      </p>
+      <p>
+        A row says “made by” only when two things are true for that line. The report’s manufacturer field (MFGTXT) names the same company as the filer, and the filer’s name contains the word tire, tyres, tyre, or rubber.
+        A filer whose name contains “sales,” or whose name does not contain those words, stays “recall filed by,” even when the manufacturer field names that same company.
+        In this file, {formatNumber(recallSummary.madeByRows)} rows say “made by” and {formatNumber(recallSummary.filedByRows)} rows say “recall filed by.”
+      </p>
+      {
+        sameExample && differExample ? (
+          <p>
+            A filing company counts as a different name when the brand, ignoring letter case and punctuation, is not the same phrase and is not contained in the company name.
+            Abbreviations are left as written. In this file, {sameExample.brand} is not a different name from {sameExample.filer}. {differExample.brand} is a different name from {differExample.filer}.
+            {formatNumber(recallSummary.brandsWithDifferentFiler)} of {formatNumber(recallSummary.brands)} brand strings have at least one filing company counted as a different name.
+          </p>
+        ) : null
+      }
+      <p>
+        “Made by” covers that recalled line and that campaign. It does not cover the rest of the brand, and it does not cover a line that was never recalled.
+        A shared tire-line name in the UTQG ratings is a match of the name string. It is not evidence that one tire is a rebadge of another, and this page does not use those matches.
+        A plant code names the company on the plant record. It has no brand field, so this page does not use plant codes, and it does not use any brand-owner list other than this recall file.
+        <a href="/methodology/#data-quality">Data-quality notes</a>. <a href="/plants/">Plant codes</a>. <a href="/brands/">UTQG brands</a>.
+      </p>
+      <p>
+        {linkedBrands === 1 ? "One recall brand string matches" : `${formatNumber(linkedBrands)} recall brand strings match`} a UTQG brand page after the same capitalization-and-spacing normalization used on those pages.
+        The brand name in the table is the spelling in the recall file. The link opens the UTQG page when the normalized names are the same.
+      </p>
+      {
+        unanswered.length ? (
+          <h2>Brands with no tire recall</h2>
+          <p>
+            This file has no tire-recall row for{" "}
+            {unanswered.map((item, index) => (
+              <span>
+                {index === 0 ? "" : index === unanswered.length - 1 ? " or " : ", "}
+                {item.brand ? <a href={item.brand.url}>{item.brand.name}</a> : item.name}
+              </span>
+            ))}
+            . A brand with no tire recall in this file cannot be answered from these filings. The UTQG page, when there is one, is only the grades list.
+          </p>
+        ) : null
+      }
+    </div>
+
+    <h2 id="filings">Tire recall filings</h2>
+    <label>
+      Filter by brand, line, filing company, or campaign
+      <input id="recall-filter" type="search" autocomplete="off" />
+    </label>
+    <p class="status small" id="recall-filter-status" aria-live="polite">
+      {formatNumber(tableRows.length)} filings.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>
+          Tire recall campaigns in NHTSA's flat file since 2010. Units affected is the campaign total, repeated on each line of that campaign.
+          The campaign number links to that campaign on NHTSA.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Brand</th>
+            <th scope="col">Recalled line</th>
+            <th scope="col">Filing company</th>
+            <th scope="col">What this row says</th>
+            <th scope="col">Campaign</th>
+            <th scope="col">Report date</th>
+            <th scope="col">Units affected</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            tableRows.map((row) => (
+              <tr id={row.isFirst ? row.anchor : undefined} data-search={row.search}>
+                <td>{row.catalogBrand ? <a href={row.catalogBrand.url}>{row.brand}</a> : row.brand}</td>
+                <td>{row.line}</td>
+                <td>{row.filer}</td>
+                <td>{row.statement.text}</td>
+                <td>
+                  <a class="num" href={nhtsaCampaignUrl(row.campaign)}>
+                    {row.campaign}
+                    <span class="visually-hidden"> on NHTSA</span>
+                  </a>
+                </td>
+                <td class="num">
+                  <time datetime={row.reportDate}>{formatUtcDate(row.reportDate)}</time>
+                </td>
+                <td class="num">{formatNumber(row.units)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Base>
+
+<script>
+  const input = document.querySelector("#recall-filter");
+  const body = document.querySelector("tbody");
+  const status = document.querySelector("#recall-filter-status");
+  if (input && body && status) {
+    const rows = [...body.rows];
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const row of rows) {
+        const visible = !query || row.dataset.search.includes(query);
+        row.hidden = !visible;
+        if (visible) shown += 1;
+      }
+      status.textContent = `${shown.toLocaleString("en-US")} of ${rows.length.toLocaleString("en-US")} filings shown.`;
+    });
+  }
+</script>

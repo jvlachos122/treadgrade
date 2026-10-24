@@ -1,6 +1,6 @@
 # TreadGrade
 
-Static reference for U.S. tire buyers. It republishes [NHTSA UTQG grades](https://api.nhtsa.gov/tires?dataSet=ratings) (treadwear, traction, temperature) and decodes a DOT tire identification number with the [NHTSA equipment plant-code list](https://vpic.nhtsa.dot.gov/api/vehicles/GetEquipmentPlantCodes?year=2026&equipmentType=1&reportType=All&format=json).
+Static reference for U.S. tire buyers. It republishes [NHTSA UTQG grades](https://api.nhtsa.gov/tires?dataSet=ratings) (treadwear, traction, temperature), decodes a DOT tire identification number with the [NHTSA equipment plant-code list](https://vpic.nhtsa.dot.gov/api/vehicles/GetEquipmentPlantCodes?year=2026&equipmentType=1&reportType=All&format=json), and lists the company that filed each tire recall in [NHTSA's flat recall file](https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip).
 
 The site does not sell tires, invent grades, or decide whether a tire is still on the market. The ratings file does not say that, and the pages say so.
 
@@ -13,11 +13,11 @@ From the data verified on 21 October 2026:
 | Tire line | 3,058 |
 | Plant code | 1,244 |
 | Brand | 215 |
-| Ratings table, brand index, plant directory, DOT decoder | 4 |
+| Ratings table, brand index, plant directory, DOT decoder, who makes it | 5 |
 | Guides (index, UTQG, DOT code) | 3 |
 | About, privacy, contact, affiliate disclosure, data sources | 5 |
 | Home and 404 | 2 |
-| **HTML pages** | **4,531** |
+| **HTML pages** | **4,532** |
 
 The ratings API returned 7,628 rows. Six exact duplicate grade rows are collapsed, so the tables show 7,622. Capitalization-only brand spellings are merged (228 raw strings, 215 brands). A line with a plus sign or other distinct slug stays on its own page.
 
@@ -29,11 +29,12 @@ The ratings API returned 7,628 rows. Six exact duplicate grade rows are collapse
 - The ratings table loads `/data/ratings.json`, then filters, sorts, and pages 40 rows at a time.
 - The DOT decoder loads `/data/plants.json` and parses the code in the browser.
 
-Those JSON files are generated at build time by `scripts/prepare-public-data.mjs` and are not committed. The source of truth is `data/ratings.json`, `data/plants.json`, and `data/meta.json`. `meta.json` holds the data-last-verified timestamp shown in the footer and on data pages.
+Those JSON files are generated at build time by `scripts/prepare-public-data.mjs` and are not committed. The source of truth is `data/ratings.json`, `data/plants.json`, `data/recalls.json`, and `data/meta.json`. `meta.json` holds the data-last-verified timestamp shown in the footer and on data pages, plus the recall-file retrieval time.
 
 Shared code lives in `src/lib/`:
 
 - `normalize.js` groups brands and tire lines and builds plant records.
+- `recalls.js` keeps tire campaigns from the flat recall file and decides "made by" versus "recall filed by."
 - `tin.js` parses a TIN, including a pre-2000 three-digit date.
 - `site.js` and `affiliates.js` hold the empty affiliate, analytics, and contact settings.
 
@@ -61,13 +62,17 @@ npm run check          # validate data, test, build, links, HTML
   The API caps a page at 100 rows. The script follows offsets until the unique `id` count equals `meta.pagination.total`.
 - `https://vpic.nhtsa.dot.gov/api/vehicles/GetEquipmentPlantCodes?year=<current UTC year>&equipmentType=1&reportType=All&format=json`  
   If that year fails, it tries the previous year, then 2016. On 21 October 2026 those years returned the same 1,244 records.
+- `https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip`  
+  Tab-separated records described by `RCL.txt`. The script keeps RCLTYPECD T and collapses repeated campaign, brand, and line rows. `FETCH_ONLY=recalls` refreshes that file without replacing ratings or plants.
 
 It replaces the files only when:
 
 - the new counts are within 25% of the previous files (`FETCH_COUNT_TOLERANCE`, default `0.25`)
 - ratings are at least 1,000 and plants at least 200
+- tire recalls have at least 50 campaigns and 500 source rows
 - every rating has an id, brand, line, size, traction, and temperature
 - plant codes are unique
+- a tire campaign has one filer, one report date, and one units figure
 
 A short or broken response exits non-zero and leaves the saved files alone, so a bad API reply cannot wipe the site. `FETCH_ALLOW_ANY_COUNT=1` skips the relative check and still enforces the hard minimums.
 
@@ -146,8 +151,8 @@ Dynamic routes are `src/pages/brands/[brand].astro`, `src/pages/tires/[brand]/[l
 
 `npm run check` runs, in order:
 
-- `validate:data` — schema and absolute floors (ratings 4,000–30,000, plants 500–5,000) so a gutted file cannot build
-- `node --test` — TIN parsing, brand merging, and a uniqueness check of the committed catalog
+- `validate:data` — schema and absolute floors (ratings 4,000–30,000, plants 500–5,000, tire-recall campaigns 100–1,000) so a gutted file cannot build
+- `node --test` — TIN parsing, brand merging, recall filtering, and a uniqueness check of the committed catalog
 - `astro build`
 - internal link checker, including sitemap URLs and in-page anchors
 - HTML structural checks (doctype, language, one `h1`, description, canonical) plus `html-validate`
@@ -166,5 +171,6 @@ The same steps run in both GitHub workflows. A failing check does not deploy.
 - The ratings file has no category. 49 CFR 575.104 covers passenger-car tires and excludes deep-tread winter-type snow tires and temporary spares. Light-truck tires are outside that section. Copy says a missing line is not a grade, and sorts are an ordering of NHTSA's list rather than a "best tire" ranking.
 - vPIC `Status` is shown as stored. Active is not presented as "operating today." In this pull Phillips Petroleum Company (1J1, 1K1) and The Gates Rubber Company (1BW, 1BX, 1BY) are Active. The plant record names the company on the code. It has no brand field, and pages do not claim a plant makes a brand.
 - Plant codes come only from NHTSA vPIC. Do not import a third-party plant-code list. The table at wfirm.com is not a source: on 21 October 2026 it included a planted row (codes XXXX / XXXXXX, Wetherington Law Firm, www.wfirm.com) that is not in the NHTSA file.
+- "Who makes it?" uses tire rows from NHTSA's flat recall file since 2010. The filing company is the Part 573 filer. "Made by" is used only for a recalled line when the manufacturer field names that filer and the filer's name contains tire, tyre, or rubber. Tireco, Harbor Freight Tools, TBC, and Discount Tire stay "recall filed by." Brands with no tire recall, including Kirkland and Douglas in the 23 October 2026 pull, are not answered. A shared UTQG line name is not treated as a rebadge.
 - There is no price comparison until affiliate templates are filled in.
 - Search Console is verified by DNS. The HTML verification slot stays empty.

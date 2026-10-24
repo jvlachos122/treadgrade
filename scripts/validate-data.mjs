@@ -50,4 +50,40 @@ for (const row of plants) {
   if (row.oldDotCode) assert.match(row.oldDotCode, /^[A-Z0-9]{2,3}$/);
 }
 
-console.log(`Data OK: ${ratings.length} ratings, ${plants.length} plants, verified ${meta.verifiedAt}.`);
+const recalls = read("recalls.json");
+assert.ok(Array.isArray(recalls), "recalls.json must be an array");
+assert.ok(recalls.length >= 100 && recalls.length <= 20000, `recall line count ${recalls.length} is outside the absolute floor`);
+assert.equal(meta.recalls.lines, recalls.length, "meta recall line count does not match the file");
+assert.equal(meta.recalls.source, "https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip");
+assert.equal(meta.recalls.layout, "https://static.nhtsa.gov/odi/ffdd/rcl/RCL.txt");
+assert.ok(!Number.isNaN(Date.parse(meta.recalls.retrievedAt)), "recalls.retrievedAt is not a date");
+assert.ok(meta.recalls.campaigns >= 100 && meta.recalls.campaigns <= 1000, `recall campaigns ${meta.recalls.campaigns} outside the absolute floor`);
+assert.ok(meta.recalls.brands >= 50 && meta.recalls.brands <= 1000, `recall brands ${meta.recalls.brands} outside the absolute floor`);
+assert.ok(meta.recalls.tireRows >= recalls.length && meta.recalls.tireRows <= 200000, `tire row count ${meta.recalls.tireRows} is outside the absolute floor`);
+assert.ok(
+  meta.recalls.brandsWithDifferentFiler >= 0 && meta.recalls.brandsWithDifferentFiler <= meta.recalls.brands,
+  "brandsWithDifferentFiler is outside the brand count",
+);
+assert.deepEqual(meta.recalls.fields, ["brand", "line", "filer", "manufacturers", "campaign", "reportDate", "units"]);
+
+const recallKeys = new Set();
+const recallCampaigns = new Set();
+for (const row of recalls) {
+  assert.match(row.campaign, /^[0-9]{2}T[0-9]{6}$/, `bad campaign ${row.campaign}`);
+  assert.match(row.reportDate, /^\d{4}-\d{2}-\d{2}$/, `bad report date ${row.reportDate}`);
+  assert.equal(typeof row.units, "number", `${row.campaign} units`);
+  assert.ok(row.units >= 0, `${row.campaign} negative units`);
+  for (const key of ["brand", "line", "filer"]) {
+    assert.equal(typeof row[key], "string", `${row.campaign} ${key}`);
+    assert.ok(row[key].trim(), `${row.campaign} blank ${key}`);
+  }
+  assert.ok(Array.isArray(row.manufacturers) && row.manufacturers.length > 0, `${row.campaign} manufacturers`);
+  for (const name of row.manufacturers) assert.ok(String(name).trim(), `${row.campaign} blank manufacturer`);
+  const key = `${row.campaign}\n${row.brand.toLowerCase()}\n${row.line.toLowerCase()}`;
+  assert.ok(!recallKeys.has(key), `duplicate recall row ${row.campaign} ${row.brand} ${row.line}`);
+  recallKeys.add(key);
+  recallCampaigns.add(row.campaign);
+}
+assert.equal(recallCampaigns.size, meta.recalls.campaigns, "meta campaign count does not match the file");
+
+console.log(`Data OK: ${ratings.length} ratings, ${plants.length} plants, ${recalls.length} recall lines, verified ${meta.verifiedAt}.`);

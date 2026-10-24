@@ -32,6 +32,17 @@ export function formatVerified(iso) {
   }).format(date);
 }
 
+export function formatUtcDate(iso) {
+  const [year, month, day] = String(iso).split("-").map(Number);
+  if (!year || !month || !day) return String(iso ?? "");
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
 export function formatUtcDay(iso) {
   const [year, month, day] = String(iso).split("-").map(Number);
   if (!year || !month || !day) return String(iso ?? "");

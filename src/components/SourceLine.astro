@@ -1,0 +1,10 @@
+---
+import { formatVerified } from "../lib/format.js";
+
+const { sources = [] } = Astro.props;
+const text = sources
+  .map((source) => `NHTSA ${source.name}, last updated ${formatVerified(source.updated)} (UTC)`)
+  .join("; ");
+---
+
+{text ? <p class="source-line">Source: {text}.</p> : null}

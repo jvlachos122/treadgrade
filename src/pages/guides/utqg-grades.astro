@@ -1,11 +1,24 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries, utqgGuideAnswer } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber, percent } from "../../lib/format.js";
+import { article } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
 
 const { traction, temperature, wearBuckets, rows } = catalog.stats;
-const description =
-  "What NHTSA UTQG treadwear, traction, and temperature grades mean, in the words of 49 CFR 575.104, plus how those grades are distributed in the public ratings file.";
+const answers = utqgGuideAnswer(catalog);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  article({
+    headline: "What UTQG tire grades mean",
+    description: answers.join(" "),
+    path: "/guides/utqg-grades/",
+    dateModified: catalog.meta.verifiedAt,
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/guides/", label: "Guides" },
@@ -22,9 +35,11 @@ const wearRows = [
 ];
 ---
 
-<Base title="What UTQG tire grades mean" description={description} breadcrumbs={crumbs} narrow>
+<Base title="What UTQG tire grades mean" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
   <div class="wrap prose">
     <h1>What UTQG tire grades mean</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <p>
       UTQG is the Uniform Tire Quality Grading system. 49 CFR 575.104 requires tire makers and brand owners to grade new passenger-car tires for treadwear, traction, and temperature resistance so buyers can compare them.
       The rule's stated purpose is to help a consumer choose among passenger-car tires.

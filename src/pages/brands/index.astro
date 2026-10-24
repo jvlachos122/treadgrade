@@ -1,7 +1,11 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { brandsIndexAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber, wearRange } from "../../lib/format.js";
+import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
 const groups = new Map();
@@ -12,18 +16,29 @@ for (const brand of catalog.brands) {
   groups.get(key).push(brand);
 }
 const letters = [...groups.keys()];
-const description = clampText(
-  `Index of ${formatNumber(catalog.stats.brands)} tire brands in the NHTSA UTQG ratings file, with line counts and treadwear ranges.`,
-);
+const answers = brandsIndexAnswer(catalog);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  dataset({
+    name: "NHTSA UTQG tire brands",
+    description: answers.join(" "),
+    path: "/brands/",
+    dateModified: catalog.meta.verifiedAt,
+    isBasedOn: catalog.meta.ratings.source,
+    keywords: ["UTQG", "tires", "NHTSA"],
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/brands/", label: "Brands" },
 ];
 ---
 
-<Base title="Tire brands" description={description} breadcrumbs={crumbs}>
+<Base title="Tire brands" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
     <h1>Tire brands</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <p class="lede">
       {formatNumber(catalog.stats.brands)} brands after merging spellings that differ only by capitalization. Each link opens the tire lines stored under that brand string in NHTSA's list.
       A shared line name is not a rebadge. Light-truck, deep-tread winter, and temporary spare tires are outside the UTQG rule and may be missing.

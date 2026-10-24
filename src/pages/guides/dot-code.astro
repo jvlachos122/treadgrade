@@ -1,8 +1,22 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { dotGuideAnswer, sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { article } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
 
-const description =
-  "How to read a DOT tire identification number: the plant code, the manufacturer code, the four-digit date, and the older three-digit date.";
+const answers = dotGuideAnswer(catalog);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  article({
+    headline: "How to read a DOT tire code",
+    description: answers.join(" "),
+    path: "/guides/dot-code/",
+    dateModified: catalog.meta.verifiedAt,
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/guides/", label: "Guides" },
@@ -10,9 +24,11 @@ const crumbs = [
 ];
 ---
 
-<Base title="How to read a DOT tire code" description={description} breadcrumbs={crumbs} narrow>
+<Base title="How to read a DOT tire code" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
   <div class="wrap prose">
     <h1>How to read a DOT tire code</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <p>
       The tire identification number, or TIN, is molded into the sidewall. The letters DOT in front of it are a certification mark: the tire conforms to an applicable Federal Motor Vehicle Safety Standard. DOT is not the plant code.
       The rules are in <a href="https://www.law.cornell.edu/cfr/text/49/574.5">49 CFR 574.5</a>

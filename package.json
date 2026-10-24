@@ -16,7 +16,8 @@
     "test": "node --test",
     "check:links": "node scripts/check-links.mjs",
     "check:html": "node scripts/check-html.mjs",
-    "check": "npm run validate:data && npm test && npm run build && npm run check:links && npm run check:html"
+    "check:structured": "node scripts/check-structured.mjs",
+    "check": "npm run validate:data && npm test && npm run build && npm run check:links && npm run check:html && npm run check:structured"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

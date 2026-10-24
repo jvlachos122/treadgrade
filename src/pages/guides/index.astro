@@ -1,19 +1,34 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { guidesIndexAnswer, sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { recallSummary } from "../../lib/recall-catalog.js";
+import { article, laterIso } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
-const description = clampText(
-  "Guides to NHTSA UTQG tire grades and to the DOT tire identification number, with links to the ratings table and the decoder.",
-);
+const answers = guidesIndexAnswer(catalog, recallSummary);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  article({
+    headline: "Tire grade and DOT code guides",
+    description: answers.join(" "),
+    path: "/guides/",
+    dateModified: laterIso(catalog.meta.verifiedAt, catalog.meta.recalls.retrievedAt),
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/guides/", label: "Guides" },
 ];
 ---
 
-<Base title="Tire grade and DOT code guides" description={description} breadcrumbs={crumbs} narrow>
+<Base title="Tire grade and DOT code guides" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
   <div class="wrap prose">
     <h1>Guides</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants", "recalls"])} />
     <p>Two explainers for the data on this site. Both stick to the regulations and to NHTSA's own descriptions.</p>
     <ul>
       <li><a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature grades mean</a></li>

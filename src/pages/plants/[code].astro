@@ -1,7 +1,11 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
 import PlantNote from "../../components/PlantNote.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { plantAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
+import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
 export function getStaticPaths() {
@@ -9,10 +13,18 @@ export function getStaticPaths() {
 }
 
 const plant = catalog.getPlant(Astro.params.code);
-const place = [plant.city, plant.state, plant.country].filter(Boolean).join(", ");
-const description = clampText(
-  `DOT plant code ${plant.code} is the NHTSA record for ${plant.name}${place ? `, ${place}` : ""}. The record names that company, not the brands made there.${plant.oldCode ? ` Former code ${plant.oldCode}.` : ""}`,
-);
+const answers = plantAnswer(plant);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  dataset({
+    name: `NHTSA plant record ${plant.code}`,
+    description: answers.join(" "),
+    path: plant.url,
+    dateModified: catalog.meta.verifiedAt,
+    isBasedOn: catalog.meta.plants.source,
+    keywords: ["DOT", "plant code", "NHTSA"],
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/plants/", label: "Plant codes" },
@@ -23,12 +35,11 @@ const shared = plant.oldCodeSharedWith
   .filter(Boolean);
 ---
 
-<Base title={`DOT plant code ${plant.code}`} description={description} breadcrumbs={crumbs}>
+<Base title={`DOT plant code ${plant.code}`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
     <h1>DOT plant code <span class="code">{plant.code}</span></h1>
-    <p class="lede">
-      {plant.name}{place ? `, ${place}` : ""}. NHTSA's record names the company on this plant code. It does not list brands, and the status field is not a finding that the plant is operating.
-    </p>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <PlantNote />
     <dl class="facts">
       <div>

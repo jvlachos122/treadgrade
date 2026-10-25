@@ -12,7 +12,7 @@ const answers = guidesIndexAnswer(catalog, recallSummary);
 const description = clampText(answers.join(" "));
 const jsonLd = [
   article({
-    headline: "Tire grade and DOT code guides",
+    headline: "Tire grade, DOT, and date code guides",
     description: answers.join(" "),
     path: "/guides/",
     dateModified: laterIso(catalog.meta.verifiedAt, catalog.meta.recalls.retrievedAt),
@@ -24,15 +24,16 @@ const crumbs = [
 ];
 ---
 
-<Base title="Tire grade and DOT code guides" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+<Base title="Tire grade, DOT, and date code guides" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
   <div class="wrap prose">
     <h1>Guides</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants", "recalls"])} />
-    <p>Two explainers for the data on this site. Both stick to the regulations and to NHTSA's own descriptions.</p>
+    <p>Explainers for the data on this site. They stick to the regulations and to NHTSA's own descriptions.</p>
     <ul>
       <li><a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature grades mean</a></li>
       <li><a href="/guides/dot-code/">How to read a DOT tire identification number</a></li>
+      <li><a href="/guides/tire-date-code/">How to read a tire date code</a></li>
     </ul>
     <h2>Recall filings</h2>
     <p>

@@ -167,6 +167,11 @@ export function initDecoder(root) {
     guide.href = "/guides/dot-code/";
     guide.textContent = "How to read a DOT code";
     more.append(guide);
+    more.append(document.createTextNode(" · "));
+    const dateGuide = document.createElement("a");
+    dateGuide.href = "/guides/tire-date-code/";
+    dateGuide.textContent = "How to read a tire date code";
+    more.append(dateGuide);
     if (result.matches.length === 1) {
       more.append(document.createTextNode(" · "));
       const plantLink = document.createElement("a");

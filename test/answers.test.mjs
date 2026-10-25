@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   brandAnswer,
   brandsIndexAnswer,
+  dateGuideAnswer,
   decoderAnswer,
   homeAnswer,
   lineAnswer,
@@ -121,6 +122,21 @@ test("a repeated line name is not called a rebadge", () => {
   }).join(" ");
   assert.match(text, /2 other brand strings/);
   assert.match(text, /not evidence of rebadging/);
+});
+
+test("the date-code guide states the week, the year, and the three-digit form", () => {
+  const sentences = dateGuideAnswer();
+  assertSentences(sentences, "date guide");
+  const text = sentences.join(" ");
+  assert.match(text, /last four digits/);
+  assert.match(text, /first two are the week/);
+  assert.match(text, /last two are the year/);
+  assert.match(text, /0109/);
+  assert.match(text, /January 4, 2009/);
+  assert.match(text, /January 10, 2009/);
+  assert.match(text, /three digits/);
+  assert.match(text, /do not name the decade/);
+  assert.doesNotMatch(text, /\bbrand\b/i);
 });
 
 test("a plant answer names the registrant and skips the status field", () => {
@@ -280,6 +296,7 @@ test("committed files produce answer boxes that follow the grade rules", () => {
   assertSentences(brandsIndexAnswer(catalog), "brands");
   assertSentences(plantsIndexAnswer(catalog), "plants");
   assertSentences(decoderAnswer(catalog), "decoder");
+  assertSentences(dateGuideAnswer(), "date guide");
   assertSentences(homeAnswer(catalog), "home");
   assertSentences(whoMakesAnswer(summary), "recalls");
   const recalls = whoMakesAnswer(summary).join(" ");

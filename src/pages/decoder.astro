@@ -1,8 +1,11 @@
 ---
 import Base from "../layouts/Base.astro";
+import Answer from "../components/Answer.astro";
+import SourceLine from "../components/SourceLine.astro";
+import { decoderAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
-import { site } from "../lib/site.js";
+import { pageUrl, publisherOrg } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
 import { plantRecordCaveat } from "../lib/tin.js";
 
@@ -13,15 +16,18 @@ const crumbs = [
   { href: "/", label: "Home" },
   { href: "/decoder/", label: "DOT decoder" },
 ];
+const answers = decoderAnswer(catalog);
 const jsonLd = [
   {
     "@type": "WebApplication",
     name: "TreadGrade DOT tire code decoder",
     applicationCategory: "ReferenceApplication",
     operatingSystem: "Any",
-    url: `${site.url}/decoder/`,
+    url: pageUrl("/decoder/"),
+    description: answers.join(" "),
+    dateModified: catalog.meta.verifiedAt,
+    publisher: publisherOrg,
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-    description,
   },
 ];
 const shirakawa = catalog.getPlant("1u2");
@@ -35,6 +41,8 @@ const shirakawaPlace = shirakawa
 <Base title="DOT tire code decoder" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap" data-decoder>
     <h1>DOT tire code decoder</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <p class="lede">
       Enter a full tire identification number, or only the part you can read. The plant lookup uses NHTSA's vPIC equipment plant list, including former two-symbol codes.
       A match names the registrant on that record, not the brands made there, and the status field is not a finding that the plant is currently operating.

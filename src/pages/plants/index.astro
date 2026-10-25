@@ -1,13 +1,26 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
 import PlantNote from "../../components/PlantNote.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { plantsIndexAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber } from "../../lib/format.js";
+import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
-const description = clampText(
-  `Search ${formatNumber(catalog.stats.plants)} NHTSA tire plant codes. Each code links to the company name, location, and former code in the equipment plant list. The list does not name brands.`,
-);
+const answers = plantsIndexAnswer(catalog);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  dataset({
+    name: "NHTSA tire plant codes",
+    description: answers.join(" "),
+    path: "/plants/",
+    dateModified: catalog.meta.verifiedAt,
+    isBasedOn: catalog.meta.plants.source,
+    keywords: ["DOT", "plant code", "NHTSA"],
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/plants/", label: "Plant codes" },
@@ -15,9 +28,11 @@ const crumbs = [
 const statuses = ["Active", "Closed", "Not stated"];
 ---
 
-<Base title="DOT tire plant codes" description={description} breadcrumbs={crumbs}>
+<Base title="DOT tire plant codes" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap" data-plants>
     <h1>DOT tire plant codes</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <p class="lede">
       {formatNumber(catalog.stats.plants)} plant records from NHTSA's equipment plant-code list.
       Search by code, a former two-symbol code, the company name, or the city.

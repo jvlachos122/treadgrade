@@ -1,9 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
+import Answer from "../components/Answer.astro";
+import SourceLine from "../components/SourceLine.astro";
+import { methodologyAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
 import { recallMeta, recallSummary } from "../lib/recall-catalog.js";
-import { site } from "../lib/site.js";
+import { dataset, laterIso } from "../lib/structured.js";
 
 const verified = formatVerified(catalog.meta.verifiedAt);
 const description =
@@ -29,30 +32,24 @@ const crumbs = [
   { href: "/", label: "Home" },
   { href: "/methodology/", label: "Data sources" },
 ];
+const answers = methodologyAnswer(catalog, recallSummary);
 const jsonLd = [
-  {
-    "@type": "Dataset",
-    name: "NHTSA UTQG ratings and tire plant codes as presented by TreadGrade",
-    description:
-      "Passenger-tire UTQG grades from NHTSA's public tire ratings API, plus NHTSA vPIC equipment plant codes used to decode DOT plant codes.",
-    url: `${site.url}/methodology/`,
-    creator: {
-      "@type": "Organization",
-      name: "TreadGrade",
-      legalName: site.legalName,
-      url: `${site.url}/`,
-    },
-    isBasedOn: catalog.meta.ratings.source,
-    dateModified: catalog.meta.verifiedAt,
-    license: "https://www.usa.gov/government-works",
-    keywords: ["UTQG", "tires", "NHTSA", "DOT plant code"],
-  },
+  dataset({
+    name: "NHTSA UTQG ratings, tire plant codes, and tire-recall filings as presented by TreadGrade",
+    description: answers.join(" "),
+    path: "/methodology/",
+    dateModified: laterIso(catalog.meta.verifiedAt, recallMeta.retrievedAt),
+    isBasedOn: [catalog.meta.ratings.source, catalog.meta.plants.source, recallMeta.source],
+    keywords: ["UTQG", "tires", "NHTSA", "DOT plant code", "recalls"],
+  }),
 ];
 ---
 
 <Base title="Data sources and method" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
   <div class="wrap prose">
     <h1>Data sources and method</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants", "recalls"])} />
     <p>Data last verified {verified} (UTC). The pages were built from that pull. Grade numbers and plant records are copied from the files. They are not retyped, and a brand string is not corrected by hand.</p>
     <h2>UTQG ratings</h2>
     <p>

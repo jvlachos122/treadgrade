@@ -1,12 +1,16 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
 import Disclaimer from "../../components/Disclaimer.astro";
 import Grade from "../../components/Grade.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { brandAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber, wearRange } from "../../lib/format.js";
 import { nameKey } from "../../lib/normalize.js";
 import { recallSummary } from "../../lib/recall-catalog.js";
 import { formatNameList } from "../../lib/recalls.js";
+import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
 export function getStaticPaths() {
@@ -16,9 +20,18 @@ export function getStaticPaths() {
 const brand = catalog.getBrand(Astro.params.brand);
 const lines = catalog.getBrandLines(brand.slug);
 const filings = recallSummary.byBrand.get(nameKey(brand.name)) || null;
-const description = clampText(
-  `${brand.name} in the NHTSA UTQG file: ${formatNumber(brand.lineCount)} tire lines and treadwear ${wearRange(brand.wearMin, brand.wearMax)}. The file does not say which lines are still sold.`,
-);
+const answers = brandAnswer(brand, lines, filings);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  dataset({
+    name: `UTQG grades for ${brand.name}`,
+    description: answers.join(" "),
+    path: brand.url,
+    dateModified: catalog.meta.verifiedAt,
+    isBasedOn: catalog.meta.ratings.source,
+    keywords: ["UTQG", "treadwear", "NHTSA"],
+  }),
+];
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/brands/", label: "Brands" },
@@ -26,13 +39,11 @@ const crumbs = [
 ];
 ---
 
-<Base title={`${brand.name} UTQG grades`} description={description} breadcrumbs={crumbs}>
+<Base title={`${brand.name} UTQG grades`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
     <h1>{brand.name}</h1>
-    <p class="lede">
-      {formatNumber(brand.lineCount)} tire lines and {formatNumber(brand.rowCount)} grade rows in the NHTSA ratings file.
-      Treadwear spans {wearRange(brand.wearMin, brand.wearMax)}.
-    </p>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, filings ? ["ratings", "recalls"] : ["ratings"])} />
     <Disclaimer />
     {
       filings ? (

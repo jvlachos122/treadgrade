@@ -1,0 +1,14 @@
+---
+const { sentences = [] } = Astro.props;
+---
+
+{
+  sentences.length ? (
+    <aside class="answer">
+      <p class="answer-label">Answer</p>
+      {sentences.map((sentence) => (
+        <p>{sentence}</p>
+      ))}
+    </aside>
+  ) : null
+}

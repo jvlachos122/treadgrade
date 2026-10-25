@@ -49,7 +49,7 @@ npm ci
 npm run fetch          # optional: refresh from NHTSA first
 npm test
 npm run dev            # http://localhost:4321
-npm run check          # validate data, test, build, links, HTML
+npm run check          # validate data, test, build, links, HTML, structured data
 ```
 
 `npm run dev` and `npm run build` regenerate `public/data/` before Astro starts. A build uses the committed data files. It does not call NHTSA. The weekly workflow is what fetches.
@@ -140,7 +140,7 @@ Affiliate ids and the analytics snippet live in `src/lib/site.js` and are empty 
 ## Add a content page
 
 1. Add `src/pages/guides/your-topic.astro` (or another path under `src/pages/`).
-2. Use `Base` and pass a unique `title`, `description`, and `breadcrumbs`. The layout adds the canonical URL, Open Graph tags, and breadcrumb JSON-LD.
+2. Use `Base` and pass a unique `title`, `description`, and `breadcrumbs`. The layout adds the canonical URL, Open Graph tags, and breadcrumb JSON-LD. A guide also passes `Article` JSON-LD with `dateModified`. A data page passes `Dataset` JSON-LD (creator NHTSA, public-domain license, `dateModified` from `data/meta.json`), an answer box generated from the data, and a visible NHTSA source line.
 3. Link the page from `src/pages/guides/index.astro` and, if it belongs in the global nav, from `src/components/Footer.astro`.
 4. Keep claims tied to a cited source or to the NHTSA files. Do not add prices, reviews, or "still sold" labels.
 5. `npm run build` picks the page up in the sitemap. `npm run check` confirms the new internal links and the HTML.
@@ -156,6 +156,7 @@ Dynamic routes are `src/pages/brands/[brand].astro`, `src/pages/tires/[brand]/[l
 - `astro build`
 - internal link checker, including sitemap URLs and in-page anchors
 - HTML structural checks (doctype, language, one `h1`, description, canonical) plus `html-validate`
+- structured-data checks on the built HTML: every JSON-LD block parses, required schema.org fields are present, answer boxes are 1–3 sentences, data tables have captions and header scope, and `Product`, `Review`, and `AggregateRating` are absent
 
 The same steps run in both GitHub workflows. A failing check does not deploy.
 

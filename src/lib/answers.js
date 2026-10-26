@@ -301,9 +301,17 @@ export function dotGuideAnswer(catalog) {
   ];
 }
 
+export function dateGuideAnswer() {
+  return [
+    "The last four digits of a DOT tire identification number are the date code: the first two are the week, and the last two are the year.",
+    "In 49 CFR 574.5, 0109 means the week of Sunday, January 4, 2009 through Saturday, January 10, 2009.",
+    "A date code from before the four-digit form is three digits, and those digits do not name the decade.",
+  ];
+}
+
 export function guidesIndexAnswer(catalog, summary) {
   return [
-    `The UTQG guide covers NHTSA's published list of ${formatNumber(catalog.stats.rows)} grade rows, and the DOT guide covers ${formatNumber(catalog.stats.plants)} plant records.`,
+    `These guides cover NHTSA's published list of ${formatNumber(catalog.stats.rows)} grade rows, ${formatNumber(catalog.stats.plants)} plant records, and the four-digit tire date code.`,
     `Who makes it lists ${formatNumber(summary.campaigns)} tire-recall campaigns and ${formatNumber(summary.brands)} brand strings from NHTSA's recall file.`,
     "A recall filer can be the factory, an importer, or the brand owner, and only for the recalled line.",
   ];

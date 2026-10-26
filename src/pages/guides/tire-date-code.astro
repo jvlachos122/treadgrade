@@ -1,0 +1,247 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { dateGuideAnswer, sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { article } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
+
+const answers = dateGuideAnswer();
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  article({
+    headline: "How to read a tire date code",
+    description: answers.join(" "),
+    path: "/guides/tire-date-code/",
+    dateModified: catalog.meta.verifiedAt,
+  }),
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: "/guides/tire-date-code/", label: "Tire date code" },
+];
+---
+
+<Base title="Tire date code" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>How to read a tire date code</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
+    <p class="lede">
+      The date is the final group of the tire identification number. The plant code and the manufacturer's symbols are the rest of that number, and they are covered in
+      <a href="/guides/dot-code/">how to read a DOT tire code</a>.
+    </p>
+    <p><a class="button" href="/decoder/">Decode a tire date code</a></p>
+
+    <h2 id="last-four">The last four digits</h2>
+    <p>
+      <a href="https://www.law.cornell.edu/cfr/text/49/574.5">49 CFR 574.5(b)(3)</a>
+      (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">eCFR</a>)
+      makes the date code four numerical symbols, and it is the final group. The first and second symbols are the week. The third and fourth symbols are the last two digits of the year.
+      Week 01 is the first full calendar week of the year. The week runs Sunday through Saturday. The final week of a year may include no more than six days of the following year.
+    </p>
+    <figure class="date-figure">
+      <div class="tin-diagram" aria-hidden="true">
+        <div class="tin-group">
+          <p class="tin-label">Plant</p>
+          <p class="digit-row">
+            <span class="digit">1</span>
+            <span class="digit">U</span>
+            <span class="digit">2</span>
+          </p>
+        </div>
+        <div class="tin-group">
+          <p class="tin-label">Manufacturer</p>
+          <p class="digit-row">
+            <span class="digit">A</span>
+            <span class="digit">B</span>
+            <span class="digit">C</span>
+            <span class="digit">D</span>
+            <span class="digit">E</span>
+            <span class="digit">F</span>
+          </p>
+        </div>
+        <div class="tin-group">
+          <p class="tin-label">Date</p>
+          <p class="digit-row">
+            <span class="digit is-date">0</span>
+            <span class="digit is-date">1</span>
+            <span class="digit is-date">0</span>
+            <span class="digit is-date">9</span>
+          </p>
+          <p class="digit-keys">
+            <span>Week</span>
+            <span>Year</span>
+          </p>
+        </div>
+      </div>
+      <figcaption>
+        A new tire's 13-symbol number, from 49 CFR 574.5(b). Plant code 1U2 is a code in NHTSA's list, used here only to show the groups. It identifies that factory, not a brand.
+        ABCDEF stands in for the manufacturer's six symbols. 0109 is the regulation's own date example, not one tire's number.
+      </figcaption>
+    </figure>
+    <dl class="facts">
+      <div>
+        <dt>Date code</dt>
+        <dd class="code">0109</dd>
+      </div>
+      <div>
+        <dt>Week</dt>
+        <dd>01, the first full calendar week of the year</dd>
+      </div>
+      <div>
+        <dt>Year</dt>
+        <dd>09, which the regulation reads as 2009</dd>
+      </div>
+      <div>
+        <dt>That week</dt>
+        <dd>Sunday, January 4, 2009 through Saturday, January 10, 2009</dd>
+      </div>
+    </dl>
+    <p>
+      The regulation's sentence is: 0109 means the tire was manufactured in the first full calendar week of 2009, the week beginning Sunday, January 4, 2009, and ending Saturday, January 10, 2009.
+      This site's <a href="/decoder/?tin=0109">decoder</a> uses that Sunday-start rule for every four-digit date and reads the year digits as 2000–2099.
+      Age is counted from the Sunday that opens the week, because the code identifies a week rather than a day. If that Sunday is still in the future, the decoder says so instead of guessing that the year was in the 1900s.
+    </p>
+    <p>
+      Four-digit dates were also used before 2000, during the optional period described below. The July 8, 1999 rule's examples are 3197, the week of August 3 through 9, 1997, and 0198, the week of January 4 through 10, 1998
+      (<a href="https://www.govinfo.gov/content/pkg/FR-1999-07-08/html/99-17402.htm">64 FR 36807</a>).
+    </p>
+
+    <h2 id="sidewall">Where it is on the sidewall</h2>
+    <figure class="sidewall-figure">
+      <div class="sidewall-layout">
+        <svg class="sidewall-svg" viewBox="0 0 240 214" aria-hidden="true" focusable="false">
+          <text class="svg-label" x="110" y="16" text-anchor="middle">Tread</text>
+          <circle class="tire-ring" cx="110" cy="115" r="70"></circle>
+          <circle class="tire-hole" cx="110" cy="115" r="52"></circle>
+          <text class="svg-label" x="110" y="119" text-anchor="middle">Bead</text>
+          <rect class="date-chip" x="127" y="162" width="46" height="20" rx="4"></rect>
+          <text class="date-chip-text" x="150" y="176" text-anchor="middle">0109</text>
+        </svg>
+        <div>
+          <p class="digit-row" aria-hidden="true">
+            <span class="digit is-date">0</span>
+            <span class="digit is-date">1</span>
+            <span class="digit is-date">0</span>
+            <span class="digit is-date">9</span>
+          </p>
+          <p class="digit-keys">
+            <span>Week</span>
+            <span>Year</span>
+          </p>
+          <p class="small">Schematic of one sidewall, not a photograph and not to scale. The date is on the sidewall, in the final four digits, not in the tread.</p>
+        </div>
+      </div>
+      <figcaption>
+        49 CFR 574.5(a)(1) requires the full number to be permanently molded into or onto one sidewall, in the manner and location in Figure 1 of that section.
+        The date code may instead be laser etched in that same location, during manufacture and not later than 24 hours after the tire leaves the mold (49 CFR 574.5(d)(1)).
+      </figcaption>
+    </figure>
+    <p>
+      The letters DOT in front of the number are a certification mark. They are not the date, and they are not the plant code.
+      Figure 1 positions that mark relative to the number. The
+      <a href="https://www.federalregister.gov/documents/2015/04/13/2015-08418/tire-identification-and-recordkeeping">April 13, 2015 final rule</a>
+      left those placement options in place, including the option to put the symbol above or below the number (80 FR 19553).
+    </p>
+    <p>
+      49 CFR 574.5 requires the full number, including the date, on one sidewall. For a new pneumatic radial tire covered by FMVSS No. 139, the other sidewall carries either the full number or a partial number that leaves off the date code and, at the manufacturer's discretion, any optional code. Retreaded tires are excepted.
+      On a tire that standard covers and that was manufactured on or after September 1, 2009, the full number goes on the intended outboard sidewall, the sidewall meant to face outward. If that tire has no intended outboard sidewall, the full number goes on one sidewall and the full or partial number on the other.
+      See <a href="https://www.law.cornell.edu/cfr/text/49/571.139">49 CFR 571.139 S5.5.1</a>
+      (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-571/subpart-B/section-571.139">eCFR</a>).
+    </p>
+    <p>
+      FMVSS No. 139 applies to new pneumatic radial tires for motor vehicles, other than motorcycles and low-speed vehicles, with a gross vehicle weight rating of 10,000 pounds or less, manufactured after 1975.
+      It does not apply to special trailer tires, farm-implement tires, tires with rim diameters of 12 inches and below, T-type temporary-use spare tires with radial construction, or light-truck tires with a tread depth of 18/32 inch or greater.
+      A tire outside that standard still needs the full number on one sidewall under 49 CFR 574.5. It does not, under that section alone, need a second copy on the other sidewall.
+    </p>
+    <p>
+      If the number you can read has no date, check the other sidewall. On a tire covered by FMVSS No. 139, a partial number is the one that leaves the date off.
+      <a href="https://www.nhtsa.gov/vehicle-safety/tires">NHTSA's TireWise page</a> describes the same place to look.
+    </p>
+
+    <h2 id="length-rule">The 2015 length rule</h2>
+    <p>
+      The April 13, 2015 final rule did two things. It expanded the plant code for new tires from two symbols to three, because NHTSA had run out of two-symbol codes. And it standardized the length of the number: 13 symbols for a new tire, and 7 symbols for a retreaded tire.
+      The rule's summary says the fixed length makes it easier to identify a number from which a symbol is missing
+      (<a href="https://www.federalregister.gov/documents/2015/04/13/2015-08418/tire-identification-and-recordkeeping">80 FR 19553</a>).
+      The preamble treats a change to the date-code format as outside this rule. The amended text keeps the date code as four digits in the final group.
+    </p>
+    <figure class="date-figure">
+      <div class="tin-diagram" aria-hidden="true">
+        <div class="tin-group">
+          <p class="tin-label">New tire, 13 symbols</p>
+          <p class="dot-code">
+            <span>1U2</span>
+            <span>ABCDEF</span>
+            <span class="is-decoded">0109</span>
+          </p>
+        </div>
+        <div class="tin-group">
+          <p class="tin-label">Retread, 7 symbols</p>
+          <p class="dot-code">
+            <span>1U2</span>
+            <span class="is-decoded">0109</span>
+          </p>
+        </div>
+      </div>
+      <figcaption>
+        In both lengths the date is the last four digits. A separate letter R marks a retread and is not part of the number (49 CFR 574.5(c)).
+        Matching the 7-symbol length does not, by itself, prove a tire was retreaded.
+      </figcaption>
+    </figure>
+    <p>
+      49 CFR 574.5(a)(5) and 574.5(g) let a manufacturer keep a previously assigned two-symbol plant code until April 13, 2025.
+      Under that older grouping the date code is still the final four digits. Tires made before the end date can still show the older code.
+      The <a href="/guides/dot-code/">DOT guide</a> covers the plant-code groups, including former two-symbol codes. A plant code names the factory on NHTSA's record, the registrant at the time of registration, not a brand.
+      <a href="/plants/1u2/">Plant code 1U2</a> is one record in that list.
+    </p>
+
+    <h2 id="three-digit">Three digits, before the four-digit date</h2>
+    <p>
+      Before the four-digit date, the code was two digits for the week and one digit for the year. The decade was not encoded.
+      Four digits are required for tires produced or retreaded on and after July 2, 2000. Optional early use was allowed from the July 8, 1999 publication of that rule
+      (<a href="https://www.govinfo.gov/content/pkg/FR-1999-07-08/html/99-17402.htm">64 FR 36807</a>).
+      The 2015 rule's preamble notes that the tire identification number was adopted in 1971 (36 FR 1196).
+    </p>
+    <figure class="date-figure">
+      <div aria-hidden="true">
+        <p class="tin-label">Three-digit date</p>
+        <p class="digit-row">
+          <span class="digit is-date">3</span>
+          <span class="digit is-date">2</span>
+          <span class="digit is-date">9</span>
+        </p>
+        <p class="digit-keys digit-keys-3">
+          <span>Week</span>
+          <span>Year digit</span>
+        </p>
+      </div>
+      <figcaption>
+        329 is week 32 of a year ending in 9. The decade is not in those digits. From the 1971 adoption through 1999, the years that fit are 1979, 1989, and 1999.
+      </figcaption>
+    </figure>
+    <p>
+      The <a href="/decoder/?tin=329">decoder</a> lists each of those years. When the year digit is 0, it also lists weeks 01 through 26 of 2000, because those weeks start before July 2, 2000.
+      Week 27 of 2000 starts on July 2, so 2000 is not listed for week 27 or a later week.
+    </p>
+    <p>
+      Some 1990s tires have a small triangle after the three digits. On May 2, 1990, NHTSA's Acting Chief Counsel told Goodyear that an isosceles right triangle placed after the number, to identify tires made in 1990 through 1999, was not prohibited (interpretation nht90-2.39).
+      The triangle is not one of the symbols in 49 CFR 574.5, and the letter did not require it. Interpretation letters are guidance. They do not amend the regulation.
+      If the triangle is present, the decoder marks the 1990s year and still lists the other years the digits match. If it is absent, the decade stays unresolved. A missing triangle is not proof the tire was made before 1990.
+      The letter is in <a href="https://www.nhtsa.gov/nhtsa-interpretation-file-search">NHTSA's interpretation file</a> under id nht90-2.39.
+    </p>
+    <p>
+      The date code names a manufacture week. It is not a safety rating.
+      <a href="/guides/dot-code/#age">NHTSA's note on tire age</a> is in the DOT guide.
+    </p>
+    <p><a class="button" href="/decoder/">Decode a tire date code</a></p>
+    <p>
+      <a href="/decoder/?tin=0109">Open 0109 in the decoder</a>
+      · <a href="/decoder/?tin=329">Open the three-digit example</a>
+      · <a href="/guides/dot-code/">The rest of the DOT number</a>
+    </p>
+  </div>
+</Base>

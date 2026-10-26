@@ -39,6 +39,7 @@ const crumbs = [
       See <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-571/subpart-B/section-571.139">49 CFR 571.139 S5.5.1</a>
       and <a href="https://www.nhtsa.gov/vehicle-safety/tires">NHTSA's TireWise page</a>.
       If a code you can read has no date, check the other sidewall.
+      The date digits have their own page: <a href="/guides/tire-date-code/">how to read a tire date code</a>.
     </p>
     <h2>Current new-tire number</h2>
     <p>A new tire's TIN is 13 symbols:</p>
@@ -52,11 +53,14 @@ const crumbs = [
     </p>
     <h2>The date code</h2>
     <p>
-      Week 01 is the first full calendar week of the year. The week runs Sunday through Saturday, and the last week of a year may include up to six days of the next year.
-      The regulation's example: 0109 means the first full calendar week of 2009, Sunday, January 4 through Saturday, January 10, 2009.
+      The date code is the final group. On a current number it is four digits: the week, then the year.
+      The regulation's example, 0109, is the week of Sunday, January 4, 2009 through Saturday, January 10, 2009.
+      A tire from before the four-digit date can show three digits, and those digits do not name the decade.
     </p>
     <p>
-      This site's decoder uses that Sunday-start rule for every four-digit date and reads the year as 2000–2099. Age is counted from the Sunday that opens the week, because the code identifies a week rather than a day. If that Sunday is still in the future, the decoder says so instead of guessing that the year was in the 1900s.
+      <a href="/guides/tire-date-code/">How to read a tire date code</a> diagrams that split, the Sunday–Saturday week, the April 13, 2015 length rule, where the date sits on the sidewall, and the three-digit form, including the 1990s triangle.
+      This page is the rest of the number: the plant code, the manufacturer's symbols, and which characters are allowed.
+      The <a href="/decoder/">decoder</a> applies the week rule to the digits you enter.
     </p>
     <h2>Older two-symbol plant codes</h2>
     <p>
@@ -70,28 +74,11 @@ const crumbs = [
       The same final rule is what lengthened the plant code to three symbols and set the new-tire TIN at 13 symbols.
       Its preamble also notes the TIN was adopted in 1971.
     </p>
-    <h2>Three-digit dates</h2>
-    <p>
-      The date code was three digits before the four-digit form: two for the week and one for the year. The decade was not encoded.
-      Four digits are required for tires produced or retreaded on and after July 2, 2000. Optional early use was allowed from the July 8, 1999 publication of that rule
-      (<a href="https://www.govinfo.gov/content/pkg/FR-1999-07-08/html/99-17402.htm">64 FR 36807</a>).
-      That rule's examples are 3197, the week of August 3 through 9, 1997, and 0198, the week of January 4 through 10, 1998.
-    </p>
-    <p>
-      A code ending in 329 is week 32 of a year ending in 9. From the 1971 adoption through 1999, that could be 1979, 1989, or 1999. The decoder lists each of those years.
-      When the year digit is 0, it also lists weeks 01 through 26 of 2000, because those weeks start before July 2, 2000. Week 27 of 2000 starts on July 2, so 2000 is not listed for week 27 or a later week.
-    </p>
-    <p>
-      Some 1990s tires have a small triangle after the three digits. On May 2, 1990, NHTSA's Acting Chief Counsel told Goodyear that an isosceles right triangle placed after the TIN, to identify tires made in 1990 through 1999, was not prohibited (interpretation nht90-2.39).
-      The triangle is not one of the symbols in 49 CFR 574.5, and the letter did not require it. Interpretation letters are guidance. They do not amend the regulation.
-      If the triangle is present, the <a href="/decoder/">decoder</a> marks the 1990s year and still lists the other years the digits match. If it is absent, the decade stays unresolved. A missing triangle is not proof the tire was made before 1990.
-      The letter is in <a href="https://www.nhtsa.gov/nhtsa-interpretation-file-search">NHTSA's interpretation file</a> under id nht90-2.39.
-    </p>
     <h2>Symbols that are allowed</h2>
     <p>
       49 CFR 574.5 allows A, B, C, D, E, F, H, J, K, L, M, N, P, R, T, U, V, W, X, Y, and the digits 0–9. G, I, O, Q, S, and Z are not in that set. The decoder drops anything outside the set and says so, because a photo or a worn sidewall is easy to misread.
     </p>
-    <h2>Age is not a safety verdict</h2>
+    <h2 id="age">Age is not a safety verdict</h2>
     <blockquote class="quote">
       <p>
         As tires age, they are more prone to failure. Some vehicle and tire manufacturers recommend replacing tires that are six to 10 years old, regardless of treadwear.
@@ -101,6 +88,7 @@ const crumbs = [
       That is NHTSA's description of manufacturer recommendations, not a calculation this site can make for a particular tire. NHTSA also says a full-size spare should not be used as a replacement for worn tires except in an emergency such as a flat. You cannot see aging just by looking at the tread. The source is the aging section of
       <a href="https://www.nhtsa.gov/vehicle-safety/tires">NHTSA TireWise</a>.
     </p>
-    <p><a class="button" href="/decoder/">Open the decoder</a></p>
+    <p><a class="button" href="/decoder/">Decode a tire date code</a></p>
+    <p><a href="/guides/tire-date-code/">How to read a tire date code</a></p>
   </div>
 </Base>

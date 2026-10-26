@@ -7,6 +7,8 @@ import { catalog } from "../lib/catalog.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
 import { recallMeta, recallSummary } from "../lib/recall-catalog.js";
 import { dataset, laterIso } from "../lib/structured.js";
+import InlineList from "../components/InlineList.astro";
+import { whoMakesPages, whoMakesSkipped } from "../lib/who-makes-pages.js";
 
 const verified = formatVerified(catalog.meta.verifiedAt);
 const description =
@@ -129,7 +131,30 @@ const jsonLd = [
     <p>
       MFGNAME is the company that filed the Part 573 report. MFGTXT is the file's manufacturer field for the recalled tires. Units are the campaign total, so the same POTAFF value is repeated on every line of a campaign.
       A row says "made by" the filer only when MFGTXT names that same company and the filer's name contains tire, tyre, or rubber. Tireco, Harbor Freight Tools, TBC, and Discount Tire stay "recall filed by" because they are importers or brand owners. Every other row says "recall filed by."
-      The wording covers that recalled line. It is not a claim about the rest of the brand. A shared UTQG line name is not used. Plant codes are not used. No other brand-owner list is used.
+      The wording covers that recalled line. It is not a claim about the rest of the brand. A shared UTQG line name is not used. No other brand-owner list is used.
+      A separate page is published only when this file has tire rows for that brand.
+      {
+        whoMakesPages.length ? (
+          <>
+            {" "}
+            In this pull those pages are <InlineList items={whoMakesPages.map((page) => ({ href: page.url, label: page.name }))} />.
+          </>
+        ) : (
+          " In this pull no separate brand page is published."
+        )
+      }
+      {
+        whoMakesSkipped.length ? (
+          <>
+            {" "}
+            <InlineList items={whoMakesSkipped.map((item) => ({ label: item.label }))} />
+            {" "}
+            {whoMakesSkipped.length === 1 ? "is" : "are"} not given a page. The recall file has no row for {whoMakesSkipped.length === 1 ? "that brand" : "those brands"}.
+          </>
+        ) : null
+      }
+      {" "}
+      A brand page links to a plant record only when the registrant name matches a company named in that brand's filings. The plant record still does not name a brand.
     </p>
     <p>
       Letter case and punctuation are ignored when a filer name is compared with a brand. A brand counts as a different name when it is not the same phrase and is not contained in the filing company's name.

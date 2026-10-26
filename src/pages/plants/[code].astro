@@ -7,6 +7,7 @@ import { plantAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
+import { whoMakesByPlantCode } from "../../lib/who-makes-pages.js";
 
 export function getStaticPaths() {
   return catalog.plants.map((plant) => ({ params: { code: plant.slug } }));
@@ -30,6 +31,7 @@ const crumbs = [
   { href: "/plants/", label: "Plant codes" },
   { href: plant.url, label: plant.code },
 ];
+const makerLinks = whoMakesByPlantCode.get(plant.code) || [];
 const shared = plant.oldCodeSharedWith
   .map((code) => catalog.getPlant(code.toLowerCase()))
   .filter(Boolean);
@@ -103,6 +105,27 @@ const shared = plant.oldCodeSharedWith
                 {other.city || other.country ? ` — ${[other.city, other.country].filter(Boolean).join(", ")}` : ""}
               </li>
             ))}
+          </ul>
+        </>
+      ) : null
+    }
+    {
+      makerLinks.length ? (
+        <>
+          <h2>Recall filings that match this registrant</h2>
+          <p>
+            This plant's name matches a company on a tire-recall filing. The plant record does not say this plant made that brand.
+          </p>
+          <ul>
+            {
+              makerLinks.map((link) => (
+                <li>
+                  <a href={link.url}>Who makes {link.name} tires?</a>
+                  {" "}
+                  ({link.role === "filer" ? "filing company" : "manufacturer field"} {link.matchedCompany}).
+                </li>
+              ))
+            }
           </ul>
         </>
       ) : null

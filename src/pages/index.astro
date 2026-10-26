@@ -7,6 +7,8 @@ import { homeAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { site } from "../lib/site.js";
 import { formatNumber } from "../lib/format.js";
+import InlineList from "../components/InlineList.astro";
+import { whoMakesPages } from "../lib/who-makes-pages.js";
 
 const biggest = [...catalog.brands].sort((a, b) => b.rowCount - a.rowCount || a.name.localeCompare(b.name)).slice(0, 8);
 const answers = homeAnswer(catalog);
@@ -113,6 +115,15 @@ const jsonLd = [
       <a href="/who-makes-it/">Who makes it?</a> lists that company for each recalled line.
       A brand with no tire recall is not answered there, and a shared line name in the ratings file is not treated as a rebadge.
     </p>
+    {
+      whoMakesPages.length ? (
+        <p>
+          <InlineList items={whoMakesPages.map((page) => ({ href: page.url, label: page.name }))} />
+          {whoMakesPages.length === 1 ? " has" : " have"} a page because the recall file names a filing company for that brand.
+          Brands the file does not answer are listed on <a href="/who-makes-it/#not-answered">Who makes it?</a>
+        </p>
+      ) : null
+    }
   </div>
   <div class="wrap">
     <h2>Brands with the most rows in NHTSA's list</h2>

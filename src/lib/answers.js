@@ -1,5 +1,5 @@
-import { formatNumber, formatVerified } from "./format.js";
-import { formatNameList } from "./recalls.js";
+import { formatNumber, formatUtcDate, formatVerified } from "./format.js";
+import { formatNameList, isImporterOrBrandOwnerExample } from "./recalls.js";
 
 const TRACTION = ["AA", "A", "B", "C"];
 const TEMPERATURE = ["A", "B", "C"];
@@ -281,6 +281,56 @@ export function whoMakesAnswer(summary) {
     `On ${formatNumber(summary.brandsWithDifferentFiler)} of those brand strings, the filing company's name differs from the brand.`,
     "The filer can be the factory, an importer, or the brand owner, and a filing covers only the recalled line.",
   ];
+}
+
+function campaignSentence(rows) {
+  const byCampaign = new Map();
+  for (const row of rows) {
+    if (!byCampaign.has(row.campaign)) {
+      byCampaign.set(row.campaign, { campaign: row.campaign, reportDate: row.reportDate, lines: [] });
+    }
+    const entry = byCampaign.get(row.campaign);
+    if (!entry.lines.includes(row.line)) entry.lines.push(row.line);
+  }
+  const campaigns = [...byCampaign.values()].sort(
+    (a, b) => a.reportDate.localeCompare(b.reportDate) || a.campaign.localeCompare(b.campaign),
+  );
+  const parts = campaigns.map(
+    (entry) => `campaign ${entry.campaign}, reported ${formatUtcDate(entry.reportDate)}, for ${formatNameList(entry.lines)}`,
+  );
+  if (parts.length === 1) return `The filing is ${parts[0]}.`;
+  if (parts.length === 2) return `The filings are ${parts[0]}, and ${parts[1]}.`;
+  return `The filings are ${parts.slice(0, -1).join("; ")}; and ${parts.at(-1)}.`;
+}
+
+/**
+ * Answer box for one brand. Filers and campaign numbers come from the recall
+ * rows. The first sentence names the filing company, not a factory.
+ */
+export function whoMakesBrandAnswer({ name, filers, rows }) {
+  if (!name || !filers?.length || !rows?.length) {
+    throw new Error("whoMakesBrandAnswer needs a name, filers, and recall rows");
+  }
+  const noun = filers.length === 1 ? "filing manufacturer" : "filing manufacturers";
+  const sentences = [
+    `${name} tires: NHTSA recall reports list ${formatNameList(filers)} as the ${noun}.`,
+    campaignSentence(rows),
+  ];
+  const importers = filers.filter((filer) => isImporterOrBrandOwnerExample(filer));
+  if (importers.length === filers.length && importers.length === 1) {
+    sentences.push(
+      `${importers[0]} is the company legally responsible for the recall and is named here as an importer or brand owner, so a manufacturer field that repeats that name is not read as the factory, and the filing covers only the recalled line.`,
+    );
+  } else if (importers.length === filers.length) {
+    sentences.push(
+      `${formatNameList(importers)} are the companies legally responsible for the recall and are named here as importers or brand owners, so a manufacturer field that repeats those names is not read as the factory, and the filing covers only the recalled line.`,
+    );
+  } else {
+    sentences.push(
+      "The filer is the company legally responsible for the recall. It may be the factory, an importer, or the brand owner, and the filing covers only the recalled line.",
+    );
+  }
+  return sentences;
 }
 
 export function utqgGuideAnswer(catalog) {

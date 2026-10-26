@@ -7,6 +7,8 @@ import { catalog } from "../../lib/catalog.js";
 import { recallSummary } from "../../lib/recall-catalog.js";
 import { article, laterIso } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
+import InlineList from "../../components/InlineList.astro";
+import { whoMakesPages } from "../../lib/who-makes-pages.js";
 
 const answers = guidesIndexAnswer(catalog, recallSummary);
 const description = clampText(answers.join(" "));
@@ -39,6 +41,15 @@ const crumbs = [
     <p>
       <a href="/who-makes-it/">Who makes it?</a> lists the company that filed each NHTSA tire recall since 2010.
       The filer may be the factory, an importer, or the brand owner. A brand with no tire recall in that file is not answered there.
+      {
+        whoMakesPages.length ? (
+          <>
+            {" "}
+            <InlineList items={whoMakesPages.map((page) => ({ href: page.url, label: page.name }))} />
+            {whoMakesPages.length === 1 ? " has" : " have"} a page of those filings.
+          </>
+        ) : null
+      }
     </p>
     <p>
       The <a href="/methodology/">data sources</a> page describes the files, including brand-string errors, plant status, and which tires UTQG does not cover.

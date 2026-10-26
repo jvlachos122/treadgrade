@@ -1,0 +1,264 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import Grade from "../../components/Grade.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries, whoMakesBrandAnswer } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber, formatUtcDate, wearRange } from "../../lib/format.js";
+import { recallMeta } from "../../lib/recall-catalog.js";
+import { formatNameList, nhtsaCampaignUrl, recallStatement } from "../../lib/recalls.js";
+import { dataset, laterIso } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
+import { whoMakesBySlug, whoMakesPages } from "../../lib/who-makes-pages.js";
+
+export function getStaticPaths() {
+  return whoMakesPages.map((page) => ({ params: { brand: page.slug } }));
+}
+
+const page = whoMakesBySlug.get(Astro.params.brand);
+if (!page) throw new Error(`Missing who-makes page ${Astro.params.brand}`);
+
+const answers = whoMakesBrandAnswer(page);
+const description = clampText(answers.join(" "));
+const sourceKinds = ["recalls"];
+if (page.grades) sourceKinds.unshift("ratings");
+if (page.plants.length) sourceKinds.splice(page.grades ? 1 : 0, 0, "plants");
+const basedOn = [recallMeta.source];
+if (page.grades) basedOn.push(catalog.meta.ratings.source);
+if (page.plants.length) basedOn.push(catalog.meta.plants.source);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/who-makes-it/", label: "Who makes it?" },
+  { href: page.url, label: page.name },
+];
+const jsonLd = [
+  dataset({
+    name: `Who makes ${page.name} tires, from NHTSA recall filings`,
+    description: answers.join(" "),
+    path: page.url,
+    dateModified: laterIso(catalog.meta.verifiedAt, recallMeta.retrievedAt),
+    isBasedOn: basedOn,
+    keywords: ["tires", "NHTSA", "recalls", page.name],
+  }),
+];
+const rows = page.rows.map((row) => ({ ...row, statement: recallStatement(row) }));
+const companyList = formatNameList(page.companies);
+const noPlantLead = `No plant record is registered under ${companyList}`;
+const noPlantSentence = /[.!?]$/.test(noPlantLead) ? noPlantLead : `${noPlantLead}.`;
+const wordPlantNote = page.wordPlantCount
+  ? `The plant list also has ${formatNumber(page.wordPlantCount)} ${page.wordPlantCount === 1 ? "record whose name includes" : "records whose names include"} ${page.name}. ${page.wordPlantCount === 1 ? "That registrant name is" : "Those registrant names are"} not ${page.companies.length === 1 ? "the company named in the filings" : "the companies named in the filings"}, so ${page.wordPlantCount === 1 ? "it is" : "they are"} not listed as the maker.`
+  : "";
+---
+
+<Base title={`Who makes ${page.name} tires?`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <h1>Who makes {page.name} tires?</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
+    <div class="notice">
+      <p class="data-note-label">About this data</p>
+      <p>
+        The filing company submitted the Part 573 report. That company is legally responsible for the recall. It may be the factory, an importer, or the brand owner.
+        A row says "made by" only for that recalled line, and only when the report's manufacturer field names the filer and the filer's name reads as a tire or rubber company.
+        Tireco, Harbor Freight Tools, TBC, and Discount Tire stay "recall filed by," including when the manufacturer field repeats their name.
+        The filing does not cover the rest of the brand, and it does not cover a line that was never recalled.
+        <a href="/who-makes-it/">All tire filings since 2010</a>.
+        <a href="/methodology/#recall-filings">How the file is prepared</a>.
+      </p>
+    </div>
+
+    <h2>Recall filings</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>
+          Tire recall rows for {page.name} in NHTSA's flat file since 2010. Units affected is the campaign total, repeated on each line of that campaign.
+          The campaign number links to that campaign on NHTSA.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Recalled line</th>
+            <th scope="col">Filing company</th>
+            <th scope="col">What this row says</th>
+            <th scope="col">Campaign</th>
+            <th scope="col">Report date</th>
+            <th scope="col">Units affected</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map((row) => (
+              <tr>
+                <td>{row.line}</td>
+                <td>{row.filer}</td>
+                <td>{row.statement.text}</td>
+                <td>
+                  <a class="num" href={nhtsaCampaignUrl(row.campaign)}>
+                    {row.campaign}
+                    <span class="visually-hidden"> on NHTSA</span>
+                  </a>
+                </td>
+                <td class="num">
+                  <time datetime={row.reportDate}>{formatUtcDate(row.reportDate)}</time>
+                </td>
+                <td class="num">{formatNumber(row.units)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Registered plants</h2>
+    {
+      page.plants.length ? (
+        <>
+          <p>
+            These plant records are registered to a name that matches {formatNameList(page.companies)} on the filings above.
+            The plant list has no brand field. A match of the company name is not proof that the plant made {page.name} tires or the recalled line.
+            Status is the value stored in vPIC, not a finding that the plant is operating.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                Plant records whose registrant name matches a company named in the {page.name} recall filings.
+                The match is the company name. The record does not say the plant made {page.name} tires.
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Plant code</th>
+                  <th scope="col">Registrant</th>
+                  <th scope="col">City</th>
+                  <th scope="col">Country</th>
+                  <th scope="col">Status field</th>
+                  <th scope="col">Matched company</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  page.plants.map((plant) => (
+                    <tr>
+                      <td>
+                        <a class="num" href={plant.url}>{plant.code}</a>
+                      </td>
+                      <td>{plant.name}</td>
+                      <td>{plant.city || "Not in the record"}</td>
+                      <td>{plant.country || "Not in the record"}</td>
+                      <td>{plant.status || "Not in the record"}</td>
+                      <td>
+                        {plant.matchedCompany}
+                        <span class="muted"> — {plant.role === "filer" ? "filing company" : "manufacturer field"}</span>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <p>
+          {noPlantSentence} The plant list has no brand field, so a record is not listed here unless the registrant name matches one of those companies.
+          {wordPlantNote ? ` ${wordPlantNote}` : ""}
+          {" "}
+          <a href="/plants/">Plant codes</a>.
+        </p>
+      )
+    }
+
+    <h2>UTQG grades</h2>
+    {
+      page.grades ? (
+        <>
+          <p>
+            NHTSA's published UTQG list stores {formatNumber(page.grades.lineCount)} {page.grades.lineCount === 1 ? "tire line" : "tire lines"} and {formatNumber(page.grades.rowCount)} {page.grades.rowCount === 1 ? "grade row" : "grade rows"} under {page.name}.
+            The ratings file does not name a manufacturer, and it does not say whether these lines are still sold.
+            {
+              page.recalledMissing.length ? (
+                <>
+                  {" "}
+                  {page.recalledInUtqg.length === 0
+                    ? `None of the recalled lines (${formatNameList(page.recalledMissing)}) are in that UTQG list under ${page.name}.`
+                    : `These recalled lines are not in that UTQG list under ${page.name}: ${formatNameList(page.recalledMissing)}.`}
+                </>
+              ) : (
+                " Every recalled line name on this page is also a line name in that UTQG list. The shared name is not evidence that the recalled tire and the graded tire are the same product."
+              )
+            }
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                UTQG grade spread for {page.name} in NHTSA's published list. Usable treadwear numbers only. Values outside the usual grades are not shown as grades.
+              </caption>
+              <tbody>
+                <tr>
+                  <th scope="row">Tire lines</th>
+                  <td class="num">{formatNumber(page.grades.lineCount)}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Grade rows</th>
+                  <td class="num">{formatNumber(page.grades.rowCount)}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Treadwear</th>
+                  <td class="num">{wearRange(page.grades.wearMin, page.grades.wearMax)}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Traction</th>
+                  <td>
+                    {
+                      page.grades.traction.length
+                        ? page.grades.traction.map((grade) => <Grade value={grade} kind="trac" />)
+                        : "Not reported"
+                    }
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Temperature</th>
+                  <td>
+                    {
+                      page.grades.temperature.length
+                        ? page.grades.temperature.map((grade) => <Grade value={grade} kind="temp" />)
+                        : "Not reported"
+                    }
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {
+            page.grades.wearInvalid.length || page.grades.tracInvalid.length || page.grades.tempInvalid.length ? (
+              <p>
+                NHTSA also published values outside the usual grades on this brand. Those values are left out of the treadwear range and the letter grades above.
+              </p>
+            ) : null
+          }
+          {
+            page.recalledInUtqg.length ? (
+              <ul>
+                {
+                  page.recalledInUtqg.map((line) => (
+                    <li>
+                      Recalled line {line.line} matches a UTQG line name: <a href={line.url}>{line.line}</a>. The shared name is not evidence of the same tire.
+                    </li>
+                  ))
+                }
+              </ul>
+            ) : null
+          }
+          {page.utqg ? <p><a href={page.utqg.url}>{page.name} UTQG grades</a></p> : null}
+        </>
+      ) : (
+        <p>The UTQG list has no brand string {page.name}. Grades are not invented for this page.</p>
+      )
+    }
+
+    <p>
+      <a href="/who-makes-it/">Who makes it?</a>
+      {page.utqg ? <> · <a href={page.utqg.url}>{page.name} UTQG grades</a></> : null}
+      {" "}· <a href="/plants/">Plant codes</a>
+      {" "}· <a href="/methodology/#recall-filings">Recall filing method</a>
+    </p>
+  </div>
+</Base>

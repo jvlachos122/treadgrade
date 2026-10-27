@@ -1,0 +1,5 @@
+---
+const { items = [] } = Astro.props;
+---
+
+{items.map((item, index) => <span>{index === 0 ? "" : index === items.length - 1 ? ", and " : ", "}{item.href ? <a href={item.href}>{item.label}</a> : item.label}</span>)}

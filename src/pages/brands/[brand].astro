@@ -12,6 +12,7 @@ import { recallSummary } from "../../lib/recall-catalog.js";
 import { formatNameList } from "../../lib/recalls.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
+import { whoMakesByKey } from "../../lib/who-makes-pages.js";
 
 export function getStaticPaths() {
   return catalog.brands.map((brand) => ({ params: { brand: brand.slug } }));
@@ -20,6 +21,7 @@ export function getStaticPaths() {
 const brand = catalog.getBrand(Astro.params.brand);
 const lines = catalog.getBrandLines(brand.slug);
 const filings = recallSummary.byBrand.get(nameKey(brand.name)) || null;
+const whoPage = whoMakesByKey.get(nameKey(brand.name)) || null;
 const answers = brandAnswer(brand, lines, filings);
 const description = clampText(answers.join(" "));
 const jsonLd = [
@@ -54,6 +56,15 @@ const crumbs = [
             across {formatNumber(filings.campaigns)} {filings.campaigns === 1 ? "campaign" : "campaigns"}.
             The filing {filings.filers.length === 1 ? "company is" : "companies are"} {formatNameList(filings.filers)}.
             <a href={`/who-makes-it/#${filings.anchor}`}>Those filings are on Who makes it?</a>
+            {
+              whoPage ? (
+                <>
+                  {" "}
+                  <a href={whoPage.url}>Who makes {brand.name} tires?</a> repeats the filings for this brand.
+                </>
+              ) : null
+            }
+            {" "}
             A filing covers the recalled line in that campaign. It does not say who makes every {brand.name} tire.
           </p>
         </div>

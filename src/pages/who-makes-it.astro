@@ -10,6 +10,7 @@ import { recallMeta, recallRows, recallSummary } from "../lib/recall-catalog.js"
 import { formatNameList, nhtsaCampaignUrl, recallStatement } from "../lib/recalls.js";
 import { dataset } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
+import { whoMakesPages, whoMakesUnanswered } from "../lib/who-makes-pages.js";
 
 const retrieved = formatVerified(recallMeta.retrievedAt);
 const catalogByKey = new Map(catalog.brands.map((brand) => [nameKey(brand.name), brand]));
@@ -30,13 +31,6 @@ const tableRows = recallRows.map((row) => {
   };
 });
 const linkedBrands = tableRows.filter((row) => row.isFirst && row.catalogBrand).length;
-const unanswered = ["Kirkland", "Douglas"]
-  .map((name) => ({
-    name,
-    inRecalls: recallSummary.byBrand.has(nameKey(name)),
-    brand: catalogByKey.get(nameKey(name)) || null,
-  }))
-  .filter((item) => !item.inRecalls);
 const sameExample = recallSummary.sameExample;
 const differExample = recallSummary.differExample;
 const answers = whoMakesAnswer(recallSummary);
@@ -115,7 +109,8 @@ const jsonLd = [
       <p>
         “Made by” covers that recalled line and that campaign. It does not cover the rest of the brand, and it does not cover a line that was never recalled.
         A shared tire-line name in the UTQG ratings is a match of the name string. It is not evidence that one tire is a rebadge of another, and this page does not use those matches.
-        A plant code names the company on the plant record. It has no brand field, so this page does not use plant codes, and it does not use any brand-owner list other than this recall file.
+        A plant code names the company on the plant record. It has no brand field, so this table does not use plant codes, and it does not use any brand-owner list other than this recall file.
+        A brand page links to a plant record only when the registrant name matches a company named in that brand's filings. That match is not proof the plant made the brand.
         <a href="/methodology/#data-quality">Data-quality notes</a>. <a href="/plants/">Plant codes</a>. <a href="/brands/">UTQG brands</a>.
       </p>
       <p>
@@ -123,18 +118,51 @@ const jsonLd = [
         The brand name in the table is the spelling in the recall file. The link opens the UTQG page when the normalized names are the same.
       </p>
       {
-        unanswered.length ? (
-          <h2>Brands with no tire recall</h2>
-          <p>
-            This file has no tire-recall row for{" "}
-            {unanswered.map((item, index) => (
-              <span>
-                {index === 0 ? "" : index === unanswered.length - 1 ? " or " : ", "}
-                {item.brand ? <a href={item.brand.url}>{item.brand.name}</a> : item.name}
-              </span>
-            ))}
-            . A brand with no tire recall in this file cannot be answered from these filings. The UTQG page, when there is one, is only the grades list.
-          </p>
+        whoMakesPages.length ? (
+          <>
+            <h2>Pages for one brand</h2>
+            <p>
+              A brand gets its own page only when this recall file names a filing company for that brand.
+              The page repeats the campaigns. It lists a plant record only when the registrant name matches a company in those filings.
+            </p>
+            <ul>
+              {
+                whoMakesPages.map((page) => (
+                  <li>
+                    <a href={page.url}>Who makes {page.name} tires?</a>
+                    {" "}
+                    Filing {page.filers.length === 1 ? "company" : "companies"}: {formatNameList(page.filers)}.
+                  </li>
+                ))
+              }
+            </ul>
+          </>
+        ) : null
+      }
+      {
+        whoMakesUnanswered.length ? (
+          <>
+            <h2 id="not-answered">Brands these files do not answer</h2>
+            <p>
+              A page is not published when the recall file has no row for that brand. The plant list is checked for a registrant name and is not used to guess a maker.
+              The UTQG page, when there is one, is only the grades list.
+            </p>
+            <ul>
+              {
+                whoMakesUnanswered.map((item) => (
+                  <li>
+                    {item.label}. {item.reason}{" "}
+                    {item.utqg ? <a href={item.utqg.url}>Open the {item.utqg.name} UTQG page</a> : null}
+                    {
+                      item.related.map((brand) => (
+                        <a href={brand.url}>Open the {brand.name} UTQG page</a>
+                      ))
+                    }
+                  </li>
+                ))
+              }
+            </ul>
+          </>
         ) : null
       }
     </div>

@@ -87,6 +87,7 @@ function requirements(pathname) {
   } else if (
     pathname === "/ratings/" ||
     pathname === "/who-makes-it/" ||
+    pathname.startsWith("/who-makes/") ||
     pathname === "/methodology/" ||
     pathname.startsWith("/tires/") ||
     pathname.startsWith("/brands/") ||

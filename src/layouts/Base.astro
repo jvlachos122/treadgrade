@@ -12,6 +12,7 @@ import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
+import { refreshContent } from "../lib/redirects.js";
 import { site, analyticsSnippet, searchConsoleToken } from "../lib/site.js";
 
 const {
@@ -20,6 +21,7 @@ const {
   home = false,
   noindex = false,
   canonicalPath = "",
+  redirectTo = "",
   breadcrumbs = [],
   narrow = false,
   jsonLd = [],
@@ -27,6 +29,8 @@ const {
 
 const fullTitle = home ? title : `${title} · ${site.name}`;
 const canonical = new URL(canonicalPath || Astro.url.pathname, site.url).href;
+const refreshUrl = redirectTo ? new URL(redirectTo, site.url).href : "";
+const robotsNoindex = noindex || Boolean(redirectTo);
 const token = searchConsoleToken();
 const snippet = analyticsSnippet();
 const graph = [];
@@ -55,7 +59,8 @@ const structured = graph.length
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    {noindex ? <meta name="robots" content="noindex" /> : null}
+    {robotsNoindex ? <meta name="robots" content="noindex" /> : null}
+    {refreshUrl ? <meta http-equiv="refresh" content={refreshContent(refreshUrl)} /> : null}
     <link rel="preload" href={plex400} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={serif700} as="font" type="font/woff2" crossorigin />
     <meta name="theme-color" content="#f6f3ec" />

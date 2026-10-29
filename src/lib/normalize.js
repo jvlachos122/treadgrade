@@ -8,6 +8,18 @@ export function nameKey(value) {
   return cleanSpace(value).toLowerCase();
 }
 
+/**
+ * Brand identity ignores punctuation. Spaces stay, so "BF Goodrich" and
+ * "BFGoodrich" remain different brands. Line keys keep using nameKey.
+ */
+export function brandKey(value) {
+  const stripped = nameKey(value)
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return stripped || nameKey(value);
+}
+
 function chooseSpelling(counts) {
   let best = "";
   let bestCount = -1;
@@ -47,7 +59,95 @@ function takeSlug(used, base) {
   return slug;
 }
 
-export function buildCatalog(ratings, plants, meta) {
+function chooseSurvivorSlug(groupedKey, displayName, legacyBrands) {
+  if (!legacyBrands) return slugify(displayName);
+  const members = legacyBrands.filter((brand) => brandKey(brand.name) === groupedKey);
+  if (members.length <= 1) return slugify(displayName);
+  const preferred = slugify(displayName);
+  members.sort(
+    (a, b) =>
+      b.lineCount - a.lineCount ||
+      b.rowCount - a.rowCount ||
+      Number(b.slug === preferred) - Number(a.slug === preferred) ||
+      a.slug.localeCompare(b.slug),
+  );
+  return members[0].slug;
+}
+
+function redirectsBetween(legacy, catalog) {
+  const lineById = new Map();
+  for (const line of catalog.lines) {
+    for (const id of line.sourceIds) {
+      const previous = lineById.get(id);
+      if (previous && previous !== line) throw new Error(`Row ${id} is on two tire lines`);
+      lineById.set(id, line);
+    }
+  }
+  const brandBySlug = new Map(catalog.brands.map((brand) => [brand.slug, brand]));
+  const live = new Set([...catalog.brands.map((brand) => brand.url), ...catalog.lines.map((line) => line.url)]);
+  const redirects = [];
+
+  function survivorLine(sourceIds) {
+    for (const id of sourceIds) {
+      const line = lineById.get(id);
+      if (line) return line;
+    }
+    return null;
+  }
+
+  for (const brand of legacy.brands) {
+    if (live.has(brand.url)) continue;
+    const sample = legacy.lines.find((line) => line.brandSlug === brand.slug);
+    const targetLine = sample ? survivorLine(sample.sourceIds) : null;
+    const target = targetLine ? brandBySlug.get(targetLine.brandSlug) : null;
+    if (!target) throw new Error(`No surviving brand for ${brand.url}`);
+    redirects.push({
+      from: brand.url,
+      to: target.url,
+      kind: "brand",
+      brandSlug: brand.slug,
+      lineSlug: "",
+      fromName: brand.name,
+      toName: target.name,
+      fromLine: "",
+      toLine: "",
+    });
+  }
+
+  for (const line of legacy.lines) {
+    if (live.has(line.url)) continue;
+    const target = survivorLine(line.sourceIds);
+    if (!target) throw new Error(`No surviving tire line for ${line.url}`);
+    redirects.push({
+      from: line.url,
+      to: target.url,
+      kind: "line",
+      brandSlug: line.brandSlug,
+      lineSlug: line.lineSlug,
+      fromName: line.brand,
+      toName: target.brand,
+      fromLine: line.line,
+      toLine: target.line,
+    });
+  }
+
+  const liveBrandSlugs = new Set(catalog.brands.map((brand) => brand.slug));
+  const liveLineKeys = new Set(catalog.lines.map((line) => `${line.brandSlug}/${line.lineSlug}`));
+  for (const redirect of redirects) {
+    if (!live.has(redirect.to)) throw new Error(`Redirect target missing ${redirect.to}`);
+    if (redirect.kind === "brand" && liveBrandSlugs.has(redirect.brandSlug)) {
+      throw new Error(`Redirect collides with a live brand ${redirect.from}`);
+    }
+    if (redirect.kind === "line" && liveLineKeys.has(`${redirect.brandSlug}/${redirect.lineSlug}`)) {
+      throw new Error(`Redirect collides with a live tire line ${redirect.from}`);
+    }
+  }
+
+  redirects.sort((a, b) => a.from.localeCompare(b.from));
+  return redirects;
+}
+
+function buildCatalogFrom(ratings, plants, meta, keyFn, legacyBrands) {
   const brandSpellings = new Map();
   const lineGroups = new Map();
 
@@ -55,15 +155,15 @@ export function buildCatalog(ratings, plants, meta) {
     const brand = cleanSpace(row.brand);
     const line = cleanSpace(row.tireline);
     if (!brand || !line) continue;
-    const brandKey = nameKey(brand);
-    if (!brandSpellings.has(brandKey)) brandSpellings.set(brandKey, new Map());
-    const spellings = brandSpellings.get(brandKey);
+    const groupedKey = keyFn(brand);
+    if (!brandSpellings.has(groupedKey)) brandSpellings.set(groupedKey, new Map());
+    const spellings = brandSpellings.get(groupedKey);
     spellings.set(brand, (spellings.get(brand) || 0) + 1);
 
     const lineSlug = slugify(line);
-    const groupKey = `${brandKey}\n${lineSlug}`;
+    const groupKey = `${groupedKey}\n${lineSlug}`;
     if (!lineGroups.has(groupKey)) {
-      lineGroups.set(groupKey, { brandKey, lineSlug, lineSpells: new Map(), rows: [] });
+      lineGroups.set(groupKey, { brandKey: groupedKey, lineSlug, lineSpells: new Map(), rows: [] });
     }
     const group = lineGroups.get(groupKey);
     group.lineSpells.set(line, (group.lineSpells.get(line) || 0) + 1);
@@ -113,8 +213,9 @@ export function buildCatalog(ratings, plants, meta) {
   const brandSlugByKey = new Map();
   const usedBrandSlugs = new Set();
   const brandKeys = [...brandName.keys()].sort((a, b) => brandName.get(a).localeCompare(brandName.get(b)));
-  for (const brandKey of brandKeys) {
-    brandSlugByKey.set(brandKey, takeSlug(usedBrandSlugs, slugify(brandName.get(brandKey))));
+  for (const groupedKey of brandKeys) {
+    const displayName = brandName.get(groupedKey);
+    brandSlugByKey.set(groupedKey, takeSlug(usedBrandSlugs, chooseSurvivorSlug(groupedKey, displayName, legacyBrands)));
   }
 
   const lines = [];
@@ -131,6 +232,7 @@ export function buildCatalog(ratings, plants, meta) {
     const line = chooseSpelling(group.lineSpells);
     if (!usedLineSlugs.has(brandSlug)) usedLineSlugs.set(brandSlug, new Set());
     const lineSlug = takeSlug(usedLineSlugs.get(brandSlug), group.lineSlug || slugify(line));
+    const sourceIds = group.rows.map((row) => row.id);
     const kept = new Map();
     for (const row of group.rows) {
       const previous = kept.get(row.dedupeKey);
@@ -144,6 +246,7 @@ export function buildCatalog(ratings, plants, meta) {
       line,
       lineSlug,
       lineKey: nameKey(line),
+      sourceIds,
       rows,
       wearMin: wearNums.length ? Math.min(...wearNums) : null,
       wearMax: wearNums.length ? Math.max(...wearNums) : null,
@@ -181,8 +284,13 @@ export function buildCatalog(ratings, plants, meta) {
   }
 
   const brands = brandKeys
-    .map((brandKey) => {
-      const slug = brandSlugByKey.get(brandKey);
+    .map((groupedKey) => {
+      const slug = brandSlugByKey.get(groupedKey);
+      const displayName = brandName.get(groupedKey);
+      const aliases = [...brandSpellings.get(groupedKey).entries()]
+        .filter(([spelling]) => nameKey(spelling) !== nameKey(displayName))
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "en"));
       const brandLines = linesByBrand.get(slug) || [];
       const wears = [];
       const traction = Object.fromEntries(TRACTION.map((grade) => [grade, 0]));
@@ -201,9 +309,10 @@ export function buildCatalog(ratings, plants, meta) {
         }
       }
       return {
-        name: brandName.get(brandKey),
+        name: displayName,
         slug,
         url: `/brands/${slug}/`,
+        aliases,
         lineCount: brandLines.length,
         rowCount,
         wearMin: wears.length ? Math.min(...wears) : null,
@@ -335,9 +444,17 @@ export function buildCatalog(ratings, plants, meta) {
       temperature,
       wearBuckets,
     },
+    redirects: [],
     getBrand: (slug) => brandBySlug.get(slug) || null,
     getBrandLines: (slug) => linesByBrand.get(slug) || [],
     getLine: (brandSlug, lineSlug) => lineByKey.get(`${brandSlug}/${lineSlug}`) || null,
     getPlant: (slug) => plantBySlug.get(String(slug || "").toLowerCase()) || null,
   };
+}
+
+export function buildCatalog(ratings, plants, meta) {
+  const legacy = buildCatalogFrom(ratings, plants, meta, nameKey, null);
+  const catalog = buildCatalogFrom(ratings, plants, meta, brandKey, legacy.brands);
+  catalog.redirects = redirectsBetween(legacy, catalog);
+  return catalog;
 }

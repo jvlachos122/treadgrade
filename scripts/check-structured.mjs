@@ -66,6 +66,10 @@ function ownTypes(node) {
   return Array.isArray(value) ? value : [value];
 }
 
+function isRedirect(html) {
+  return /<meta http-equiv="refresh" content="0;url=https:\/\/treadgrade\.com\/[^"]+">/.test(html);
+}
+
 function requirements(pathname) {
   const req = { types: [], answer: false, source: false };
   if (pathname === "/404.html") return req;
@@ -274,6 +278,11 @@ for (const file of walk(dist)) {
   const pathname = pagePath(file);
   const expectedUrl = pathname === "/404.html" ? `${site}/404.html` : new URL(pathname, site).href;
   const req = requirements(pathname);
+  if (isRedirect(html)) {
+    req.types = [];
+    req.answer = true;
+    req.source = true;
+  }
   const mainMatch = html.match(/<main\b[^>]*>([\s\S]*)<\/main>/);
   if (!mainMatch) {
     fail(file, "missing main");

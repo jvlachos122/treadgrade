@@ -35,7 +35,12 @@ const searchPayload = {
     u: line.url,
     w: line.wearMin == null ? "" : line.wearMin === line.wearMax ? String(line.wearMin) : `${line.wearMin}–${line.wearMax}`,
   })),
-  brands: catalog.brands.map((brand) => ({ n: brand.name, u: brand.url, c: brand.lineCount })),
+  brands: catalog.brands.map((brand) => ({
+    n: brand.name,
+    u: brand.url,
+    c: brand.lineCount,
+    ...(brand.aliases.length ? { a: brand.aliases.map((alias) => alias.name) } : {}),
+  })),
   plants: catalog.plants.map((plant) => ({
     c: plant.code,
     o: plant.oldCode,

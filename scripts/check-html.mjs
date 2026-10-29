@@ -26,6 +26,11 @@ function expectedCanonical(file) {
   return site + rel;
 }
 
+function redirectTarget(html) {
+  const match = html.match(/<meta http-equiv="refresh" content="0;url=([^"]+)">/);
+  return match ? match[1] : "";
+}
+
 const validator = new HtmlValidate({
   extends: ["html-validate:recommended"],
   elements: [
@@ -64,14 +69,29 @@ for (const file of files) {
   const descriptions = [...html.matchAll(/<meta name="description" content="([^"]*)">/g)];
   if (descriptions.length !== 1 || descriptions[0][1].trim().length < 40) errors.push(`${rel}: description`);
   const canonicals = [...html.matchAll(/<link rel="canonical" href="([^"]+)">/g)];
-  if (canonicals.length !== 1 || canonicals[0][1] !== expectedCanonical(file)) {
-    errors.push(`${rel}: canonical ${canonicals[0]?.[1] ?? "missing"} != ${expectedCanonical(file)}`);
+  const refresh = redirectTarget(html);
+  const selfCanonical = expectedCanonical(file);
+  if (canonicals.length !== 1) errors.push(`${rel}: canonical ${canonicals[0]?.[1] ?? "missing"}`);
+  else if (refresh) {
+    if (canonicals[0][1] !== refresh) errors.push(`${rel}: redirect canonical ${canonicals[0][1]} != ${refresh}`);
+    if (canonicals[0][1] === selfCanonical) errors.push(`${rel}: redirect canonical points at itself`);
+    if (!html.includes('name="robots" content="noindex"')) errors.push(`${rel}: redirect missing noindex`);
+    let targetPath = "";
+    try {
+      targetPath = new URL(refresh).pathname;
+    } catch {
+      errors.push(`${rel}: redirect target is not a URL`);
+    }
+    if (targetPath && !targetPath.endsWith("/")) errors.push(`${rel}: redirect target should use a trailing slash`);
+  } else if (canonicals[0][1] !== selfCanonical) {
+    errors.push(`${rel}: canonical ${canonicals[0][1]} != ${selfCanonical}`);
   }
   const h1 = html.match(/<h1\b/g) || [];
   if (h1.length !== 1) errors.push(`${rel}: ${h1.length} h1`);
   if (!html.includes('id="main"')) errors.push(`${rel}: main`);
-  if (rel !== "/404.html" && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
+  if (!refresh && rel !== "/404.html" && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
   if (rel === "/404.html" && !html.includes('content="noindex"')) errors.push("404 should be noindex");
+  if (rel === "/404.html" && refresh) errors.push("404 should not refresh");
 }
 
 let reported = 0;

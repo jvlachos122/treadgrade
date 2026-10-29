@@ -45,6 +45,22 @@ function idsIn(html) {
 const files = walk(dist);
 const htmlByFile = new Map(files.map((file) => [file, readFileSync(file, "utf8")]));
 
+function redirectPath(html) {
+  const match = html.match(/<meta http-equiv="refresh" content="0;url=([^"]+)">/);
+  if (!match) return "";
+  try {
+    return new URL(match[1]).pathname;
+  } catch {
+    return "";
+  }
+}
+
+const redirectPages = new Set();
+for (const [file, html] of htmlByFile) {
+  if (redirectPath(html)) redirectPages.add(pageUrl(file));
+}
+if (!redirectPages.size) errors.push("expected retired-address pages");
+
 for (const [file, html] of htmlByFile) {
   const ids = idsIn(html);
   if (ids.size !== [...html.matchAll(/\sid="([^"]+)"/g)].length) {
@@ -69,6 +85,9 @@ for (const [file, html] of htmlByFile) {
       continue;
     }
     if (url.origin !== site) continue;
+    if (!redirectPages.has(pageUrl(file)) && redirectPages.has(url.pathname)) {
+      errors.push(`${file}: links to retired ${url.pathname}`);
+    }
     const target = fileForPath(url.pathname);
     if (!existsSync(target)) {
       errors.push(`${file}: missing ${url.pathname}`);
@@ -112,6 +131,7 @@ for (const name of sitemapFiles) {
     const url = new URL(match[1]);
     if (url.origin !== site) errors.push(`sitemap off-site ${match[1]}`);
     if (url.pathname === "/404.html" || url.pathname === "/404/") errors.push(`sitemap includes 404 ${match[1]}`);
+    if (redirectPages.has(url.pathname)) errors.push(`sitemap includes retired ${match[1]}`);
     const target = fileForPath(url.pathname);
     if (!existsSync(target)) errors.push(`sitemap missing ${url.pathname}`);
   }

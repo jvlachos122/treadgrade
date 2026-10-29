@@ -6,11 +6,13 @@ import { methodologyAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
 import { recallMeta, recallSummary } from "../lib/recall-catalog.js";
+import { formatNameList } from "../lib/recalls.js";
 import { dataset, laterIso } from "../lib/structured.js";
 import InlineList from "../components/InlineList.astro";
 import { whoMakesPages, whoMakesSkipped } from "../lib/who-makes-pages.js";
 
 const verified = formatVerified(catalog.meta.verifiedAt);
+const punctuationBrands = catalog.brands.filter((brand) => brand.aliases.length);
 const description =
   "Where TreadGrade's UTQG grades and DOT plant codes come from, which NHTSA fields are shown, and what the site does not claim.";
 const advanLines = catalog.lines
@@ -65,7 +67,28 @@ const jsonLd = [
       The nested <span class="num">safetyIssues</span> arrays are not stored.
     </p>
     <p>
-      Brand spellings that differ only by letter case and spacing are one brand. The spelling with the most rows is the one shown. Tire lines under a brand are grouped when a stable web address would be the same, so "Pilot Sport 4" and "PILOT SPORT 4" share a page, while a line whose name adds a plus sign stays separate.
+      Brand spellings that differ only by letter case and spacing are one brand. Characters other than letters, digits, and spaces are ignored in the brand key, so a spelling that differs only by punctuation joins that brand. The spelling with the most rows is the one shown. The address that stays is the previous address with more tire lines. Each retired address is still published as a noindex page whose canonical link and immediate refresh point at the address that stays. Retired addresses are left out of the sitemap.
+      {
+        punctuationBrands.length ? (
+          <>
+            {" "}
+            In this pull,{" "}
+            {punctuationBrands.map((brand, index) => {
+              const rows = brand.aliases.reduce((sum, alias) => sum + alias.count, 0);
+              const names = formatNameList(brand.aliases.map((alias) => alias.name));
+              return (
+                <>
+                  {index ? "; " : ""}
+                  {`${names} (${formatNumber(rows)} ${rows === 1 ? "row" : "rows"}) ${rows === 1 ? "is" : "are"} included under `}
+                  <a href={brand.url}>{brand.name}</a>
+                </>
+              );
+            })}
+            .
+          </>
+        ) : null
+      }{" "}
+      Tire lines under a brand are grouped when a stable web address would be the same, so "Pilot Sport 4" and "PILOT SPORT 4" share a page, while a line whose name adds a plus sign stays separate. A tire-line name keeps its own punctuation, so a plus sign or a slash still separates lines.
       Size text is trimmed and otherwise left as published. "Radial" and "RADIAL" are both shown as Radial.
     </p>
     <p>
@@ -159,7 +182,7 @@ const jsonLd = [
     <p>
       Letter case and punctuation are ignored when a filer name is compared with a brand. A brand counts as a different name when it is not the same phrase and is not contained in the filing company's name.
       In this pull, {formatNumber(recallSummary.brandsWithDifferentFiler)} of {formatNumber(recallSummary.brands)} brand strings have at least one filer counted as a different name.
-      Brand pages link to the table when the recall brand matches a UTQG brand after the same capitalization-and-spacing normalization used for the ratings.
+      Brand pages link to the table when the recall brand matches the spelling shown on the UTQG page after capitalization and spacing are normalized. Recall rows are not merged when the only difference is punctuation.
     </p>
     <h2>What the refresh refuses to publish</h2>
     <p>

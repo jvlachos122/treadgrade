@@ -1,0 +1,378 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import InlineList from "../../components/InlineList.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber, formatVerified } from "../../lib/format.js";
+import {
+  buildKnownErrors,
+  countsCaption,
+  examplesCaption,
+  knownErrorsDescription,
+  knownErrorsJsonLd,
+  loadRefreshSchedule,
+} from "../../lib/known-errors.js";
+import { recallRows } from "../../lib/recall-catalog.js";
+import { formatNameList } from "../../lib/recalls.js";
+import ratings from "../../../data/ratings.json";
+
+const report = buildKnownErrors({ catalog, ratings, recalls: recallRows });
+const schedule = loadRefreshSchedule();
+const verified = formatVerified(report.verifiedAt);
+const recallVerified = formatVerified(report.recallsRetrievedAt);
+const description = knownErrorsDescription(report);
+const jsonLd = knownErrorsJsonLd(report);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/methodology/", label: "Data sources" },
+  { href: "/methodology/known-errors/", label: "Known errors" },
+];
+const fieldList = report.ratingFields.length ? formatNameList(report.ratingFields) : "the fields stored in the ratings file";
+---
+
+<Base title="Known errors in NHTSA's UTQG data" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>Known errors in NHTSA's UTQG data</h1>
+    <Answer sentences={report.answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants", "recalls"])} />
+    <p>
+      This page counts limits in the NHTSA files this site publishes. The figures are taken from those files when the site is built.
+      A listing is not a claim that a tire is on sale. A sort of the grades orders NHTSA's published UTQG list. It is not a ranking.
+      How the files are paged, deduplicated, and refreshed is on the <a href="/methodology/">data sources</a> page.
+    </p>
+
+    <h2 id="counts">Counts in this pull</h2>
+    <p>Data last verified {verified} (UTC). The recall file was retrieved {recallVerified} (UTC).</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{countsCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">What</th>
+            <th scope="col">Count</th>
+            <th scope="col">Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.counts.map((row) => (
+              <tr>
+                <td>{row.label}</td>
+                <td class="num">{formatNumber(row.value)}</td>
+                <td>{row.unit}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="examples">Examples from this pull</h2>
+    <p>
+      Each example below was found by looking up the name in this pull. A name that is not in the file is not listed, except for a coverage row, which stays and shows a count of zero.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>{examplesCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Kind</th>
+            <th scope="col">Example</th>
+            <th scope="col">What this file shows</th>
+            <th scope="col">Grade rows</th>
+            <th scope="col">How this site handles it</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.examples.map((row) => (
+              <tr>
+                <td>{row.kind}</td>
+                <td>{row.href ? <a href={row.href}>{row.example}</a> : row.example}</td>
+                <td>{row.detail}</td>
+                <td class="num">{formatNumber(row.rows)}</td>
+                <td>{row.handling}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="sources">Sources and refresh</h2>
+    <p>
+      UTQG grades come from <a href={report.ratingsSource}>{report.ratingsSource}</a>.
+      This pull stored {formatNumber(report.sourceRows)} source rows and shows {formatNumber(report.gradeRows)} grade rows after dropping {formatNumber(report.duplicateRows)} exact duplicate grade rows.
+      Plant codes come from <a href={report.plantsSource}>{report.plantsSource}</a>.
+      {
+        report.plantSearch
+          ? ` Search criteria returned with this pull: ${report.plantSearch}.`
+          : ""
+      }
+      {" "}
+      The saved plant file{report.plantYear != null ? ` is the ${report.plantYear} response and` : ""} contains {formatNumber(report.plants)} records.
+      Tire-recall filings come from <a href={report.recallsSource}>{report.recallsSource}</a>.
+      In this pull that file has {formatNumber(report.recallCampaigns)} tire campaigns and {formatNumber(report.recallLines)} recalled lines.
+    </p>
+    <p>
+      {
+        schedule
+          ? `The refresh workflow is scheduled for ${schedule.time} UTC each ${schedule.day}.`
+          : "The refresh workflow is the weekly job in this project."
+      }
+      {" "}
+      It replaces the saved files only when the new counts pass the checks on the <a href="/methodology/">data sources</a> page. A short or broken response does not overwrite the files.
+      The dates on this page are the verified times of the files this build used.
+      An earlier check recorded on the data sources page, dated October 21, 2026, compared the 2016, 2020, 2024, 2025, and 2026 plant requests. That comparison is not repeated at build time.
+    </p>
+
+    <h2 id="brand-strings">Brand strings</h2>
+    <p>
+      The ratings file has {formatNumber(report.rawBrandStrings)} distinct brand strings.
+      Strings that differ only by letter case or spacing are one brand, which is {formatNumber(report.brandsAfterCase)} brands.
+      The brand key also drops characters other than letters, digits, and spaces, so a spelling that differs only by punctuation joins that brand.
+      This site publishes {formatNumber(report.brands)} brands.
+      Spaces stay in the key, so a space still separates two brands. "BF Goodrich" and "BFGoodrich" do not merge.
+      The spelling with the most rows is the one shown. A tire-line name keeps its own punctuation, so a plus sign still separates lines.
+    </p>
+    {
+      report.punctuationMerges.length ? (
+        report.punctuationMerges.map((merge) => {
+          const rows = merge.aliases.reduce((sum, alias) => sum + alias.count, 0);
+          const names = formatNameList(merge.aliases.map((alias) => alias.name));
+          return (
+            <p>
+              In this pull, {names} ({formatNumber(rows)} {rows === 1 ? "row" : "rows"}) {rows === 1 ? "is" : "are"} included under <a href={merge.href}>{merge.name}</a>.
+              The address that stays is the previous address with more tire lines.
+            </p>
+          );
+        })
+      ) : (
+        <p>This pull has no brand whose other spelling differs only by punctuation.</p>
+      )
+    }
+    {
+      report.redirects.length ? (
+        <>
+          <p>
+            Each retired address is still published as a noindex page. Its canonical link and immediate refresh point at the address that stays. Retired addresses are left out of the sitemap.
+          </p>
+          <ul>
+            {
+              report.redirects.map((item) => (
+                <li>
+                  {item.from} points at <a href={item.to}>{item.to}</a>. {item.fromName} is the retired spelling, and {item.toName} is the spelling that stays.
+                </li>
+              ))
+            }
+          </ul>
+        </>
+      ) : (
+        <p>This pull has no retired address from a punctuation-only brand merge.</p>
+      )
+    }
+    <p>A brand string that looks like the wrong company is not corrected by hand. The row stays under the string NHTSA stored.</p>
+
+    <h2 id="repeated-names">Repeated line names</h2>
+    <p>
+      {formatNumber(report.sharedLineNames)} line names, after letter case and spacing are normalized, appear on more than one brand page.
+      A shared name is a match of the string. It is not evidence of rebadging, and it is not evidence that the tires are the same product.
+      The tire-line page links the other brand strings. <a href="/who-makes-it/">Who makes it?</a> does not use these matches.
+    </p>
+    {
+      report.repeatedLines.length ? (
+        report.repeatedLines.map((group) => (
+          <p>
+            The line name {group.example} is stored under{" "}
+            <InlineList items={group.brands.map((brand) => ({ href: brand.href, label: brand.name }))} />
+            {" "}({formatNumber(group.rows)} {group.rows === 1 ? "grade row" : "grade rows"}).
+            {group.adjacency ? ` ${group.adjacency}` : ""}
+            {group.absent.length ? ` It is not stored under ${formatNameList(group.absent)}.` : ""}
+            {" "}
+            Those rows stay under the brand strings NHTSA stored.
+          </p>
+        ))
+      ) : (
+        <p>None of the watched line names is stored under more than one brand in this pull.</p>
+      )
+    }
+    {
+      report.repeatedLines.length ? (
+        <p>
+          These names are examples. They are not the whole set of {formatNumber(report.sharedLineNames)} shared names.
+          A run of neighboring names in the brand index is not a finding that the rows were shifted, and it is not a finding that one of the brands is the maker.
+        </p>
+      ) : null
+    }
+
+    <h2 id="invalid-fields">Values outside the usual grades</h2>
+    <p>
+      Usual traction letters in 49 CFR 575.104 are AA, A, B, and C. Usual temperature letters are A, B, and C.
+      This pull has {formatNumber(report.invalidLetterRows)} {report.invalidLetterRows === 1 ? "grade row" : "grade rows"} with a traction or temperature value outside those letters,
+      {formatNumber(report.wearZeroRows)} with treadwear 0, and {formatNumber(report.wearMissingRows)} with no treadwear number.
+      {
+        report.wearNonNumericRows
+          ? ` ${formatNumber(report.wearNonNumericRows)} more have a treadwear value that is not a whole number.`
+          : ""
+      }
+    </p>
+    {
+      report.anomalies.length ? (
+        <ul>
+          {report.anomalies.map((row) => (
+            <li>
+              <a href={row.href}>{row.example}</a>. {row.summary} {row.handling}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>This pull has no grade row with treadwear 0, a blank treadwear number, or a traction or temperature value outside the usual letters.</p>
+      )
+    }
+    <p>
+      A value such as temperature "500" or temperature "AA" sits in a field that usually holds a different grade. This site does not move it to another field.
+      Treadwear 0 is a whole number, so it does not by itself open the notice a tire-line page shows for a value outside the usual letters. The answer box still leaves 0 out of usable treadwear.
+      The ratings table keeps the row. Choosing a traction or temperature letter in the filter leaves other values out of that filtered view. They are not deleted.
+    </p>
+
+    <h2 id="size-grades">Grades that vary by size</h2>
+    <p>
+      {formatNumber(report.multiWearLines)} {report.multiWearLines === 1 ? "tire line has" : "tire lines have"} more than one treadwear number above 0.
+      A single number for the line would hide that. The tire-line page keeps each size series, and it says when the grades differ.
+    </p>
+    {
+      report.ranges.length ? (
+        <ul>
+          {report.ranges.map((row) => (
+            <li>
+              <a href={row.href}>{row.example}</a>. {row.summary}
+            </li>
+          ))}
+        </ul>
+      ) : null
+    }
+
+    <h2 id="missing-fields">No category, and fields that are empty on every row</h2>
+    <p>
+      The stored rating fields are {fieldList}.
+      {
+        report.hasCategoryField
+          ? " A category field is among them."
+          : " A category field is not among them."
+      }
+      {" "}
+      The active flag is set on {formatNumber(report.activeRows)} of {formatNumber(report.gradeRows)} grade rows.
+      Complaint, recall, investigation, and manufacturer-communication counts are above zero on {formatNumber(report.safetyRows)} grade rows.
+      The active flag is not shown as "for sale" or "discontinued." A zero issue count is not shown as a clean bill of health.
+      Recalls on this site come from the separate recall file below.
+    </p>
+    <p>
+      Some line names contain a category-like fragment. In this pull that is {formatNumber(report.proxy.allSeason)} lines with "A/S", {formatNumber(report.proxy.allTerrain)} with "A/T", {formatNumber(report.proxy.touring)} with "touring", and {formatNumber(report.proxy.highway)} with "H/T".
+      Those are matches on the name. They are not a category field, and a page does not treat them as one.
+    </p>
+
+    <h2 id="coverage">Lines the file does not contain</h2>
+    <p>
+      49 CFR 575.104 applies to new pneumatic tires for passenger cars. It does not apply to deep-tread, winter-type snow tires, space-saver or temporary-use spare tires, tires with nominal rim diameters of 12 inches or less, or limited-production tires.
+      Light-truck tires are outside that section because they are not passenger-car tires.
+      NHTSA's 2017 consumer guide describes the same passenger-car scope
+      (<a href="https://www.nhtsa.gov/sites/nhtsa.gov/files/documents/812459_2017uniformtirequalitygradingconsumerguide_0.pdf">DOT HS 812 459</a>).
+      The file has no category, so this site does not label a missing line as exempt and does not label a present row as a light-truck tire.
+      Absence is not a grade. The same is true of a passenger-car line the file simply does not contain.
+    </p>
+    <ul>
+      {
+        report.coverage.map((row) => (
+          <li>
+            {row.href ? <a href={row.href}>{row.detail}</a> : row.detail} {row.handling}
+          </li>
+        ))
+      }
+    </ul>
+
+    <h2 id="plants">Plant codes are not brands</h2>
+    <p>
+      The plant file has one name and one address per code.
+      {
+        report.hasPlantBrandField
+          ? " A brand field is among the stored plant fields."
+          : " The stored plant fields do not include a brand."
+      }
+      {" "}
+      Which plant makes which brand cannot be derived from this list. 49 CFR 574.6 describes what an applicant submits. The vPIC response used here does not carry a brand.
+      {formatNumber(report.formerTwoSymbol)} of {formatNumber(report.plants)} records include a former two-symbol code.
+      {
+        report.formerOther
+          ? ` ${formatNumber(report.formerOther)} include a former code of some other length.`
+          : ""
+      }
+      {" "}
+      The name is the registrant at registration time, not a current owner. Many former codes are the old two-character code. The status field is Active on {formatNumber(report.plantStatus.Active)} records, Closed on {formatNumber(report.plantStatus.Closed)}, and empty on {formatNumber(report.plantStatus.empty)}.
+      Active is left as published. It is not a current-operations flag.
+    </p>
+    {
+      report.statusExamples.length ? (
+        <p>
+          Records marked Active in this pull include{" "}
+          <InlineList items={report.statusExamples.map((plant) => ({ href: plant.href, label: `${plant.name} (${plant.code})` }))} />.
+          The spelling is the file's spelling.
+        </p>
+      ) : (
+        <p>No Phillips Petroleum Company or Gates Rubber record is marked Active in this pull. Whatever the field says, it is still not shown as a current-operations flag.</p>
+      )
+    }
+    <p>
+      Plant codes on this site come only from that vPIC response. Other published plant-code tables are not consulted.
+      On October 21, 2026, the plant-code table at wfirm.com included codes XXXX and XXXXXX for Wetherington Law Firm.
+      {
+        report.absentPlantCodes.length
+          ? `${formatNameList(report.absentPlantCodes)} ${report.absentPlantCodes.length === 1 ? "is" : "are"} not in this saved file.`
+          : "Those codes are in this saved file and are shown as published."
+      }
+      {
+        report.presentPlantCodes.length && report.absentPlantCodes.length
+          ? ` ${formatNameList(report.presentPlantCodes)} ${report.presentPlantCodes.length === 1 ? "is" : "are"} in this saved file.`
+          : ""
+      }
+      {" "}
+      This site does not use that table.
+    </p>
+
+    <h2 id="recall-filings">Recall filings, and what they do not prove</h2>
+    <p>
+      NHTSA's flat recall file, rows with RCLTYPECD T, gives a brand (MAKETXT), a line (MODELTXT), and the company that filed the Part 573 report (MFGNAME).
+      This pull has {formatNumber(report.recallCampaigns)} tire campaigns and {formatNumber(report.recallLines)} recalled lines.
+      The filer can be the factory, an importer, or the brand owner. The wording covers that recalled line and that campaign. It does not cover the rest of the brand, and it does not cover a UTQG line that shares a name.
+    </p>
+    <p>
+      Tireco, Harbor Freight Tools, TBC, and Discount Tire stay "recall filed by" when they are the filer, including when the report's manufacturer field repeats their name. They are importers or brand owners.
+      {
+        report.importerFilers.length
+          ? ` In this file the matching filer names are ${formatNameList(report.importerFilers.map((filer) => `${filer.name} (${formatNumber(filer.rows)} ${filer.rows === 1 ? "recalled line" : "recalled lines"})`))}.`
+          : " This pull has none of those filer names."
+      }
+      {" "}
+      The preparation rules are on the <a href="/methodology/#recall-filings">data sources</a> page and on <a href="/who-makes-it/">Who makes it?</a>.
+    </p>
+
+    <h2 id="report-an-error">How to report an error</h2>
+    {
+      report.contactEmail ? (
+        <p>
+          Email <a href={`mailto:${report.contactEmail}`}>{report.contactEmail}</a> about a data error.
+          Include the page address and the NHTSA record id if you have one.
+          The <a href="/contact/">contact page</a> publishes this address. This page does not add a form.
+        </p>
+      ) : (
+        <p>
+          A contact email has not been set, so this page does not publish an address. The <a href="/contact/">contact page</a> says when that is the case.
+        </p>
+      )
+    }
+    <p>
+      For a recall or a safety complaint about a tire, use <a href="https://www.nhtsa.gov/recalls">NHTSA</a> rather than this site.
+    </p>
+  </div>
+</Base>

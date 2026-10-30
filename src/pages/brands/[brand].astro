@@ -13,40 +13,67 @@ import { formatNameList } from "../../lib/recalls.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 import { whoMakesByKey } from "../../lib/who-makes-pages.js";
+import RedirectNotice from "../../components/RedirectNotice.astro";
 
 export function getStaticPaths() {
-  return catalog.brands.map((brand) => ({ params: { brand: brand.slug } }));
+  return [
+    ...catalog.brands.map((brand) => ({ params: { brand: brand.slug }, props: { redirect: null } })),
+    ...catalog.redirects
+      .filter((item) => item.kind === "brand")
+      .map((item) => ({ params: { brand: item.brandSlug }, props: { redirect: item } })),
+  ];
 }
 
-const brand = catalog.getBrand(Astro.params.brand);
-const lines = catalog.getBrandLines(brand.slug);
-const filings = recallSummary.byBrand.get(nameKey(brand.name)) || null;
-const whoPage = whoMakesByKey.get(nameKey(brand.name)) || null;
-const answers = brandAnswer(brand, lines, filings);
-const description = clampText(answers.join(" "));
-const jsonLd = [
-  dataset({
-    name: `UTQG grades for ${brand.name}`,
-    description: answers.join(" "),
-    path: brand.url,
-    dateModified: catalog.meta.verifiedAt,
-    isBasedOn: catalog.meta.ratings.source,
-    keywords: ["UTQG", "treadwear", "NHTSA"],
-  }),
-];
-const crumbs = [
-  { href: "/", label: "Home" },
-  { href: "/brands/", label: "Brands" },
-  { href: brand.url, label: brand.name },
-];
+const { redirect = null } = Astro.props;
+const brand = redirect ? null : catalog.getBrand(Astro.params.brand);
+const lines = brand ? catalog.getBrandLines(brand.slug) : [];
+const filings = brand ? recallSummary.byBrand.get(nameKey(brand.name)) || null : null;
+const whoPage = brand ? whoMakesByKey.get(nameKey(brand.name)) || null : null;
+const aliasRows = brand ? brand.aliases.reduce((sum, alias) => sum + alias.count, 0) : 0;
+const aliasNames = brand && brand.aliases.length ? formatNameList(brand.aliases.map((alias) => alias.name)) : "";
+const answers = brand ? brandAnswer(brand, lines, filings) : [];
+const description = brand ? clampText(answers.join(" ")) : "";
+const jsonLd = brand
+  ? [
+      dataset({
+        name: `UTQG grades for ${brand.name}`,
+        description: answers.join(" "),
+        path: brand.url,
+        dateModified: catalog.meta.verifiedAt,
+        isBasedOn: catalog.meta.ratings.source,
+        keywords: ["UTQG", "treadwear", "NHTSA"],
+      }),
+    ]
+  : [];
+const crumbs = brand
+  ? [
+      { href: "/", label: "Home" },
+      { href: "/brands/", label: "Brands" },
+      { href: brand.url, label: brand.name },
+    ]
+  : [];
 ---
 
+{
+  redirect ? (
+    <RedirectNotice redirect={redirect} />
+  ) : (
 <Base title={`${brand.name} UTQG grades`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
     <h1>{brand.name}</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, filings ? ["ratings", "recalls"] : ["ratings"])} />
     <Disclaimer />
+    {
+      brand.aliases.length ? (
+        <div class="notice">
+          <p class="data-note-label">Data-quality note</p>
+          <p>
+            {`NHTSA also spells this brand ${aliasNames} on ${formatNumber(aliasRows)} ${aliasRows === 1 ? "row" : "rows"}. ${aliasRows === 1 ? "That row is" : "Those rows are"} included here. ${brand.name} is the spelling on the most rows.`}
+          </p>
+        </div>
+      ) : null
+    }
     {
       filings ? (
         <div class="notice">
@@ -115,6 +142,8 @@ const crumbs = [
     <p><a href="/ratings/">Search all brands</a></p>
   </div>
 </Base>
+  )
+}
 
 <script>
   const input = document.querySelector("#line-filter");

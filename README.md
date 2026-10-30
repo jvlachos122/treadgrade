@@ -10,16 +10,17 @@ From the data verified on 21 October 2026:
 
 | Page type | Count |
 | --- | ---: |
-| Tire line | 3,058 |
+| Tire line | 3,057 |
 | Plant code | 1,244 |
-| Brand | 215 |
+| Brand | 214 |
+| Retired brand and tire addresses | 2 |
 | Ratings table, brand index, plant directory, DOT decoder, who makes it | 5 |
 | Guides (index, UTQG, DOT code) | 3 |
 | About, privacy, contact, affiliate disclosure, data sources | 5 |
 | Home and 404 | 2 |
 | **HTML pages** | **4,532** |
 
-The ratings API returned 7,628 rows. Six exact duplicate grade rows are collapsed, so the tables show 7,622. Capitalization-only brand spellings are merged (228 raw strings, 215 brands). A line with a plus sign or other distinct slug stays on its own page.
+The ratings API returned 7,628 rows. Six exact duplicate grade rows are collapsed, so the tables show 7,622. Capitalization-only and punctuation-only brand spellings are merged (228 raw strings, 214 brands). Multi-Mile and Multimile are one brand. The old `/brands/multimile/` and `/tires/multimile/aspen-touring-a-s/` addresses stay up as noindex pages that point at the addresses kept. A line with a plus sign or other distinct slug stays on its own page.
 
 ## Architecture
 

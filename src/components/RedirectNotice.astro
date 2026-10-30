@@ -1,0 +1,24 @@
+---
+import Base from "../layouts/Base.astro";
+import Answer from "./Answer.astro";
+import SourceLine from "./SourceLine.astro";
+import { sourceEntries } from "../lib/answers.js";
+import { catalog } from "../lib/catalog.js";
+import { redirectCopy } from "../lib/redirects.js";
+import { clampText } from "../lib/text.js";
+
+const { redirect } = Astro.props;
+const copy = redirectCopy(redirect);
+const description = clampText(copy.sentences.join(" "));
+---
+
+<Base title={copy.title} description={description} canonicalPath={redirect.to} redirectTo={redirect.to}>
+  <div class="wrap prose">
+    <h1>{copy.heading}</h1>
+    <Answer sentences={copy.sentences} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <p>
+      <a href={redirect.to}>{copy.linkLabel}</a>
+    </p>
+  </div>
+</Base>

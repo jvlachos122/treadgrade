@@ -9,51 +9,73 @@ import { lineAnswer, sourceEntries } from "../../../lib/answers.js";
 import { catalog } from "../../../lib/catalog.js";
 import { dataset } from "../../../lib/structured.js";
 import { clampText } from "../../../lib/text.js";
+import RedirectNotice from "../../../components/RedirectNotice.astro";
 
 export function getStaticPaths() {
-  return catalog.lines.map((line) => ({
-    params: { brand: line.brandSlug, line: line.lineSlug },
-  }));
+  return [
+    ...catalog.lines.map((line) => ({
+      params: { brand: line.brandSlug, line: line.lineSlug },
+      props: { redirect: null },
+    })),
+    ...catalog.redirects
+      .filter((item) => item.kind === "line")
+      .map((item) => ({
+        params: { brand: item.brandSlug, line: item.lineSlug },
+        props: { redirect: item },
+      })),
+  ];
 }
 
-const line = catalog.getLine(Astro.params.brand, Astro.params.line);
-const sameGrades =
-  line.rows.length > 1 &&
-  line.rows.every(
-    (row) => row.wear === line.rows[0].wear && row.trac === line.rows[0].trac && row.temp === line.rows[0].temp,
-  );
-const safety = line.rows.reduce(
-  (sum, row) => ({
-    complaints: sum.complaints + row.complaintsCount,
-    recalls: sum.recalls + row.recallsCount,
-    investigations: sum.investigations + row.investigationsCount,
-    communications: sum.communications + row.manufacturerCommunicationsCount,
-  }),
-  { complaints: 0, recalls: 0, investigations: 0, communications: 0 },
-);
+const { redirect = null } = Astro.props;
+const line = redirect ? null : catalog.getLine(Astro.params.brand, Astro.params.line);
+const sameGrades = line
+  ? line.rows.length > 1 &&
+    line.rows.every(
+      (row) => row.wear === line.rows[0].wear && row.trac === line.rows[0].trac && row.temp === line.rows[0].temp,
+    )
+  : false;
+const safety = line
+  ? line.rows.reduce(
+      (sum, row) => ({
+        complaints: sum.complaints + row.complaintsCount,
+        recalls: sum.recalls + row.recallsCount,
+        investigations: sum.investigations + row.investigationsCount,
+        communications: sum.communications + row.manufacturerCommunicationsCount,
+      }),
+      { complaints: 0, recalls: 0, investigations: 0, communications: 0 },
+    )
+  : { complaints: 0, recalls: 0, investigations: 0, communications: 0 };
 const safetyTotal = safety.complaints + safety.recalls + safety.investigations + safety.communications;
-const activeMixed = line.rows.some((row) => row.active) && line.rows.some((row) => !row.active);
-const sameName = line.sameName.slice(0, 12);
-const answers = lineAnswer(line);
-const description = clampText(answers.join(" "));
-const jsonLd = [
-  dataset({
-    name: `UTQG grades for ${line.brand} ${line.line}`,
-    description: answers.join(" "),
-    path: line.url,
-    dateModified: catalog.meta.verifiedAt,
-    isBasedOn: catalog.meta.ratings.source,
-    keywords: ["UTQG", "treadwear", "NHTSA"],
-  }),
-];
-const crumbs = [
-  { href: "/", label: "Home" },
-  { href: "/brands/", label: "Brands" },
-  { href: `/brands/${line.brandSlug}/`, label: line.brand },
-  { href: line.url, label: line.line },
-];
+const activeMixed = line ? line.rows.some((row) => row.active) && line.rows.some((row) => !row.active) : false;
+const sameName = line ? line.sameName.slice(0, 12) : [];
+const answers = line ? lineAnswer(line) : [];
+const description = line ? clampText(answers.join(" ")) : "";
+const jsonLd = line
+  ? [
+      dataset({
+        name: `UTQG grades for ${line.brand} ${line.line}`,
+        description: answers.join(" "),
+        path: line.url,
+        dateModified: catalog.meta.verifiedAt,
+        isBasedOn: catalog.meta.ratings.source,
+        keywords: ["UTQG", "treadwear", "NHTSA"],
+      }),
+    ]
+  : [];
+const crumbs = line
+  ? [
+      { href: "/", label: "Home" },
+      { href: "/brands/", label: "Brands" },
+      { href: `/brands/${line.brandSlug}/`, label: line.brand },
+      { href: line.url, label: line.line },
+    ]
+  : [];
 ---
 
+{
+  redirect ? (
+    <RedirectNotice redirect={redirect} />
+  ) : (
 <Base title={`${line.brand} ${line.line} UTQG grades`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
     <h1>{line.brand} {line.line}</h1>
@@ -163,3 +185,5 @@ const crumbs = [
     </details>
   </div>
 </Base>
+  )
+}

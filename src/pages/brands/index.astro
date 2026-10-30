@@ -42,7 +42,7 @@ const crumbs = [
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <p class="lede">
-      {formatNumber(catalog.stats.brands)} brands after merging spellings that differ only by capitalization. Each link opens the tire lines stored under that brand string in NHTSA's list.
+      {formatNumber(catalog.stats.brands)} brands after merging spellings that differ only by capitalization or punctuation. Each link opens the tire lines stored under that brand string in NHTSA's list.
       A shared line name is not a rebadge. Light-truck, deep-tread winter, and temporary spare tires are outside the UTQG rule and may be missing.
       Recall filings that use one of these brand strings, after the same capitalization-and-spacing normalization, are listed on <a href="/who-makes-it/">Who makes it?</a>
       {
@@ -70,7 +70,7 @@ const crumbs = [
           <h2 id={`letter-${letter}`}>{letter}</h2>
           <ul class="brand-list" data-brand-list>
             {groups.get(letter).map((brand) => (
-              <li data-search={`${brand.name}`.toLowerCase()}>
+                <li data-search={[brand.name, ...brand.aliases.map((alias) => alias.name)].join(" ").toLowerCase()}>
                 <a href={brand.url}>
                   <span>{brand.name}</span>
                   <span class="muted">

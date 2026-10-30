@@ -6,11 +6,11 @@ export function searchRecords(data, query, limit = 12) {
   const scored = [];
 
   for (const brand of data.brands || []) {
-    const name = brand.n.toLowerCase();
+    const names = [brand.n, ...(brand.a || [])].map((item) => String(item).toLowerCase());
     let score = 0;
-    if (name === q) score = 100;
-    else if (name.startsWith(q)) score = 80;
-    else if (name.includes(q)) score = 40;
+    if (names.some((name) => name === q)) score = 100;
+    else if (names.some((name) => name.startsWith(q))) score = 80;
+    else if (names.some((name) => name.includes(q))) score = 40;
     if (!score) continue;
     scored.push({
       score,

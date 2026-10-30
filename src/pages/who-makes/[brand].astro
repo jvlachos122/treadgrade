@@ -240,7 +240,7 @@ const wordPlantNote = page.wordPlantCount
                 {
                   page.recalledInUtqg.map((line) => (
                     <li>
-                      Recalled line {line.line} matches a UTQG line name: <a href={line.url}>{line.line}</a>. The shared name is not evidence of the same tire.
+                      Recalled line {line.line} matches a UTQG line name: <a href={line.url}>{line.line}</a>. The shared name is not evidence of the same tire. <a href="/methodology/known-errors/#repeated-names">Known errors</a>.
                     </li>
                   ))
                 }
@@ -259,6 +259,7 @@ const wordPlantNote = page.wordPlantCount
       {page.utqg ? <> · <a href={page.utqg.url}>{page.name} UTQG grades</a></> : null}
       {" "}· <a href="/plants/">Plant codes</a>
       {" "}· <a href="/methodology/#recall-filings">Recall filing method</a>
+      {" "}· <a href="/methodology/known-errors/#recall-filings">Known errors</a>
     </p>
   </div>
 </Base>

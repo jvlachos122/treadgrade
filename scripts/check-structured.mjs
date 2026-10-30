@@ -80,7 +80,11 @@ function requirements(pathname) {
     return req;
   }
   req.types.push("BreadcrumbList");
-  if (pathname === "/decoder/") {
+  if (pathname === "/methodology/known-errors/") {
+    req.types.push("Dataset", "Article");
+    req.answer = true;
+    req.source = true;
+  } else if (pathname === "/decoder/") {
     req.types.push("WebApplication");
     req.answer = true;
     req.source = true;
@@ -122,6 +126,13 @@ function creatorCreditsNhtsa(creator) {
   );
 }
 
+function assertOrganization(node, ctx, label) {
+  const list = Array.isArray(node) ? node : [node];
+  for (const org of list) {
+    if (!org || org["@type"] !== "Organization") fail(ctx.file, `${label} @type ${org?.["@type"]}`);
+  }
+}
+
 function fail(file, message) {
   errors.push(`${file.slice(dist.length)}: ${message}`);
 }
@@ -140,12 +151,16 @@ function validateNode(node, ctx) {
     if (!allowedDates.has(node.dateModified)) fail(ctx.file, `Dataset dateModified ${node.dateModified}`);
     if (node.license !== license) fail(ctx.file, `Dataset license ${node.license}`);
     if (!creatorCreditsNhtsa(node.creator)) fail(ctx.file, "Dataset creator is not NHTSA");
+    assertOrganization(node.creator, ctx, "Dataset creator");
+    assertOrganization(node.publisher, ctx, "Dataset publisher");
     if (!basedOnUrls(node.isBasedOn)) fail(ctx.file, "Dataset isBasedOn is not an https URL");
   }
   if (types.includes("Article")) {
     if (!node.headline || !node.dateModified) fail(ctx.file, "Article missing headline or dateModified");
     if (!allowedDates.has(node.dateModified)) fail(ctx.file, `Article dateModified ${node.dateModified}`);
     if (node.mainEntityOfPage !== ctx.expectedUrl) fail(ctx.file, `Article mainEntityOfPage ${node.mainEntityOfPage}`);
+    assertOrganization(node.author, ctx, "Article author");
+    assertOrganization(node.publisher, ctx, "Article publisher");
   }
   if (types.includes("WebApplication")) {
     if (!node.name || !node.url) fail(ctx.file, "WebApplication missing name or url");

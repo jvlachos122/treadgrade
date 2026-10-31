@@ -2,7 +2,6 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HtmlValidate } from "html-validate";
-import { indexablePlantPaths, thinPlantPaths } from "../src/lib/plant-hubs.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -99,12 +98,8 @@ for (const file of files) {
   if (h1.length !== 1) errors.push(`${rel}: ${h1.length} h1`);
   if (!html.includes('id="main"')) errors.push(`${rel}: main`);
   const path = publicPath(rel);
-  const thinPlant = thinPlantPaths.has(path);
-  if (thinPlant && !html.includes('content="noindex"')) errors.push(`${rel}: thin plant should be noindex`);
-  if (!thinPlant && indexablePlantPaths.has(path) && html.includes('content="noindex"')) {
-    errors.push(`${rel}: indexable plant is noindex`);
-  }
-  if (!refresh && rel !== "/404.html" && !thinPlant && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
+  if (path.startsWith("/plants/") && html.includes('content="noindex"')) errors.push(`${rel}: plant page is noindex`);
+  if (!refresh && rel !== "/404.html" && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
   if (rel === "/404.html" && !html.includes('content="noindex"')) errors.push("404 should be noindex");
   if (rel === "/404.html" && refresh) errors.push("404 should not refresh");
 }

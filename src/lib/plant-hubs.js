@@ -20,10 +20,6 @@ export function recallsForRegistrant(name, rows) {
   return rows.filter((row) => registrantKey(row.filer) === key);
 }
 
-export function isThinPlantRecord({ siblingCount, recallCount }) {
-  return siblingCount === 0 && recallCount === 0;
-}
-
 function plantBrief(plant) {
   return {
     code: plant.code,
@@ -179,21 +175,12 @@ for (const plant of catalog.plants) {
     siblings,
     recalls,
     filerNames: uniqueFilerNames(recalls),
-    thin: isThinPlantRecord({ siblingCount: siblings.length, recallCount: recalls.length }),
     group: groupByCode.get(plant.code) || null,
     countryUrl: plant.countryKey ? `/plants/country/${plant.countryKey}/` : "",
   });
 }
 
 export const plantByCode = extras;
-
-export const thinPlantPaths = new Set(
-  catalog.plants.filter((plant) => extras.get(plant.code).thin).map((plant) => plant.url),
-);
-
-export const indexablePlantPaths = new Set(
-  catalog.plants.filter((plant) => !extras.get(plant.code).thin).map((plant) => plant.url),
-);
 
 export const hubPaths = new Set([
   "/plants/manufacturer/",

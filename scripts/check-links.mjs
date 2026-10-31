@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hubPaths, indexablePlantPaths, thinPlantPaths } from "../src/lib/plant-hubs.js";
+import { catalog } from "../src/lib/catalog.js";
+import { hubPaths } from "../src/lib/plant-hubs.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -134,15 +135,15 @@ for (const name of sitemapFiles) {
     if (url.origin !== site) errors.push(`sitemap off-site ${match[1]}`);
     if (url.pathname === "/404.html" || url.pathname === "/404/") errors.push(`sitemap includes 404 ${match[1]}`);
     if (redirectPages.has(url.pathname)) errors.push(`sitemap includes retired ${match[1]}`);
-    if (thinPlantPaths.has(url.pathname)) errors.push(`sitemap includes thin plant ${match[1]}`);
     const target = fileForPath(url.pathname);
     if (!existsSync(target)) errors.push(`sitemap missing ${url.pathname}`);
     if (!url.pathname.endsWith(".xml")) pageLocs.add(url.pathname);
   }
 }
-for (const path of indexablePlantPaths) {
-  if (!pageLocs.has(path)) errors.push(`sitemap missing indexable plant ${path}`);
+for (const plant of catalog.plants) {
+  if (!pageLocs.has(plant.url)) errors.push(`sitemap missing plant ${plant.url}`);
 }
+if (!pageLocs.has("/plants/")) errors.push("sitemap missing /plants/");
 for (const path of hubPaths) {
   if (!pageLocs.has(path)) errors.push(`sitemap missing hub ${path}`);
 }

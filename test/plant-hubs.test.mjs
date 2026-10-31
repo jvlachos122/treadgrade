@@ -15,16 +15,12 @@ import {
   countryHubs,
   countryNormalization,
   hubDataset,
-  hubPaths,
-  indexablePlantPaths,
-  isThinPlantRecord,
   manufacturerGroupForBrand,
   manufacturerGroups,
   plantByCode,
   plantJsonLd,
   recallsForRegistrant,
   registrantKey,
-  thinPlantPaths,
 } from "../src/lib/plant-hubs.js";
 import { breadcrumbList, schemaGraph } from "../src/lib/structured.js";
 
@@ -128,10 +124,7 @@ test("manufacturer groups match the named counts and do not overlap", () => {
   assert.equal(manufacturerGroupForBrand("bf-goodrich"), null);
 });
 
-test("a thin plant has neither a same-registrant sibling nor an exact recall filer", () => {
-  assert.equal(isThinPlantRecord({ siblingCount: 0, recallCount: 0 }), true);
-  assert.equal(isThinPlantRecord({ siblingCount: 1, recallCount: 0 }), false);
-  assert.equal(isThinPlantRecord({ siblingCount: 0, recallCount: 2 }), false);
+test("same-registrant siblings and recall rows use an exact company match", () => {
   const rows = [{ filer: "Michelin North America, Inc.", campaign: "00T0000" }];
   assert.equal(recallsForRegistrant("Michelin", rows).length, 0);
   assert.equal(recallsForRegistrant("MICHELIN NORTH AMERICA, INC.", rows).length, 1);
@@ -141,10 +134,9 @@ test("a thin plant has neither a same-registrant sibling nor an exact recall fil
   const undotted = plantByCode.get("1BE");
   assert.ok(dotted.siblings.some((plant) => plant.code === "1BE"));
   assert.ok(undotted.siblings.some((plant) => plant.code === "1AP"));
-  assert.equal(dotted.thin, false);
 
   const cooper = plantByCode.get("1UP");
-  assert.equal(cooper.thin, false);
+  assert.ok(cooper.siblings.length > 0);
   assert.ok(cooper.recalls.length > 0);
   assert.ok(cooper.recalls.every((row) => registrantKey(row.filer) === registrantKey(catalog.getPlant("1up").name)));
 
@@ -156,24 +148,8 @@ test("a thin plant has neither a same-registrant sibling nor an exact recall fil
   const shirakawa = plantByCode.get("1U2");
   assert.equal(shirakawa.siblings.length, 0);
   assert.equal(shirakawa.recalls.length, 0);
-  assert.equal(shirakawa.thin, true);
-  assert.ok(thinPlantPaths.has("/plants/1u2/"));
-  assert.equal(indexablePlantPaths.has("/plants/1u2/"), false);
-  assert.equal(indexablePlantPaths.has("/plants/1up/"), true);
-
-  let thin = 0;
-  for (const plant of catalog.plants) {
-    const extra = plantByCode.get(plant.code);
-    const expected = extra.siblings.length === 0 && extra.recalls.length === 0;
-    assert.equal(extra.thin, expected, plant.code);
-    assert.equal(thinPlantPaths.has(plant.url), expected);
-    assert.equal(indexablePlantPaths.has(plant.url), !expected);
-    if (expected) thin += 1;
-  }
-  assert.equal(thin, thinPlantPaths.size);
-  assert.equal(thin + indexablePlantPaths.size, catalog.plants.length);
-  assert.equal(thin, 1041);
-  for (const path of hubPaths) assert.equal(thinPlantPaths.has(path), false);
+  assert.equal(shirakawa.countryUrl, "/plants/country/japan/");
+  assert.equal(shirakawa.group, null);
 });
 
 test("hub and plant answers stay inside the answer-box rules", () => {
@@ -265,6 +241,7 @@ test("each plant template source has one h1 and one answer box", () => {
     assert.equal((source.match(/<Answer\b/g) || []).length, 1, file);
     assert.match(source, /<Base\b/, file);
     assert.match(source, /breadcrumbs=/, file);
+    assert.doesNotMatch(source, /\bnoindex\b/, file);
     assert.doesNotMatch(source, /AggregateRating|GovernmentOrganization/, file);
   }
 });

@@ -2,7 +2,6 @@ import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
 import meta from "./data/meta.json";
 import { catalog } from "./src/lib/catalog.js";
-import { thinPlantPaths } from "./src/lib/plant-hubs.js";
 
 const verifiedDay = String(meta.verifiedAt || "").slice(0, 10);
 const retired = new Set(catalog.redirects.map((item) => item.from));
@@ -23,7 +22,7 @@ export default defineConfig({
         } catch {
           pathname = page;
         }
-        if (retired.has(pathname) || thinPlantPaths.has(pathname)) return false;
+        if (retired.has(pathname)) return false;
         return true;
       },
       serialize(item) {

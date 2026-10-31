@@ -47,6 +47,7 @@ const searchPayload = {
     n: plant.name,
     city: plant.city,
     country: plant.country,
+    ...(plant.countryRaw && plant.countryRaw !== plant.country ? { raw: plant.countryRaw } : {}),
     u: plant.url,
   })),
 };

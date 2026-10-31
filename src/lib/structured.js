@@ -20,6 +20,22 @@ export function pageUrl(path) {
   return new URL(path, site.url).href;
 }
 
+export function breadcrumbList(crumbs) {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.label,
+      item: pageUrl(item.href),
+    })),
+  };
+}
+
+export function schemaGraph(nodes) {
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": nodes }).replace(/</g, "\\u003c");
+}
+
 export function laterIso(...values) {
   return values.filter(Boolean).sort().at(-1) || "";
 }

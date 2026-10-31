@@ -10,6 +10,7 @@ import { recallMeta } from "../../lib/recall-catalog.js";
 import { formatNameList, nhtsaCampaignUrl, recallStatement } from "../../lib/recalls.js";
 import { dataset, laterIso } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
+import { groupByCode } from "../../lib/plant-hubs.js";
 import { whoMakesBySlug, whoMakesPages } from "../../lib/who-makes-pages.js";
 
 export function getStaticPaths() {
@@ -43,6 +44,14 @@ const jsonLd = [
   }),
 ];
 const rows = page.rows.map((row) => ({ ...row, statement: recallStatement(row) }));
+const plantRows = page.plants.map((plant) => {
+  const record = catalog.getPlant(plant.slug);
+  return {
+    ...plant,
+    countryUrl: record?.countryKey ? `/plants/country/${record.countryKey}/` : "",
+    group: groupByCode.get(plant.code) || null,
+  };
+});
 const companyList = formatNameList(page.companies);
 const noPlantLead = `No plant record is registered under ${companyList}`;
 const noPlantSentence = /[.!?]$/.test(noPlantLead) ? noPlantLead : `${noPlantLead}.`;
@@ -136,14 +145,31 @@ const wordPlantNote = page.wordPlantCount
               </thead>
               <tbody>
                 {
-                  page.plants.map((plant) => (
+                  plantRows.map((plant) => (
                     <tr>
                       <td>
                         <a class="num" href={plant.url}>{plant.code}</a>
                       </td>
-                      <td>{plant.name}</td>
+                      <td>
+                        {plant.name}
+                        {
+                          plant.group ? (
+                            <div class="small">
+                              Name group: <a href={plant.group.url}>{plant.group.linkLabel}</a>
+                            </div>
+                          ) : null
+                        }
+                      </td>
                       <td>{plant.city || "Not in the record"}</td>
-                      <td>{plant.country || "Not in the record"}</td>
+                      <td>
+                        {
+                          plant.countryUrl ? (
+                            <a href={plant.countryUrl}>{plant.country}</a>
+                          ) : (
+                            plant.country || "Not in the record"
+                          )
+                        }
+                      </td>
                       <td>{plant.status || "Not in the record"}</td>
                       <td>
                         {plant.matchedCompany}

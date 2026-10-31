@@ -14,6 +14,7 @@ import Footer from "../components/Footer.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 import { refreshContent } from "../lib/redirects.js";
 import { site, analyticsSnippet, searchConsoleToken } from "../lib/site.js";
+import { breadcrumbList, schemaGraph } from "../lib/structured.js";
 
 const {
   title,
@@ -34,21 +35,9 @@ const robotsNoindex = noindex || Boolean(redirectTo);
 const token = searchConsoleToken();
 const snippet = analyticsSnippet();
 const graph = [];
-if (breadcrumbs.length) {
-  graph.push({
-    "@type": "BreadcrumbList",
-    itemListElement: breadcrumbs.map((item, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: item.label,
-      item: new URL(item.href, site.url).href,
-    })),
-  });
-}
+if (breadcrumbs.length) graph.push(breadcrumbList(breadcrumbs));
 for (const entry of jsonLd) graph.push(entry);
-const structured = graph.length
-  ? JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c")
-  : "";
+const structured = graph.length ? schemaGraph(graph) : "";
 ---
 
 <!DOCTYPE html>

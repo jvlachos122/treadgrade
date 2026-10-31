@@ -1,4 +1,5 @@
 import { formatNumber, formatUtcDate, formatVerified } from "./format.js";
+import { countryInPhrase } from "./plant-countries.js";
 import { formatNameList, isImporterOrBrandOwnerExample } from "./recalls.js";
 
 const TRACTION = ["AA", "A", "B", "C"];
@@ -249,6 +250,47 @@ export function plantAnswer(plant) {
     sentences.push(`The same record lists former code ${plant.oldCode}${also}.`);
   }
   return sentences;
+}
+
+export function manufacturerHubAnswer(group) {
+  return [
+    `NHTSA's equipment plant list has ${formatNumber(group.count)} records whose registrant name matches ${group.nameNote}.`,
+    `The match is the name on the plant record. It is not ${group.name}'s own factory list, and a record does not say the plant makes ${group.name} tires.`,
+    "The status field is the value vPIC stored and may be out of date.",
+  ];
+}
+
+export function manufacturerIndexAnswer(groups) {
+  const total = groups.reduce((sum, group) => sum + group.count, 0);
+  return [
+    `NHTSA's equipment plant list has ${formatNumber(total)} records grouped here under ${formatNumber(groups.length)} manufacturer names: ${formatNameList(groups.map((group) => group.name))}.`,
+    "A record is included when its registrant name contains that name. Firestone is grouped with Bridgestone, and General Tire with Continental, except a Cambodia registrant whose name is General Tires Technology.",
+    "The grouping is a name match in the plant list. It is not a company's own factory list, and it does not say which brands a plant makes.",
+  ];
+}
+
+export function countryHubAnswer(country) {
+  const noun = country.count === 1 ? "record" : "records";
+  const sentences = [
+    `NHTSA's equipment plant list has ${formatNumber(country.count)} ${noun} grouped here as ${countryInPhrase(country.label)}.`,
+  ];
+  if (country.rawLabels.length > 1) {
+    sentences.push(`Those records were stored under ${formatNameList(country.rawLabels)}.`);
+  } else if (country.rawLabels.length === 1 && country.rawLabels[0] !== country.label) {
+    sentences.push(`NHTSA stores the country as ${country.rawLabels[0]}. This page uses ${country.label} for that string.`);
+  } else {
+    sentences.push("Each record names the registrant at the time of registration.");
+  }
+  sentences.push("The status field is the value vPIC stored and may be out of date.");
+  return sentences;
+}
+
+export function countryIndexAnswer({ rawCount, normalizedCount, plantCount }) {
+  return [
+    `NHTSA's equipment plant list stores ${formatNumber(rawCount)} country strings on ${formatNumber(plantCount)} records.`,
+    `Those strings are grouped here as ${formatNumber(normalizedCount)} countries.`,
+    "Grouping fixes letter case, a spelling difference such as Austrailia, and aliases such as United States (USA). It is not a finding that a plant is operating.",
+  ];
 }
 
 export function plantsIndexAnswer(catalog) {

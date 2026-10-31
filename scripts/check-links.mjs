@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { hubPaths, indexablePlantPaths, thinPlantPaths } from "../src/lib/plant-hubs.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -125,6 +126,7 @@ if (cname !== "treadgrade.com") errors.push(`CNAME is ${cname}`);
 
 const sitemapFiles = readdirSync(dist).filter((name) => name.startsWith("sitemap") && name.endsWith(".xml"));
 if (!sitemapFiles.length) errors.push("missing sitemap");
+const pageLocs = new Set();
 for (const name of sitemapFiles) {
   const xml = readFileSync(join(dist, name), "utf8");
   for (const match of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
@@ -132,9 +134,17 @@ for (const name of sitemapFiles) {
     if (url.origin !== site) errors.push(`sitemap off-site ${match[1]}`);
     if (url.pathname === "/404.html" || url.pathname === "/404/") errors.push(`sitemap includes 404 ${match[1]}`);
     if (redirectPages.has(url.pathname)) errors.push(`sitemap includes retired ${match[1]}`);
+    if (thinPlantPaths.has(url.pathname)) errors.push(`sitemap includes thin plant ${match[1]}`);
     const target = fileForPath(url.pathname);
     if (!existsSync(target)) errors.push(`sitemap missing ${url.pathname}`);
+    if (!url.pathname.endsWith(".xml")) pageLocs.add(url.pathname);
   }
+}
+for (const path of indexablePlantPaths) {
+  if (!pageLocs.has(path)) errors.push(`sitemap missing indexable plant ${path}`);
+}
+for (const path of hubPaths) {
+  if (!pageLocs.has(path)) errors.push(`sitemap missing hub ${path}`);
 }
 
 const robots = readFileSync(join(dist, "robots.txt"), "utf8");

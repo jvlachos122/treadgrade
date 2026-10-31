@@ -4,6 +4,7 @@ import Answer from "../components/Answer.astro";
 import SourceLine from "../components/SourceLine.astro";
 import { methodologyAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
+import { countryNormalization, manufacturerGroups } from "../lib/plant-hubs.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
 import { recallMeta, recallSummary } from "../lib/recall-catalog.js";
 import { formatNameList } from "../lib/recalls.js";
@@ -145,6 +146,11 @@ const jsonLd = [
     <h3>No third-party plant lists</h3>
     <p>
       Plant codes come only from the NHTSA vPIC response above. Other published plant-code tables are not consulted and are not merged in.
+      <a href="/plants/manufacturer/">Manufacturer name groups</a> and <a href="/plants/country/">country groups</a> are built from those same records.
+      A manufacturer group keeps a record when the registrant name contains the group name. Firestone is grouped with Bridgestone ({formatNumber(manufacturerGroups.find((group) => group.id === "bridgestone").count)} records), and General Tire with Continental ({formatNumber(manufacturerGroups.find((group) => group.id === "continental").count)} records), except a Cambodia registrant named General Tires Technology.
+      Michelin has {formatNumber(manufacturerGroups.find((group) => group.id === "michelin").count)} records, Goodyear {formatNumber(manufacturerGroups.find((group) => group.id === "goodyear").count)}, and Pirelli {formatNumber(manufacturerGroups.find((group) => group.id === "pirelli").count)}.
+      {formatNumber(countryNormalization.rawCount)} stored country strings are grouped as {formatNumber(countryNormalization.normalizedCount)} countries, including case, the spelling Austrailia, and aliases such as United States (USA).
+      The groups are not a company's own factory list.
       On October 21, 2026, the plant-code table at wfirm.com included a row with codes XXXX and XXXXXX for Wetherington Law Firm and www.wfirm.com. That row is not in the NHTSA file. This site does not use that table.
     </p>
     <h2 id="recall-filings">Tire recall filings</h2>

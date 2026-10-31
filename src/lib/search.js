@@ -41,7 +41,7 @@ export function searchRecords(data, query, limit = 12) {
   for (const plant of data.plants || []) {
     const code = plant.c.toLowerCase();
     const oldCode = String(plant.o || "").toLowerCase();
-    const blob = `${plant.n} ${plant.city} ${plant.country}`.toLowerCase();
+    const blob = `${plant.n} ${plant.city} ${plant.country} ${plant.raw || ""}`.toLowerCase();
     let score = 0;
     if (code === q || (oldCode && oldCode === q)) score = 110;
     else if (code.startsWith(q) || (oldCode && oldCode.startsWith(q))) score = 85;

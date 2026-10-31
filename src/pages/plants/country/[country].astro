@@ -1,0 +1,87 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Answer from "../../../components/Answer.astro";
+import PlantNote from "../../../components/PlantNote.astro";
+import SourceLine from "../../../components/SourceLine.astro";
+import { countryHubAnswer, sourceEntries } from "../../../lib/answers.js";
+import { catalog } from "../../../lib/catalog.js";
+import { formatNumber } from "../../../lib/format.js";
+import { countryInPhrase } from "../../../lib/plant-countries.js";
+import { countryHubs, groupByCode, hubDataset } from "../../../lib/plant-hubs.js";
+import { clampText } from "../../../lib/text.js";
+
+export function getStaticPaths() {
+  return countryHubs.map((country) => ({ params: { country: country.key } }));
+}
+
+const country = countryHubs.find((item) => item.key === Astro.params.country);
+if (!country) throw new Error(`Missing country hub ${Astro.params.country}`);
+const answers = countryHubAnswer(country);
+const description = clampText(answers.join(" "));
+const place = countryInPhrase(country.label);
+const jsonLd = [
+  hubDataset({
+    name: `NHTSA plant records in ${place}`,
+    description: answers.join(" "),
+    path: country.url,
+    keywords: ["DOT", "plant code", "NHTSA", country.label],
+  }),
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/plants/", label: "Plant codes" },
+  { href: "/plants/country/", label: "Countries" },
+  { href: country.url, label: country.label },
+];
+---
+
+<Base title={`Tire plant codes in ${place}`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <h1>Tire plant codes in {place}</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
+    <PlantNote />
+    {country.note ? <p>{country.note}</p> : null}
+    <div class="table-wrap">
+      <table>
+        <caption>
+          {formatNumber(country.count)} NHTSA plant {country.count === 1 ? "record" : "records"} grouped as {place}.
+          NHTSA status field; may be out of date.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Code</th>
+            <th scope="col">Former code</th>
+            <th scope="col">Registrant</th>
+            <th scope="col">City</th>
+            <th scope="col">Name group</th>
+            <th scope="col">Status field</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            country.plants.map((plant) => {
+              const group = groupByCode.get(plant.code);
+              return (
+                <tr>
+                  <td class="num code"><a href={plant.url}>{plant.code}</a></td>
+                  <td class="num code">{plant.oldCode || "—"}</td>
+                  <td>{plant.name}</td>
+                  <td>{plant.city || "—"}</td>
+                  <td>{group ? <a href={group.url}>{group.linkLabel}</a> : "—"}</td>
+                  <td>{plant.status || "Not stated"}</td>
+                </tr>
+              );
+            })
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <a href="/plants/country/">All countries</a>
+      · <a href="/plants/manufacturer/">Manufacturer name groups</a>
+      · <a href="/plants/">All plant codes</a>
+      · <a href="/decoder/">DOT decoder</a>
+    </p>
+  </div>
+</Base>

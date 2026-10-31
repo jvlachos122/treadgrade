@@ -4,6 +4,7 @@ import Answer from "../components/Answer.astro";
 import SourceLine from "../components/SourceLine.astro";
 import { decoderAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
+import { countryByKey } from "../lib/plant-hubs.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
 import { pageUrl, publisherOrg } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
@@ -36,6 +37,7 @@ const verified = formatVerified(catalog.meta.verifiedAt);
 const shirakawaPlace = shirakawa
   ? [shirakawa.city, shirakawa.state, shirakawa.country].filter(Boolean).join(", ")
   : "";
+const shirakawaCountry = shirakawa?.countryKey ? countryByKey.get(shirakawa.countryKey) : null;
 ---
 
 <Base title="How to read a tire date code" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
@@ -172,7 +174,13 @@ const shirakawaPlace = shirakawa
             The vPIC status field on this record is {shirakawa.status || "empty"}. That value is not a finding that the plant is currently operating.
           </p>
           <p>
-            <a href={shirakawa.url}>Open the {shirakawa.code} plant page</a> · <a href="/guides/tire-date-code/">How to read a tire date code</a> · <a href="/guides/dot-code/">How to read a DOT code</a> · <a href="/plants/">All plant codes</a>
+            <a href={shirakawa.url}>Open the {shirakawa.code} plant page</a>
+            {shirakawaCountry ? <> · <a href={shirakawaCountry.url}>{shirakawaCountry.label} plant codes</a></> : null}
+            · <a href="/guides/tire-date-code/">How to read a tire date code</a>
+            · <a href="/guides/dot-code/">How to read a DOT code</a>
+            · <a href="/plants/">All plant codes</a>
+            · <a href="/plants/manufacturer/">Manufacturer name groups</a>
+            · <a href="/plants/country/">Plant codes by country</a>
           </p>
         </>
       ) : null

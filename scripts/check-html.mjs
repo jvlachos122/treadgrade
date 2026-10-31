@@ -18,6 +18,14 @@ function walk(dir) {
   return files;
 }
 
+function publicPath(rel) {
+  const path = rel.replaceAll("\\", "/");
+  if (path === "/404.html") return "/404.html";
+  if (path === "/index.html") return "/";
+  if (path.endsWith("/index.html")) return path.slice(0, -"index.html".length);
+  return path;
+}
+
 function expectedCanonical(file) {
   const rel = file.slice(dist.length).replaceAll("\\", "/");
   if (rel === "/404.html") return `${site}/404.html`;
@@ -89,6 +97,8 @@ for (const file of files) {
   const h1 = html.match(/<h1\b/g) || [];
   if (h1.length !== 1) errors.push(`${rel}: ${h1.length} h1`);
   if (!html.includes('id="main"')) errors.push(`${rel}: main`);
+  const path = publicPath(rel);
+  if (path.startsWith("/plants/") && html.includes('content="noindex"')) errors.push(`${rel}: plant page is noindex`);
   if (!refresh && rel !== "/404.html" && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
   if (rel === "/404.html" && !html.includes('content="noindex"')) errors.push("404 should be noindex");
   if (rel === "/404.html" && refresh) errors.push("404 should not refresh");

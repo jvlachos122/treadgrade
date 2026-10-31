@@ -1,0 +1,102 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Answer from "../../../components/Answer.astro";
+import PlantNote from "../../../components/PlantNote.astro";
+import SourceLine from "../../../components/SourceLine.astro";
+import { manufacturerHubAnswer, sourceEntries } from "../../../lib/answers.js";
+import { catalog } from "../../../lib/catalog.js";
+import { formatNumber } from "../../../lib/format.js";
+import { hubDataset, manufacturerGroups } from "../../../lib/plant-hubs.js";
+import { clampText } from "../../../lib/text.js";
+
+export function getStaticPaths() {
+  return manufacturerGroups.map((group) => ({ params: { group: group.id } }));
+}
+
+const group = manufacturerGroups.find((item) => item.id === Astro.params.group);
+if (!group) throw new Error(`Missing manufacturer group ${Astro.params.group}`);
+const answers = manufacturerHubAnswer(group);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  hubDataset({
+    name: `${group.linkLabel} plant codes in the NHTSA list`,
+    description: answers.join(" "),
+    path: group.url,
+    keywords: ["DOT", "plant code", "NHTSA", group.name],
+  }),
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/plants/", label: "Plant codes" },
+  { href: "/plants/manufacturer/", label: "Manufacturers" },
+  { href: group.url, label: group.name },
+];
+---
+
+<Base title={`${group.linkLabel} plant codes`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <h1>{group.linkLabel} plant codes</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
+    <PlantNote />
+    <p>
+      A record is in this group when {group.rule}. The comparison is the registrant name in NHTSA's plant list.
+      It is not {group.name}'s own factory list, and it does not say the plant makes {group.name} tires.
+    </p>
+    {
+      group.omitted.length ? (
+        <div class="notice">
+          <p class="data-note-label">Left out of this name match</p>
+          <ul>
+            {
+              group.omitted.map((plant) => (
+                <li>
+                  <a href={plant.url}>{plant.code}</a> {plant.name}. The name contains the words General Tires, which is not the General Tire registrant.
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      ) : null
+    }
+    <div class="table-wrap">
+      <table>
+        <caption>
+          {formatNumber(group.count)} NHTSA plant records whose registrant name matches {group.nameNote}.
+          NHTSA status field; may be out of date.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Code</th>
+            <th scope="col">Former code</th>
+            <th scope="col">Registrant</th>
+            <th scope="col">City</th>
+            <th scope="col">Country</th>
+            <th scope="col">Status field</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            group.plants.map((plant) => (
+              <tr>
+                <td class="num code"><a href={plant.url}>{plant.code}</a></td>
+                <td class="num code">{plant.oldCode || "—"}</td>
+                <td>{plant.name}</td>
+                <td>{plant.city || "—"}</td>
+                <td>
+                  {plant.country ? <a href={`/plants/country/${plant.countryKey}/`}>{plant.country}</a> : "—"}
+                </td>
+                <td>{plant.status || "Not stated"}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <a href="/plants/manufacturer/">All manufacturer name groups</a>
+      · <a href="/plants/">All plant codes</a>
+      · <a href="/decoder/">DOT decoder</a>
+    </p>
+  </div>
+</Base>

@@ -1,6 +1,12 @@
-import ratings from "../../data/ratings.json";
-import plants from "../../data/plants.json";
-import meta from "../../data/meta.json";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildCatalog } from "./normalize.js";
 
-export const catalog = buildCatalog(ratings, plants, meta);
+const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
+
+function readJson(name) {
+  return JSON.parse(readFileSync(join(root, "data", name), "utf8"));
+}
+
+export const catalog = buildCatalog(readJson("ratings.json"), readJson("plants.json"), readJson("meta.json"));

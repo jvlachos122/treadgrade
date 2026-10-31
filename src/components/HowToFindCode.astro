@@ -1,0 +1,27 @@
+---
+const { code, oldCode = "" } = Astro.props;
+---
+
+<h2>How to find this code on your tire</h2>
+<p>
+  The plant code is the first group of the tire identification number molded into the sidewall.
+  The letters DOT in front of it are a certification mark, not the plant code.
+  The symbol rules are in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>.
+</p>
+<p>
+  On a current new tire the number has 13 symbols: plant code <span class="code">{code}</span>, then six symbols the manufacturer assigns, then four digits for the week and the year.
+  A retreaded tire's number in 49 CFR 574.5(a)(2) is 7 symbols: the plant code and the four-digit date.
+  {
+    oldCode ? (
+      <>
+        {" "}This record also lists former code <span class="code">{oldCode}</span>. Tires made under the older two-symbol layout can still show that code.
+      </>
+    ) : (
+      " This record does not list a former two-symbol code."
+    )
+  }
+</p>
+<p>
+  49 CFR 574.5 requires the full number on one sidewall. On many radial tires the other sidewall leaves the date off, so the plant code can sit on either side.
+  If you do not see <span class="code">{code}</span> on the side you can read, check the other sidewall.
+</p>

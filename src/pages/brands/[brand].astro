@@ -12,6 +12,7 @@ import { recallSummary } from "../../lib/recall-catalog.js";
 import { formatNameList } from "../../lib/recalls.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
+import { manufacturerGroupForBrand } from "../../lib/plant-hubs.js";
 import { whoMakesByKey } from "../../lib/who-makes-pages.js";
 import RedirectNotice from "../../components/RedirectNotice.astro";
 
@@ -29,6 +30,7 @@ const brand = redirect ? null : catalog.getBrand(Astro.params.brand);
 const lines = brand ? catalog.getBrandLines(brand.slug) : [];
 const filings = brand ? recallSummary.byBrand.get(nameKey(brand.name)) || null : null;
 const whoPage = brand ? whoMakesByKey.get(nameKey(brand.name)) || null : null;
+const plantGroup = brand ? manufacturerGroupForBrand(brand.slug) : null;
 const aliasRows = brand ? brand.aliases.reduce((sum, alias) => sum + alias.count, 0) : 0;
 const aliasNames = brand && brand.aliases.length ? formatNameList(brand.aliases.map((alias) => alias.name)) : "";
 const answers = brand ? brandAnswer(brand, lines, filings) : [];
@@ -139,6 +141,14 @@ const crumbs = brand
         </tbody>
       </table>
     </div>
+    {
+      plantGroup ? (
+        <p>
+          <a href={plantGroup.url}>{plantGroup.linkLabel} plant codes</a> lists NHTSA plant records whose registrant name matches that group.
+          A plant record does not say it makes {brand.name} tires.
+        </p>
+      ) : null
+    }
     <p><a href="/ratings/">Search all brands</a></p>
   </div>
 </Base>

@@ -1,47 +1,49 @@
 ---
 import Base from "../../layouts/Base.astro";
 import Answer from "../../components/Answer.astro";
+import HowToFindCode from "../../components/HowToFindCode.astro";
 import PlantNote from "../../components/PlantNote.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { plantAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
-import { dataset } from "../../lib/structured.js";
+import { formatNumber, formatUtcDate } from "../../lib/format.js";
+import { plantByCode, plantJsonLd } from "../../lib/plant-hubs.js";
+import { formatNameList, nhtsaCampaignUrl } from "../../lib/recalls.js";
 import { clampText } from "../../lib/text.js";
-import { whoMakesByPlantCode } from "../../lib/who-makes-pages.js";
 
 export function getStaticPaths() {
   return catalog.plants.map((plant) => ({ params: { code: plant.slug } }));
 }
 
 const plant = catalog.getPlant(Astro.params.code);
+const extra = plantByCode.get(plant.code);
+if (!extra) throw new Error(`Missing plant hub data ${plant.code}`);
 const answers = plantAnswer(plant);
 const description = clampText(answers.join(" "));
-const jsonLd = [
-  dataset({
-    name: `NHTSA plant record ${plant.code}`,
-    description: answers.join(" "),
-    path: plant.url,
-    dateModified: catalog.meta.verifiedAt,
-    isBasedOn: catalog.meta.plants.source,
-    keywords: ["DOT", "plant code", "NHTSA"],
-  }),
-];
+const sourceKinds = extra.recalls.length ? ["plants", "recalls"] : ["plants"];
+const jsonLd = plantJsonLd(plant, extra);
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/plants/", label: "Plant codes" },
-  { href: plant.url, label: plant.code },
 ];
-const makerLinks = whoMakesByPlantCode.get(plant.code) || [];
+if (plant.country && extra.countryUrl) crumbs.push({ href: extra.countryUrl, label: plant.country });
+crumbs.push({ href: plant.url, label: plant.code });
 const shared = plant.oldCodeSharedWith
   .map((code) => catalog.getPlant(code.toLowerCase()))
   .filter(Boolean);
+const recallCaptionFilers = extra.filerNames.length ? formatNameList(extra.filerNames) : "";
 ---
 
-<Base title={`DOT plant code ${plant.code}`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+<Base
+  title={`DOT plant code ${plant.code}`}
+  description={description}
+  breadcrumbs={crumbs}
+  jsonLd={jsonLd}
+>
   <div class="wrap">
     <h1>DOT plant code <span class="code">{plant.code}</span></h1>
     <Answer sentences={answers} />
-    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
+    <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
     <PlantNote />
     <dl class="facts">
       <div>
@@ -53,7 +55,7 @@ const shared = plant.oldCodeSharedWith
         <dd class="num code">{plant.oldCode || "None in this record"}</dd>
       </div>
       <div>
-        <dt>Plant name</dt>
+        <dt>Registrant</dt>
         <dd>{plant.name}</dd>
       </div>
       <div>
@@ -66,12 +68,25 @@ const shared = plant.oldCodeSharedWith
       </div>
       <div>
         <dt>Country</dt>
-        <dd>{plant.country || "Not included in the NHTSA record"}</dd>
+        <dd>
+          {
+            plant.country ? (
+              <a href={extra.countryUrl}>{plant.country}</a>
+            ) : (
+              "Not included in the NHTSA record"
+            )
+          }
+          {
+            plant.countryRaw && plant.countryRaw !== plant.country ? (
+              <span class="small"> NHTSA stores the country as {plant.countryRaw}.</span>
+            ) : null
+          }
+        </dd>
       </div>
       <div>
         <dt>Status field</dt>
         <dd>
-          {plant.status || "Not included in the NHTSA record"}. This is the value stored in vPIC, not a finding that the company or plant is operating today.
+          {plant.status || "Not included in the NHTSA record"}. NHTSA status field; may be out of date. This is the value stored in vPIC, not a finding that the company or plant is operating today.
         </dd>
       </div>
     </dl>
@@ -95,11 +110,15 @@ const shared = plant.oldCodeSharedWith
       ) : null
     }
     {
-      plant.sameName.length ? (
+      extra.siblings.length ? (
         <>
-          <h2>Other records with this plant name</h2>
+          <h2>Other plants with this registrant</h2>
+          <p>
+            {formatNumber(extra.siblings.length)} other {extra.siblings.length === 1 ? "record uses" : "records use"} this registrant name.
+            Letter case, punctuation, and legal suffixes such as Inc. and LLC are ignored. A shared first word is not enough, and the records do not list brands.
+          </p>
           <ul>
-            {plant.sameName.map((other) => (
+            {extra.siblings.map((other) => (
               <li>
                 <a href={other.url}>{other.code}</a>
                 {other.city || other.country ? ` — ${[other.city, other.country].filter(Boolean).join(", ")}` : ""}
@@ -107,33 +126,71 @@ const shared = plant.oldCodeSharedWith
             ))}
           </ul>
         </>
+      ) : (
+        <p>No other record in this list uses this registrant name.</p>
+      )
+    }
+    {
+      extra.group ? (
+        <p>
+          The registrant name matches the <a href={extra.group.url}>{extra.group.linkLabel}</a> group ({formatNumber(extra.group.count)} records).
+          That group is a name match in the plant list, not a list of brands made at this plant.
+        </p>
       ) : null
     }
     {
-      makerLinks.length ? (
+      extra.recalls.length ? (
         <>
-          <h2>Recall filings that match this registrant</h2>
+          <h2>Recall campaigns filed by this registrant</h2>
           <p>
-            This plant's name matches a company on a tire-recall filing. The plant record does not say this plant made that brand.
+            The tire-recall file names {recallCaptionFilers} as the filing company on {formatNumber(extra.recalls.length)} {extra.recalls.length === 1 ? "row" : "rows"}.
+            The company name matches this registrant. A shared first word would not. The plant record does not say this plant built the recalled tires.
           </p>
-          <ul>
-            {
-              makerLinks.map((link) => (
-                <li>
-                  <a href={link.url}>Who makes {link.name} tires?</a>
-                  {" "}
-                  ({link.role === "filer" ? "filing company" : "manufacturer field"} {link.matchedCompany}).
-                </li>
-              ))
-            }
-          </ul>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                Tire recall rows filed by {recallCaptionFilers}. Units affected is the campaign total, repeated on each line of that campaign.
+                The campaign number links to that campaign on NHTSA.
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Brand</th>
+                  <th scope="col">Recalled line</th>
+                  <th scope="col">Campaign</th>
+                  <th scope="col">Report date</th>
+                  <th scope="col">Units affected</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  extra.recalls.map((row) => (
+                    <tr>
+                      <td>{row.brand}</td>
+                      <td>{row.line}</td>
+                      <td>
+                        <a class="num" href={nhtsaCampaignUrl(row.campaign)}>
+                          {row.campaign}
+                          <span class="visually-hidden"> on NHTSA</span>
+                        </a>
+                      </td>
+                      <td>{formatUtcDate(row.reportDate)}</td>
+                      <td class="num">{formatNumber(row.units)}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
         </>
       ) : null
     }
+    <HowToFindCode code={plant.code} oldCode={plant.oldCode} />
     <p>
       <a href={`/decoder/?tin=${plant.code}`}>Decode a code that starts with {plant.code}</a>
       · <a href="/guides/tire-date-code/">How to read a tire date code</a>
       · <a href="/guides/dot-code/">How to read a DOT code</a>
+      {extra.countryUrl ? <> · <a href={extra.countryUrl}>{plant.country} plant codes</a></> : null}
+      {extra.group ? <> · <a href={extra.group.url}>{extra.group.linkLabel} plant codes</a></> : null}
       · <a href="/plants/">All plant codes</a>
     </p>
   </div>

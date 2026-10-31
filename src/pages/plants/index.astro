@@ -6,6 +6,7 @@ import SourceLine from "../../components/SourceLine.astro";
 import { plantsIndexAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber } from "../../lib/format.js";
+import { countryHubs, manufacturerGroups } from "../../lib/plant-hubs.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
@@ -76,7 +77,7 @@ const statuses = ["Active", "Closed", "Not stated"];
           {
             catalog.plants.map((plant) => (
               <tr
-                data-search={`${plant.code} ${plant.oldCode} ${plant.name} ${plant.city} ${plant.country}`.toLowerCase()}
+                data-search={`${plant.code} ${plant.oldCode} ${plant.name} ${plant.city} ${plant.country} ${plant.countryRaw}`.toLowerCase()}
                 data-country={plant.countryKey}
                 data-status={plant.status || "Not stated"}
               >
@@ -98,6 +99,34 @@ const statuses = ["Active", "Closed", "Not stated"];
       <a href="/guides/dot-code/">How a plant code fits into a DOT number</a>
       · <a href="/guides/tire-date-code/">How to read the date code</a>.
     </p>
+    <h2 id="manufacturers">Manufacturer name groups</h2>
+    <p>
+      These groups keep a record when the registrant name contains the manufacturer's name.
+      A group is not that company's own factory list.
+    </p>
+    <ul>
+      {
+        manufacturerGroups.map((group) => (
+          <li>
+            <a href={group.url}>{group.linkLabel}</a> ({formatNumber(group.count)} records)
+          </li>
+        ))
+      }
+    </ul>
+    <h2 id="countries">Countries</h2>
+    <p>
+      Country strings that differ by letter case, spelling, or an alias such as United States (USA) are one country.
+      <a href="/plants/country/">The country table</a> lists every stored string.
+    </p>
+    <ul>
+      {
+        countryHubs.map((country) => (
+          <li>
+            <a href={country.url}>{country.label}</a> ({formatNumber(country.count)})
+          </li>
+        ))
+      }
+    </ul>
   </div>
 </Base>
 

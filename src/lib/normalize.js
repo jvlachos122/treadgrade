@@ -1,5 +1,6 @@
-import { slugify } from "./slug.js";
 import { cleanSpace, softenCaps } from "./format.js";
+import { normalizeCountry } from "./plant-countries.js";
+import { slugify } from "./slug.js";
 
 const TRACTION = ["AA", "A", "B", "C"];
 const TEMPERATURE = ["A", "B", "C"];
@@ -331,7 +332,7 @@ function buildCatalogFrom(ratings, plants, meta, keyFn, legacyBrands) {
     if (seenCodes.has(code)) throw new Error(`Duplicate DOT plant code ${code}`);
     seenCodes.add(code);
     const slug = code.toLowerCase();
-    const countryRaw = cleanSpace(raw.country || raw.Country);
+    const country = normalizeCountry(raw.country || raw.Country);
     plantObjects.push({
       code,
       slug,
@@ -341,8 +342,10 @@ function buildCatalogFrom(ratings, plants, meta, keyFn, legacyBrands) {
       city: softenCaps(raw.city || raw.City),
       state: softenCaps(raw.stateProvince || raw.StateProvince),
       postal: cleanSpace(raw.postalCode || raw.PostalCode),
-      country: softenCaps(countryRaw),
-      countryKey: nameKey(countryRaw),
+      countryStored: country.stored,
+      countryRaw: country.rawLabel,
+      country: country.label,
+      countryKey: country.key,
       status: cleanSpace(raw.status || raw.Status) || null,
       url: `/plants/${slug}/`,
     });
@@ -378,12 +381,20 @@ function buildCatalogFrom(ratings, plants, meta, keyFn, legacyBrands) {
   for (const plant of plantObjects) {
     if (!plant.countryKey) continue;
     if (!countries.has(plant.countryKey)) {
-      countries.set(plant.countryKey, { key: plant.countryKey, label: plant.country, count: 0 });
+      countries.set(plant.countryKey, {
+        key: plant.countryKey,
+        label: plant.country,
+        count: 0,
+        rawLabels: [],
+        url: `/plants/country/${plant.countryKey}/`,
+      });
     }
     const entry = countries.get(plant.countryKey);
+    if (entry.label !== plant.country) throw new Error(`Country slug collision ${plant.countryKey}`);
     entry.count += 1;
-    if (plant.country.length > entry.label.length) entry.label = plant.country;
+    if (plant.countryRaw && !entry.rawLabels.includes(plant.countryRaw)) entry.rawLabels.push(plant.countryRaw);
   }
+  for (const entry of countries.values()) entry.rawLabels.sort((a, b) => a.localeCompare(b, "en"));
 
   const traction = Object.fromEntries(TRACTION.map((grade) => [grade, 0]));
   traction.other = 0;

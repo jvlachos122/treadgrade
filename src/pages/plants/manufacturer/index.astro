@@ -1,0 +1,66 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Answer from "../../../components/Answer.astro";
+import PlantNote from "../../../components/PlantNote.astro";
+import SourceLine from "../../../components/SourceLine.astro";
+import { manufacturerIndexAnswer, sourceEntries } from "../../../lib/answers.js";
+import { catalog } from "../../../lib/catalog.js";
+import { formatNumber } from "../../../lib/format.js";
+import { hubDataset, manufacturerGroups } from "../../../lib/plant-hubs.js";
+import { clampText } from "../../../lib/text.js";
+
+const answers = manufacturerIndexAnswer(manufacturerGroups);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  hubDataset({
+    name: "NHTSA plant records grouped by manufacturer name",
+    description: answers.join(" "),
+    path: "/plants/manufacturer/",
+    keywords: ["DOT", "plant code", "NHTSA"],
+  }),
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/plants/", label: "Plant codes" },
+  { href: "/plants/manufacturer/", label: "Manufacturers" },
+];
+---
+
+<Base title="Plant codes by manufacturer name" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <h1>Plant codes by manufacturer name</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
+    <PlantNote />
+    <div class="table-wrap">
+      <table>
+        <caption>
+          Manufacturer name groups in NHTSA's equipment plant list. A row is a name match, not the company's own factory list.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Group</th>
+            <th scope="col">Name match</th>
+            <th scope="col">Records</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            manufacturerGroups.map((group) => (
+              <tr>
+                <td><a href={group.url}>{group.linkLabel}</a></td>
+                <td>{group.rule}</td>
+                <td class="num">{formatNumber(group.count)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <a href="/plants/">All plant codes</a>
+      · <a href="/plants/country/">Plant codes by country</a>
+      · <a href="/decoder/">DOT decoder</a>
+    </p>
+  </div>
+</Base>

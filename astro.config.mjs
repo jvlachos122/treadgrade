@@ -16,11 +16,14 @@ export default defineConfig({
     sitemap({
       filter: (page) => {
         if (page.includes("/404")) return false;
+        let pathname = page;
         try {
-          return !retired.has(new URL(page).pathname);
+          pathname = new URL(page).pathname;
         } catch {
-          return !retired.has(page);
+          pathname = page;
         }
+        if (retired.has(pathname)) return false;
+        return true;
       },
       serialize(item) {
         if (verifiedDay) item.lastmod = verifiedDay;

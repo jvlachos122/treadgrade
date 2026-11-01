@@ -5,11 +5,16 @@ import Disclaimer from "../components/Disclaimer.astro";
 import SourceLine from "../components/SourceLine.astro";
 import { ratingsAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
+import { formatNumber, formatVerified } from "../lib/format.js";
+import { flattenGradeRows, gradeTableSummary, ratingsTableHref } from "../lib/ratings-table.js";
 import { dataset } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
 
 const answers = ratingsAnswer(catalog);
 const description = clampText(answers.join(" "));
+const gradeRows = flattenGradeRows(catalog);
+const summary = gradeTableSummary(gradeRows);
+const verified = formatVerified(catalog.meta.verifiedAt);
 const jsonLd = [
   dataset({
     name: "NHTSA UTQG tire ratings",
@@ -24,41 +29,60 @@ const crumbs = [
   { href: "/", label: "Home" },
   { href: "/ratings/", label: "UTQG grades" },
 ];
+const exampleHref = ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], temp: ["A"] });
 ---
 
 <Base title="UTQG tire grades" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
-  <div class="wrap" data-ratings>
+  <div class="wrap" data-ratings data-source={catalog.meta.ratings.source} data-verified={catalog.meta.verifiedAt}>
     <h1>UTQG tire grades</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <Disclaimer />
-    <form class="filters" action="/ratings/" method="get">
+    <p>
+      In the NHTSA UTQG file verified {verified} (UTC), {formatNumber(summary.sizeSpecific)} of {formatNumber(summary.rows)} grade rows are size-specific and {formatNumber(summary.allSizes)} say all sizes.
+      A row is all sizes only when the size text, with extra spaces collapsed, is “all”, “all size”, or “all sizes”. Any other text, including “all sizes except” and a named size, is size-specific. The size text is shown as published.
+    </p>
+    <p>
+      The same file has {formatNumber(summary.invalid)} invalid grade rows and {formatNumber(summary.suspect)} suspect grade rows.
+      Invalid means traction is outside AA, A, B, and C, temperature is outside A, B, and C, or treadwear is not a whole number.
+      Suspect means treadwear is 0 or not reported, and the row is not already invalid.
+      These are the same checks as the <a href="/methodology/known-errors/#invalid-fields">known-errors page</a>.
+      The table flags the rows. The data-quality control can hide them or show only those rows. Hiding a row does not remove it from the file.
+    </p>
+    <p>
+      The address keeps the filters, so a link can be shared. Filtered addresses use the canonical URL of this page.
+      The CSV is built in the browser from the filtered rows. It names the NHTSA UTQG file and the verified date. It is not a ranking, and a row does not mean a tire is on sale.
+    </p>
+    <form class="filters filters-ratings" action="/ratings/" method="get">
       <label>
         Brand or tire line
         <input type="search" name="q" autocomplete="off" />
       </label>
       <label>
-        Traction
-        <select name="traction">
-          <option value="">Any</option>
-          <option value="AA">AA</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-        </select>
-      </label>
-      <label>
-        Temperature
-        <select name="temp">
-          <option value="">Any</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-        </select>
-      </label>
-      <label>
-        Minimum treadwear
+        Treadwear at least
         <input type="number" name="wearMin" min="0" inputmode="numeric" />
+      </label>
+      <label>
+        Treadwear at most
+        <input type="number" name="wearMax" min="0" inputmode="numeric" />
+      </label>
+      <label>
+        Size text
+        <select name="size">
+          <option value="">Any size text</option>
+          <option value="specific">Size-specific grade</option>
+          <option value="all">All sizes</option>
+        </select>
+      </label>
+      <label>
+        Data quality
+        <select name="quality">
+          <option value="">Flag invalid and suspect rows</option>
+          <option value="hide">Hide invalid and suspect rows</option>
+          <option value="flagged">Only flagged rows</option>
+          <option value="invalid">Only invalid rows</option>
+          <option value="suspect">Only suspect rows</option>
+        </select>
       </label>
       <label>
         Sort
@@ -70,23 +94,42 @@ const crumbs = [
           <option value="temp">Temperature high–low</option>
         </select>
       </label>
-      <button type="submit">Apply</button>
+      <fieldset class="checks">
+        <legend>Traction</legend>
+        <label><input type="checkbox" name="traction" value="AA" /> AA</label>
+        <label><input type="checkbox" name="traction" value="A" /> A</label>
+        <label><input type="checkbox" name="traction" value="B" /> B</label>
+        <label><input type="checkbox" name="traction" value="C" /> C</label>
+      </fieldset>
+      <fieldset class="checks">
+        <legend>Temperature</legend>
+        <label><input type="checkbox" name="temp" value="A" /> A</label>
+        <label><input type="checkbox" name="temp" value="B" /> B</label>
+        <label><input type="checkbox" name="temp" value="C" /> C</label>
+      </fieldset>
+      <div class="filter-actions">
+        <button type="submit">Apply</button>
+        <button type="button" class="button-ghost" data-csv disabled>Download these rows as CSV</button>
+        <button type="button" class="button-ghost" data-clear>Clear filters</button>
+      </div>
     </form>
     <p class="status" data-status aria-live="polite">Loading the ratings table…</p>
     <noscript>
       <p>The combined table needs JavaScript. Every brand is linked from the <a href="/brands/">brand index</a>.</p>
     </noscript>
     <div class="table-wrap">
-      <table>
-        <caption>NHTSA UTQG ratings</caption>
+      <table id="ratings-table">
+        <caption>NHTSA UTQG ratings verified {verified} (UTC).</caption>
         <thead>
           <tr>
             <th scope="col">Brand</th>
             <th scope="col">Tire line</th>
             <th scope="col">Size series</th>
+            <th scope="col">Size flag</th>
             <th scope="col">Treadwear</th>
             <th scope="col">Traction</th>
             <th scope="col">Temperature</th>
+            <th scope="col">Data quality</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -98,9 +141,10 @@ const crumbs = [
       <button type="button" class="button-ghost" data-next>Next</button>
     </div>
     <p class="small muted">
-      Values outside AA, A, B, and C for traction, or A, B, and C for temperature, are shown as published.
+      Each row links to the tire-line page on this site. A value outside the usual letters is shown as published.
       <a href="/methodology/known-errors/#invalid-fields">Known errors in this file</a>.
       <a href="/guides/utqg-grades/">Grade definitions</a>.
+      <a href={exampleHref}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>.
     </p>
   </div>
 </Base>

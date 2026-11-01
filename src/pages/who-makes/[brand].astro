@@ -8,6 +8,7 @@ import { catalog } from "../../lib/catalog.js";
 import { formatNumber, formatUtcDate, wearRange } from "../../lib/format.js";
 import { recallMeta } from "../../lib/recall-catalog.js";
 import { formatNameList, nhtsaCampaignUrl, recallStatement } from "../../lib/recalls.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
 import { dataset, laterIso } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 import { groupByCode } from "../../lib/plant-hubs.js";
@@ -273,7 +274,12 @@ const wordPlantNote = page.wordPlantCount
               </ul>
             ) : null
           }
-          {page.utqg ? <p><a href={page.utqg.url}>{page.name} UTQG grades</a></p> : null}
+          {page.utqg ? (
+            <p>
+              <a href={page.utqg.url}>{page.name} UTQG grades</a>
+              {" "}· <a href={ratingsTableHref({ q: page.utqg.name })}>Open this list in the table</a>
+            </p>
+          ) : null}
         </>
       ) : (
         <p>The UTQG list has no brand string {page.name}. Grades are not invented for this page.</p>

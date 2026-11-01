@@ -4,7 +4,8 @@ import Answer from "../../components/Answer.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { sourceEntries, utqgGuideAnswer } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
-import { formatNumber, percent } from "../../lib/format.js";
+import { formatNumber, formatVerified, percent } from "../../lib/format.js";
+import { filterGradeRows, flattenGradeRows, ratingsTableHref, tireLineCount } from "../../lib/ratings-table.js";
 import { article } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
@@ -24,6 +25,12 @@ const crumbs = [
   { href: "/guides/", label: "Guides" },
   { href: "/guides/utqg-grades/", label: "UTQG grades" },
 ];
+const verified = formatVerified(catalog.meta.verifiedAt);
+const highWear = filterGradeRows(flattenGradeRows(catalog), {
+  wearMin: "700",
+  traction: ["AA", "A"],
+  temp: ["A"],
+});
 const wearRows = [
   ["Below 200", wearBuckets.under200],
   ["200–300", wearBuckets.from200to300],
@@ -166,9 +173,13 @@ const wearRows = [
       </table>
     </div>
     <p>
-      <a href="/ratings/?traction=AA">Rows graded traction AA</a>
-      · <a href="/ratings/?temp=A">Rows graded temperature A</a>
-      · <a href="/ratings/?wearMin=600">Rows with treadwear of at least 600</a>
+      In the NHTSA UTQG file verified {verified} (UTC), treadwear of at least 700 with traction AA or A and temperature A is {formatNumber(highWear.length)} grade rows on {formatNumber(tireLineCount(highWear))} tire lines.
+    </p>
+    <p>
+      <a href={ratingsTableHref({ traction: ["AA"] })}>Open this list in the table: traction AA</a>
+      · <a href={ratingsTableHref({ temp: ["A"] })}>Open this list in the table: temperature A</a>
+      · <a href={ratingsTableHref({ wearMin: "600" })}>Open this list in the table: treadwear of at least 600</a>
+      · <a href={ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], temp: ["A"] })}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>
     </p>
     <h2>What a grade page on this site is not</h2>
     <p>

@@ -63,6 +63,8 @@ const validator = new HtmlValidate({
     "script-type": "off",
     "wcag/h63": "off",
     "input-missing-label": "error",
+    // A checkbox group shares one name so the query string can repeat it.
+    "form-dup-name": ["error", { shared: ["radio", "button", "reset", "submit", "checkbox"] }],
   },
 });
 

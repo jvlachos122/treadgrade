@@ -2,13 +2,12 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cleanSpace, formatNumber, formatVerified } from "./format.js";
+import { USUAL_TEMPERATURE, USUAL_TRACTION, rowQuality } from "./grade-quality.js";
 import { brandKey, nameKey } from "./normalize.js";
 import { formatNameList, isImporterOrBrandOwnerExample } from "./recalls.js";
 import { contactEmail } from "./site.js";
 import { article, dataset, laterIso } from "./structured.js";
 
-const TRACTION = ["AA", "A", "B", "C"];
-const TEMPERATURE = ["A", "B", "C"];
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export const KNOWN_ERRORS_PATH = "/methodology/known-errors/";
@@ -86,10 +85,6 @@ const HANDLING = {
   range: "Each size series stays on its own row. The line is not collapsed to one treadwear number.",
 };
 
-function quote(value) {
-  return `"${value}"`;
-}
-
 function rowNoun(count) {
   return count === 1 ? "grade row" : "grade rows";
 }
@@ -132,11 +127,11 @@ export function loadRefreshSchedule() {
 }
 
 function usualTraction(value) {
-  return TRACTION.includes(value);
+  return USUAL_TRACTION.includes(value);
 }
 
 function usualTemperature(value) {
-  return TEMPERATURE.includes(value);
+  return USUAL_TEMPERATURE.includes(value);
 }
 
 function positiveWears(line) {
@@ -182,21 +177,15 @@ function mostCommonLine(lines) {
 }
 
 function problemLabels(row) {
-  const labels = [];
-  if (row.wear == null || row.wear === "") labels.push("no treadwear number");
-  else if (row.wearN == null) labels.push(`treadwear ${quote(row.wear)}`);
-  else if (row.wearN === 0) labels.push("treadwear 0");
-  if (!usualTraction(row.trac)) labels.push(`traction ${quote(row.trac || "")}`);
-  if (!usualTemperature(row.temp)) labels.push(`temperature ${quote(row.temp || "")}`);
-  return labels;
+  return rowQuality(row).reasons;
 }
 
 function anomalyKind(row) {
-  if (!usualTraction(row.trac) || !usualTemperature(row.temp)) return "invalid";
-  if (row.wearN === 0) return "wearZero";
-  if (row.wear == null || row.wear === "") return "wearMissing";
-  if (row.wearN == null) return "invalid";
-  return "";
+  const quality = rowQuality(row);
+  if (quality.kind === "invalid") return "invalid";
+  if (quality.kind !== "suspect") return "";
+  if (quality.reasons.includes("treadwear 0")) return "wearZero";
+  return "wearMissing";
 }
 
 function countRows(hits) {

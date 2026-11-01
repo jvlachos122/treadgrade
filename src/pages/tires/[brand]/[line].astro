@@ -7,6 +7,7 @@ import Grade from "../../../components/Grade.astro";
 import SourceLine from "../../../components/SourceLine.astro";
 import { lineAnswer, sourceEntries } from "../../../lib/answers.js";
 import { catalog } from "../../../lib/catalog.js";
+import { ratingsTableHref } from "../../../lib/ratings-table.js";
 import { dataset } from "../../../lib/structured.js";
 import { clampText } from "../../../lib/text.js";
 import RedirectNotice from "../../../components/RedirectNotice.astro";
@@ -176,6 +177,7 @@ const crumbs = line
     </p>
     <p>
       <a href={`/brands/${line.brandSlug}/`}>All {line.brand} lines</a>
+      · <a href={ratingsTableHref({ q: `${line.brand} ${line.line}` })}>Open this list in the table</a>
       · <a href="/ratings/">Full ratings table</a>
       · <a href="/decoder/">DOT code decoder</a>
     </p>

@@ -8,6 +8,7 @@ import { countryNormalization, manufacturerGroups } from "../lib/plant-hubs.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
 import { recallMeta, recallSummary } from "../lib/recall-catalog.js";
 import { formatNameList } from "../lib/recalls.js";
+import { ratingsTableHref } from "../lib/ratings-table.js";
 import { dataset, laterIso } from "../lib/structured.js";
 import InlineList from "../components/InlineList.astro";
 import { whoMakesPages, whoMakesSkipped } from "../lib/who-makes-pages.js";
@@ -91,6 +92,8 @@ const jsonLd = [
       }{" "}
       Tire lines under a brand are grouped when a stable web address would be the same, so "Pilot Sport 4" and "PILOT SPORT 4" share a page, while a line whose name adds a plus sign stays separate. A tire-line name keeps its own punctuation, so a plus sign or a slash still separates lines.
       Size text is trimmed and otherwise left as published. "Radial" and "RADIAL" are both shown as Radial.
+      The <a href="/ratings/">ratings table</a> marks a row size-specific unless that text is only “all”, “all size”, or “all sizes”.
+      <a href={ratingsTableHref({ size: "specific" })}>Open this list in the table</a>.
     </p>
     <p>
       The <span class="num">active</span> flag is not shown as "discontinued" or "for sale." In this verified file it is true on {formatNumber(catalog.stats.activeRows)} of {formatNumber(catalog.stats.rows)} grade rows.

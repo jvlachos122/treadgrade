@@ -1,33 +1,34 @@
-const TRACTION = { AA: 4, A: 3, B: 2, C: 1 };
-const TEMPERATURE = { A: 3, B: 2, C: 1 };
-const PAGE_SIZE = 40;
-
-function rank(table, value) {
-  return table[value] ?? 0;
-}
+import { rowQuality } from "../lib/grade-quality.js";
+import {
+  PAGE_SIZE,
+  expandPublicRow,
+  parseRatingsQuery,
+  qualityLabel,
+  ratingsCsv,
+  rowMatches,
+  serializeRatingsQuery,
+  sizeFlagLabel,
+  sortGradeRows,
+  tireLineCount,
+} from "../lib/ratings-table.js";
 
 function readState() {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    q: params.get("q") || "",
-    traction: params.get("traction") || "",
-    temp: params.get("temp") || "",
-    wearMin: params.get("wearMin") || "",
-    sort: params.get("sort") || "brand",
-    page: Math.max(1, Number(params.get("page")) || 1),
-  };
+  return parseRatingsQuery(window.location.search);
 }
 
 function writeState(state) {
-  const params = new URLSearchParams();
-  if (state.q) params.set("q", state.q);
-  if (state.traction) params.set("traction", state.traction);
-  if (state.temp) params.set("temp", state.temp);
-  if (state.wearMin) params.set("wearMin", state.wearMin);
-  if (state.sort && state.sort !== "brand") params.set("sort", state.sort);
-  if (state.page > 1) params.set("page", String(state.page));
-  const search = params.toString();
-  history.replaceState(null, "", search ? `?${search}` : window.location.pathname);
+  const search = serializeRatingsQuery(state);
+  const next = search ? `${window.location.pathname}?${search}` : window.location.pathname;
+  const current = `${window.location.pathname}${window.location.search}`;
+  if (current !== next) history.replaceState(null, "", next);
+}
+
+function checkedValues(form, name) {
+  return [...form.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+}
+
+function brandHref(url) {
+  return `/brands/${String(url).split("/")[2]}/`;
 }
 
 export function initRatings(root) {
@@ -36,8 +37,10 @@ export function initRatings(root) {
   const pageLabel = root.querySelector("[data-page]");
   const prev = root.querySelector("[data-prev]");
   const next = root.querySelector("[data-next]");
+  const csvButton = root.querySelector("[data-csv]");
   const form = root.querySelector("form");
   let data = null;
+  let rows = [];
   let state = readState();
 
   function field(name) {
@@ -46,43 +49,33 @@ export function initRatings(root) {
 
   function syncForm() {
     field("q").value = state.q;
-    field("traction").value = state.traction;
-    field("temp").value = state.temp;
+    for (const input of form.querySelectorAll('input[name="traction"]')) {
+      input.checked = state.traction.includes(input.value);
+    }
+    for (const input of form.querySelectorAll('input[name="temp"]')) {
+      input.checked = state.temp.includes(input.value);
+    }
     field("wearMin").value = state.wearMin;
+    field("wearMax").value = state.wearMax;
+    field("size").value = state.size;
+    field("quality").value = state.quality;
     field("sort").value = state.sort;
   }
 
-  function filtered() {
-    const q = state.q.trim().toLowerCase();
-    const wearMin = state.wearMin === "" ? null : Number(state.wearMin);
-    return data.rows.filter((row) => {
-      const line = data.lines[row[0]];
-      if (q && !`${line.b} ${line.l}`.toLowerCase().includes(q)) return false;
-      if (state.traction && row[3] !== state.traction) return false;
-      if (state.temp && row[4] !== state.temp) return false;
-      if (wearMin != null && (row[2] == null || row[2] < wearMin)) return false;
-      return true;
-    });
-  }
-
-  function sorted(rows) {
-    const copy = [...rows];
-    copy.sort((a, b) => {
-      const lineA = data.lines[a[0]];
-      const lineB = data.lines[b[0]];
-      let diff = 0;
-      if (state.sort === "wear-desc") diff = (b[2] ?? -1) - (a[2] ?? -1);
-      else if (state.sort === "wear-asc") diff = (a[2] ?? 9999) - (b[2] ?? 9999);
-      else if (state.sort === "traction") diff = rank(TRACTION, b[3]) - rank(TRACTION, a[3]);
-      else if (state.sort === "temp") diff = rank(TEMPERATURE, b[4]) - rank(TEMPERATURE, a[4]);
-      if (diff) return diff;
-      return (
-        lineA.b.localeCompare(lineB.b, "en") ||
-        lineA.l.localeCompare(lineB.l, "en") ||
-        String(a[1]).localeCompare(String(b[1]), "en")
-      );
-    });
-    return copy;
+  function readForm(page) {
+    return parseRatingsQuery(
+      serializeRatingsQuery({
+        q: field("q").value,
+        traction: checkedValues(form, "traction"),
+        temp: checkedValues(form, "temp"),
+        wearMin: field("wearMin").value,
+        wearMax: field("wearMax").value,
+        size: field("size").value,
+        quality: field("quality").value,
+        sort: field("sort").value,
+        page,
+      }),
+    );
   }
 
   function cellLink(href, text) {
@@ -92,64 +85,94 @@ export function initRatings(root) {
     return link;
   }
 
-  function grade(value) {
+  function grade(value, temperature) {
     const span = document.createElement("span");
-    const known = ["AA", "A", "B", "C"].includes(value);
+    const letters = temperature ? ["A", "B", "C"] : ["AA", "A", "B", "C"];
+    const known = letters.includes(value);
     span.className = `grade utqg grade-${known ? value.toLowerCase() : "other"}`;
     span.textContent = value || "—";
     return span;
   }
 
+  function filteredRows() {
+    return sortGradeRows(
+      rows.filter((row) => rowMatches(row, state)),
+      state,
+    );
+  }
+
   function render() {
-    const rows = sorted(filtered());
-    const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    const matched = filteredRows();
+    const pages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
     if (state.page > pages) state.page = pages;
     const start = (state.page - 1) * PAGE_SIZE;
-    const slice = rows.slice(start, start + PAGE_SIZE);
+    const slice = matched.slice(start, start + PAGE_SIZE);
     body.replaceChildren();
     for (const row of slice) {
-      const line = data.lines[row[0]];
       const tr = document.createElement("tr");
+      const quality = rowQuality(row);
+      if (quality.kind !== "ok") tr.className = `quality-${quality.kind}`;
       const brand = document.createElement("td");
-      brand.append(cellLink(`/brands/${line.u.split("/")[2]}/`, line.b));
+      brand.append(cellLink(brandHref(row.url), row.brand));
       const name = document.createElement("td");
-      name.append(cellLink(line.u, line.l));
+      name.append(cellLink(row.url, row.line));
       const size = document.createElement("td");
       size.className = "tire-size";
-      size.textContent = row[1];
+      size.textContent = row.size;
+      const flag = document.createElement("td");
+      flag.textContent = sizeFlagLabel(row.size);
       const wear = document.createElement("td");
       wear.className = "num utqg";
-      wear.textContent = row[2] == null ? "—" : String(row[2]);
+      wear.textContent = row.wear == null || row.wear === "" ? "—" : String(row.wear);
       const trac = document.createElement("td");
-      trac.append(grade(row[3]));
+      trac.append(grade(row.trac, false));
       const temp = document.createElement("td");
-      const tempKnown = ["A", "B", "C"].includes(row[4]);
-      const tempBadge = grade(row[4]);
-      if (!tempKnown) tempBadge.className = "grade utqg grade-other";
-      temp.append(tempBadge);
-      tr.append(brand, name, size, wear, trac, temp);
+      temp.append(grade(row.temp, true));
+      const note = document.createElement("td");
+      const label = qualityLabel(row);
+      if (label) {
+        const mark = document.createElement("span");
+        mark.className = "quality-flag";
+        mark.textContent = label;
+        note.append(mark);
+      } else {
+        note.textContent = "—";
+      }
+      tr.append(brand, name, size, flag, wear, trac, temp, note);
       body.append(tr);
     }
-    const from = rows.length ? start + 1 : 0;
+    const from = matched.length ? start + 1 : 0;
     const to = start + slice.length;
-    status.textContent = `Showing ${from.toLocaleString("en-US")}–${to.toLocaleString("en-US")} of ${rows.length.toLocaleString("en-US")} grade rows.`;
+    const lines = tireLineCount(matched);
+    const lineNoun = lines === 1 ? "tire line" : "tire lines";
+    status.textContent = `Showing ${from.toLocaleString("en-US")}–${to.toLocaleString("en-US")} of ${matched.length.toLocaleString("en-US")} grade rows on ${lines.toLocaleString("en-US")} ${lineNoun}.`;
     pageLabel.textContent = `Page ${state.page} of ${pages}`;
     prev.disabled = state.page <= 1;
     next.disabled = state.page >= pages;
+    if (csvButton) csvButton.disabled = !data;
     writeState(state);
   }
 
   function onFilter(resetPage) {
+    state = readForm(resetPage ? 1 : state.page);
+    if (data) render();
+    else writeState(state);
+  }
+
+  function downloadCsv() {
     if (!data) return;
-    state = {
-      q: field("q").value,
-      traction: field("traction").value,
-      temp: field("temp").value,
-      wearMin: field("wearMin").value,
-      sort: field("sort").value,
-      page: resetPage ? 1 : state.page,
-    };
-    render();
+    const matched = filteredRows();
+    const csv = ratingsCsv(matched, {
+      source: data.source || root.dataset.source,
+      verifiedAt: data.verifiedAt || root.dataset.verified,
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "treadgrade-utqg-ratings.csv";
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   form.addEventListener("submit", (event) => {
@@ -168,6 +191,17 @@ export function initRatings(root) {
     render();
     root.querySelector("table")?.scrollIntoView({ block: "start" });
   });
+  csvButton?.addEventListener("click", downloadCsv);
+  form.querySelector("[data-clear]")?.addEventListener("click", () => {
+    state = parseRatingsQuery("");
+    syncForm();
+    render();
+  });
+  window.addEventListener("popstate", () => {
+    state = readState();
+    syncForm();
+    if (data) render();
+  });
 
   syncForm();
   fetch("/data/ratings.json")
@@ -177,6 +211,7 @@ export function initRatings(root) {
     })
     .then((payload) => {
       data = payload;
+      rows = payload.rows.map((cells) => expandPublicRow(cells, payload.lines));
       render();
     })
     .catch(() => {

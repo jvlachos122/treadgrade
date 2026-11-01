@@ -16,6 +16,7 @@ import {
 } from "../../lib/known-errors.js";
 import { recallRows } from "../../lib/recall-catalog.js";
 import { formatNameList } from "../../lib/recalls.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
 import ratings from "../../../data/ratings.json";
 
 const report = buildKnownErrors({ catalog, ratings, recalls: recallRows });
@@ -234,13 +235,18 @@ const fieldList = report.ratingFields.length ? formatNameList(report.ratingField
     <p>
       A value such as temperature "500" or temperature "AA" sits in a field that usually holds a different grade. This site does not move it to another field.
       Treadwear 0 is a whole number, so it does not by itself open the notice a tire-line page shows for a value outside the usual letters. The answer box still leaves 0 out of usable treadwear.
-      The ratings table keeps the row. Choosing a traction or temperature letter in the filter leaves other values out of that filtered view. They are not deleted.
+      The ratings table flags a row as invalid when traction or temperature is outside those letters, or when treadwear is not a whole number. It flags a row as suspect when treadwear is 0 or not reported and the row is not already invalid. The row stays in the file. A control on the table can hide the flagged rows. Choosing a traction or temperature letter in the filter leaves other values out of that filtered view. They are not deleted.
+      <a href={ratingsTableHref({ quality: "invalid" })}>Open this list in the table: invalid rows</a>.
+      <a href={ratingsTableHref({ quality: "suspect" })}>Open this list in the table: suspect rows</a>.
     </p>
 
     <h2 id="size-grades">Grades that vary by size</h2>
     <p>
       {formatNumber(report.multiWearLines)} {report.multiWearLines === 1 ? "tire line has" : "tire lines have"} more than one treadwear number above 0.
       A single number for the line would hide that. The tire-line page keeps each size series, and it says when the grades differ.
+      The ratings table marks a row size-specific unless the size text is only “all”, “all size”, or “all sizes”.
+      <a href={ratingsTableHref({ size: "specific" })}>Open this list in the table: size-specific grades</a>.
+      <a href={ratingsTableHref({ size: "all" })}>Open this list in the table: all sizes</a>.
     </p>
     {
       report.ranges.length ? (

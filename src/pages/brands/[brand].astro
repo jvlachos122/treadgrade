@@ -10,6 +10,7 @@ import { formatNumber, wearRange } from "../../lib/format.js";
 import { nameKey } from "../../lib/normalize.js";
 import { recallSummary } from "../../lib/recall-catalog.js";
 import { formatNameList } from "../../lib/recalls.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 import { manufacturerGroupForBrand } from "../../lib/plant-hubs.js";
@@ -149,7 +150,10 @@ const crumbs = brand
         </p>
       ) : null
     }
-    <p><a href="/ratings/">Search all brands</a></p>
+    <p>
+      <a href={ratingsTableHref({ q: brand.name })}>Open this list in the table</a>
+      · <a href="/ratings/">All grades</a>
+    </p>
   </div>
 </Base>
   )

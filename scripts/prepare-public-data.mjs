@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildCatalog } from "../src/lib/normalize.js";
+import { compactPublicRow } from "../src/lib/ratings-table.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ratings = JSON.parse(readFileSync(join(root, "data/ratings.json"), "utf8"));
@@ -11,8 +12,9 @@ const catalog = buildCatalog(ratings, plants, meta);
 
 const ratingsPayload = {
   verifiedAt: meta.verifiedAt,
+  source: meta.ratings.source,
   lines: catalog.lines.map((line) => ({ b: line.brand, l: line.line, u: line.url })),
-  rows: catalog.lines.flatMap((line, index) => line.rows.map((row) => [index, row.size, row.wearN, row.trac, row.temp])),
+  rows: catalog.lines.flatMap((line, index) => line.rows.map((row) => compactPublicRow(index, row))),
 };
 
 const plantsPayload = catalog.plants.map((plant) => ({

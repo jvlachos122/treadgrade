@@ -29,8 +29,8 @@ export function initSearch(root) {
       setExpanded(false);
       status.replaceChildren();
       const note = document.createElement("a");
-      note.href = "/guides/utqg-grades/#not-in-the-list";
-      note.textContent = "Why a light-truck, winter, or spare tire may be missing";
+      note.href = "/guides/no-utqg-rating/";
+      note.textContent = "Why a tire may have no UTQG rating";
       status.append(document.createTextNode(`No matches for “${query}”. A missing name is not a grade. `), note, document.createTextNode("."));
       return;
     }

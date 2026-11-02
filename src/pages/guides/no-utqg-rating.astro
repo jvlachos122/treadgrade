@@ -1,0 +1,333 @@
+---
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { noUtqgAnswer, sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber, formatUtcDate, formatVerified } from "../../lib/format.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
+import { article, dataset } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
+import { ECFR_575_104, ECFR_CHECKED, FR_1999_575_104, NO_UTQG_PATH, utqgExemptReport } from "../../lib/utqg-exempt.js";
+
+const sourceRows = JSON.parse(readFileSync(fileURLToPath(new URL("../../../data/ratings.json", import.meta.url)), "utf8"));
+const report = utqgExemptReport(catalog, sourceRows);
+const answers = noUtqgAnswer({
+  verifiedAt: catalog.meta.verifiedAt,
+  checkedOn: ECFR_CHECKED,
+  ko2SourceRows: report.ko2SourceRows,
+  ko2GradeRows: report.ko2GradeRows,
+});
+const description = clampText(answers.join(" "));
+const checked = formatUtcDate(ECFR_CHECKED);
+const verified = formatVerified(catalog.meta.verifiedAt);
+const jsonLd = [
+  dataset({
+    name: "NHTSA UTQG rows checked for a KO2 line name, and BFGoodrich lines in that file",
+    description: answers.join(" "),
+    path: NO_UTQG_PATH,
+    dateModified: catalog.meta.verifiedAt,
+    isBasedOn: catalog.meta.ratings.source,
+    keywords: ["UTQG", "light truck", "winter tire", "NHTSA", "KO2"],
+  }),
+  article({
+    headline: "Why doesn't my tire have a UTQG rating?",
+    description: answers.join(" "),
+    path: NO_UTQG_PATH,
+    dateModified: catalog.meta.verifiedAt,
+  }),
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: NO_UTQG_PATH, label: "No UTQG rating" },
+];
+const cornell = "https://www.law.cornell.edu/cfr/text/49/575.104";
+const fmvss = "https://www.law.cornell.edu/cfr/text/49/571.139";
+const counts = [
+  ["Source rows whose line name contains KO2", report.ko2SourceRows, "source row"],
+  ["Grade rows whose line name contains KO2", report.ko2GradeRows, "grade row"],
+  ["Source rows whose line name contains K02, with a digit zero", report.k02SourceRows, "source row"],
+  ["Source rows under a BFGoodrich brand string", report.bfSourceRows, "source row"],
+  ["Grade rows under that brand after letter case is merged", report.bfGradeRows, "grade row"],
+  ["Tire lines under that brand", report.bfLineCount, "tire line"],
+  ["Source rows whose size text starts with LT", report.sizesStartingLt, "source row"],
+];
+---
+
+<Base title="Why doesn't my tire have a UTQG rating?" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>Why doesn't my tire have a UTQG rating?</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <p>
+      The exemption list below is the current text of <a href={cornell}>49 CFR 575.104</a>
+      (<a href={ECFR_575_104}>eCFR</a>), checked {checked}.
+      The counts are computed from the committed NHTSA ratings file, verified {verified} (UTC).
+      <a href="/ratings/">Open the ratings table</a>.
+      <a href="/guides/utqg-grades/">What the grades mean</a>.
+    </p>
+
+    <h2 id="exemptions">Which tires the rule does not cover</h2>
+    <p>Paragraph (c)(1), as checked {checked}, reads:</p>
+    <blockquote class="quote">
+      <p>
+        This section applies to new pneumatic tires for use on passenger cars. However, this section does not apply to deep tread, winter-type snow tires, space-saver or temporary use spare tires, tires with nominal rim diameters of 12 inches or less, or to limited production tires as defined in paragraph (c)(2) of this section.
+      </p>
+    </blockquote>
+    <p>
+      That wording matches paragraph (c)(1) adopted in the May 24, 1999 final rule
+      (<a href={FR_1999_575_104}>64 FR 27921</a>).
+      The same notice says the earlier exclusion was tires with nominal rim diameters of 10 to 12 inches.
+      The current rule uses “12 inches or less,” and this page follows the current text.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>Tires 49 CFR 575.104 does not require a UTQG grade for, from the eCFR text checked {checked}.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Tire</th>
+            <th scope="col">Where the rule says so</th>
+            <th scope="col">What the current text says</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Deep tread, winter-type snow tires</td>
+            <td>49 CFR 575.104(c)(1)</td>
+            <td>Named. The section does not apply.</td>
+          </tr>
+          <tr>
+            <td>Space-saver or temporary use spare tires</td>
+            <td>49 CFR 575.104(c)(1)</td>
+            <td>Named. The section does not apply. The sentence does not name every spare.</td>
+          </tr>
+          <tr>
+            <td>Nominal rim diameter of 12 inches or less</td>
+            <td>49 CFR 575.104(c)(1)</td>
+            <td>Named. This is the 1999 wording. The earlier exclusion described in 64 FR 27921 was 10 to 12 inches.</td>
+          </tr>
+          <tr>
+            <td>Limited-production tires</td>
+            <td>49 CFR 575.104(c)(1) and (c)(2)</td>
+            <td>Named in (c)(1) and defined in (c)(2). The yearly limits are in the next table. The ratings file has no field that marks a tire as limited production.</td>
+          </tr>
+          <tr>
+            <td>Light-truck tires</td>
+            <td>49 CFR 575.104(a), (b), and (c)(1)</td>
+            <td>Not named in the (c)(1) list. The section applies to new pneumatic tires for passenger cars. A light-truck tire is outside the section for that reason.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Limited-production tire criteria in 49 CFR 575.104(c)(2), from the eCFR text checked {checked}.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Criterion, as applicable</th>
+            <th scope="col">Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>The manufacturer's yearly domestic production or importation of tires of the same design and size</td>
+            <td>Does not exceed 15,000 tires</td>
+          </tr>
+          <tr>
+            <td>When the tire is marketed under a brand name, the brand-name owner's yearly domestic purchase or importation of tires of the same design and size</td>
+            <td>Does not exceed 15,000 tires</td>
+          </tr>
+          <tr>
+            <td>That size as a recommended size on a new motor vehicle produced in or imported into the United States in the previous calendar year</td>
+            <td>The size was not listed for a vehicle produced or imported in quantities greater than 10,000</td>
+          </tr>
+          <tr>
+            <td>The manufacturer's, and any brand-name owner's, yearly total of tires that meet the three limits above</td>
+            <td>Does not exceed 35,000 tires</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      (c)(2) says the tire must meet all of those criteria, as applicable.
+      The same paragraph says tire design is the combination of general structural characteristics, materials, and tread pattern, but does include cosmetic, identifying or other minor variations among tires.
+    </p>
+
+    <h2 id="winter">Winter tires, all-season tires, and all-terrain tires</h2>
+    <p>
+      NHTSA has said the winter exception is a deep tread and tread design that makes year-round use on a passenger car inadvisable. All-season tires are not that exception
+      (<a href="https://www.nhtsa.gov/interpretations/86-249">NHTSA interpretation, 1986</a>, citing 44 FR 30140, May 24, 1979).
+    </p>
+    <p>
+      All-terrain is not named in 49 CFR 575.104(c)(1). A passenger-car tire sold as all-terrain can still be a tire the section covers. A light-truck all-terrain tire is outside the section because it is not a passenger-car tire, not because the words “all-terrain” appear in the rule.
+      The ratings file has no category field. A line name that contains “A/T” is counted on the <a href="/methodology/known-errors/#missing-fields">known-errors page</a> as a name fragment, not as a light-truck label.
+    </p>
+
+    <h2 id="light-truck">Light-truck tires, and how to read an LT size</h2>
+    <p>
+      49 CFR 575.104 says “passenger cars.” It does not use the
+      <a href={fmvss}>49 CFR 571.139</a> definition of “passenger car tire,” which also covers some tires for multipurpose passenger vehicles and trucks with a GVWR of 10,000 pounds or less.
+      Those two sections are not the same list. The UTQG section, checked {checked}, applies to new pneumatic tires for use on passenger cars, with the (c)(1) exceptions above.
+    </p>
+    <p>
+      49 CFR 571.139 S3 defines a light truck (LT) tire as a tire its manufacturer designates as primarily intended for use on lightweight trucks or multipurpose passenger vehicles.
+      S5.5(b) requires the tire size designation listed in the rim publications named in S4.1.1, including the Tire and Rim Association.
+      This site does not copy those publications.
+      In the size text itself, a light-truck size uses an LT prefix, as in LT245/75R16, and some flotation sizes end in LT, as in 31x10.50R15LT.
+      A passenger-car size often uses a P prefix, as in P215/65R16.
+      Those three strings are examples of the text shape, not rows in NHTSA's file.
+      S5.5(d) requires an LT tire to show the letter that designates its load range. On the sidewall that letter is written with the words “load range.”
+    </p>
+    <p>
+      The ratings file has no category, so this site cannot label a missing line as exempt and cannot label a present row as a light-truck tire.
+      In the committed file verified {verified} (UTC), {formatNumber(report.sizesStartingLt)} source {report.sizesStartingLt === 1 ? "row has" : "rows have"} size text that starts with LT.
+    </p>
+    <div data-size-mark>
+      <form class="decoder-form" action={NO_UTQG_PATH} method="get">
+        <label>
+          Size text from the sidewall
+          <input type="text" name="size" autocomplete="off" spellcheck="false" />
+        </label>
+        <button type="submit">Read the size text</button>
+      </form>
+      <div class="button-row">
+        <button type="button" class="button-ghost" data-example="LT245/75R16 Load Range E">Example: LT245/75R16 Load Range E</button>
+        <button type="button" class="button-ghost" data-example="P215/65R16">Example: P215/65R16</button>
+        <button type="button" class="button-ghost" data-example="145/70R12">Example: 145/70R12</button>
+        <button type="button" class="button-ghost" data-example="31x10.50R15LT">Example: 31x10.50R15LT</button>
+      </div>
+      <p class="small muted">
+        The examples show the shape of a size. They are not tires in the NHTSA file, and the check does not say a tire is on sale.
+        Reading the text runs in your browser.
+      </p>
+      <noscript>
+        <p>The size-text check needs JavaScript. The regulation text on this page does not.</p>
+      </noscript>
+      <div data-size-output aria-live="polite"></div>
+    </div>
+
+    <h2 id="still-missing">A passenger-car tire can still be missing</h2>
+    <p>
+      49 CFR 575.104(d)(1)(i)(A) excepts a tire of a new tire line, manufactured within the first six months of production of that line, from the requirement to mold the grade into the sidewall.
+      A passenger-car tire the section does cover can also be absent from NHTSA's list.
+      Absence is not a grade, and it does not say the tire is unsold.
+      The same is true of a line the file simply does not contain.
+      <a href="/methodology/known-errors/#coverage">Lines this file does not contain</a>.
+      <a href="/methodology/#data-quality">How the files are read</a>.
+    </p>
+
+    <h2 id="instead">What to use instead of a missing grade</h2>
+    <p>
+      The treadwear explanation buyers are shown is quoted on the <a href="/guides/utqg-grades/">UTQG grades page</a>.
+      It says wear in use can depart from the government test course because of driving, service, roads, and climate.
+      Where the tire maker publishes a treadwear warranty, that warranty is the maker's own mileage figure. It is not a UTQG treadwear number.
+      An independent published test is a separate comparison, under the method that test describes.
+      This page does not name a seller or a test.
+    </p>
+
+    <h2 id="dataset-check">KO2 and the BFGoodrich lines in this file</h2>
+    <p>
+      “KO2” here means those three characters in the line name, in either letter case. “K02” is the same check with a digit zero instead of the letter O. Both counts are rows in the committed ratings file.
+      Grade rows are what this site shows after exact duplicate grade rows are collapsed.
+      <a href={ratingsTableHref({ q: "KO2" })}>Open this list in the table: KO2</a>.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>KO2 and BFGoodrich counts from the NHTSA UTQG file verified {verified} (UTC).</caption>
+        <thead>
+          <tr>
+            <th scope="col">Check</th>
+            <th scope="col">Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            counts.map(([label, count, unit]) => (
+              <tr>
+                <td>{label}</td>
+                <td class="num">{formatNumber(count)} {count === 1 ? unit : `${unit}s`}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    {
+      report.brandSpellings.length ? (
+        <p>
+          The committed file stores this brand as{" "}
+          {
+            report.brandSpellings.map((item, index) => (
+              <>
+                {index === 0 ? "" : index === report.brandSpellings.length - 1 ? ", and " : ", "}
+                “{item.brand}” on {formatNumber(item.rows)} source {item.rows === 1 ? "row" : "rows"}
+              </>
+            ))
+          }
+          . Letter case is merged on this site as {report.brand}. The file has no category, so these line names are not labeled passenger or light truck.
+          <a href="/brands/bf-goodrich/">All {report.brand} lines</a>.
+          <a href={ratingsTableHref({ q: report.brand })}>Open this list in the table: {report.brand}</a>.
+        </p>
+      ) : (
+        <p>The committed file has no brand string that matches BFGoodrich with the space removed.</p>
+      )
+    }
+    {
+      report.lines.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>
+              {report.brand} tire lines in the NHTSA UTQG file verified {verified} (UTC). {formatNumber(report.bfLineCount)} tire {report.bfLineCount === 1 ? "line" : "lines"}, {formatNumber(report.bfGradeRows)} grade {report.bfGradeRows === 1 ? "row" : "rows"}.
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Tire line</th>
+                <th scope="col">Grade rows</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.lines.map((line) => (
+                  <tr>
+                    <td><a href={line.url}>{line.line}</a></td>
+                    <td class="num">{formatNumber(line.rows)}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : null
+    }
+    {
+      report.ltNamedLines.length ? (
+        <ul>
+          {
+            report.ltNamedLines.map((line) => (
+              <li>
+                <a href={line.url}>{line.line}</a> is {formatNumber(line.rows)} grade {line.rows === 1 ? "row" : "rows"}, with size text {line.sizes.map((size) => `“${size}”`).join(", ")}.
+                {line.sizesStartingLt === 0 ? " None of that size text starts with LT." : ` ${formatNumber(line.sizesStartingLt)} of those rows have size text that starts with LT.`}
+                {" "}The letters LT in the line name are not a category. The file does not have one.
+              </li>
+            ))
+          }
+        </ul>
+      ) : (
+        <p>None of those line names contain the letters LT as a word.</p>
+      )
+    }
+    <p>
+      A line that is not in the file is not a grade.
+      <a href="/guides/utqg-grades/#not-in-the-list">The grade guide's note on a missing line</a>.
+    </p>
+  </div>
+</Base>
+
+<script>
+  import { initSizeMark } from "../../scripts/size-mark.js";
+  const root = document.querySelector("[data-size-mark]");
+  if (root) initSizeMark(root);
+</script>

@@ -145,7 +145,15 @@ export function initRatings(root) {
     const to = start + slice.length;
     const lines = tireLineCount(matched);
     const lineNoun = lines === 1 ? "tire line" : "tire lines";
-    status.textContent = `Showing ${from.toLocaleString("en-US")}–${to.toLocaleString("en-US")} of ${matched.length.toLocaleString("en-US")} grade rows on ${lines.toLocaleString("en-US")} ${lineNoun}.`;
+    if (!matched.length) {
+      status.replaceChildren();
+      const note = document.createElement("a");
+      note.href = "/guides/no-utqg-rating/";
+      note.textContent = "Why a tire may have no UTQG rating";
+      status.append(document.createTextNode("No grade rows match. A missing name is not a grade. "), note, document.createTextNode("."));
+    } else {
+      status.textContent = `Showing ${from.toLocaleString("en-US")}–${to.toLocaleString("en-US")} of ${matched.length.toLocaleString("en-US")} grade rows on ${lines.toLocaleString("en-US")} ${lineNoun}.`;
+    }
     pageLabel.textContent = `Page ${state.page} of ${pages}`;
     prev.disabled = state.page <= 1;
     next.disabled = state.page >= pages;

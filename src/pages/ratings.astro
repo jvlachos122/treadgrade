@@ -115,7 +115,10 @@ const exampleHref = ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], te
     </form>
     <p class="status" data-status aria-live="polite">Loading the ratings table…</p>
     <noscript>
-      <p>The combined table needs JavaScript. Every brand is linked from the <a href="/brands/">brand index</a>.</p>
+      <p>
+        The combined table needs JavaScript. Every brand is linked from the <a href="/brands/">brand index</a>.
+        If a tire is not in the list, see <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
+      </p>
     </noscript>
     <div class="table-wrap">
       <table id="ratings-table">
@@ -144,6 +147,7 @@ const exampleHref = ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], te
       Each row links to the tire-line page on this site. A value outside the usual letters is shown as published.
       <a href="/methodology/known-errors/#invalid-fields">Known errors in this file</a>.
       <a href="/guides/utqg-grades/">Grade definitions</a>.
+      <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
       <a href={exampleHref}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>.
     </p>
   </div>

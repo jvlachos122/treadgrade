@@ -401,6 +401,19 @@ export function dateGuideAnswer() {
   ];
 }
 
+export function noUtqgAnswer({ verifiedAt, checkedOn, ko2SourceRows, ko2GradeRows }) {
+  const when = formatVerified(verifiedAt);
+  const checked = formatUtcDate(checkedOn);
+  const source = countNoun(ko2SourceRows, "source row");
+  const grade = countNoun(ko2GradeRows, "grade row");
+  const relation = ko2SourceRows === ko2GradeRows ? "which remains" : "which is";
+  return [
+    `As checked on the eCFR on ${checked}, 49 CFR 575.104 applies to new pneumatic tires for passenger cars and does not apply to deep tread, winter-type snow tires, space-saver or temporary use spare tires, tires with a nominal rim diameter of 12 inches or less, or limited-production tires.`,
+    "A light-truck tire is outside that section because the section covers passenger-car tires, and paragraph (c)(1) does not name light-truck tires as one of those exceptions.",
+    `The NHTSA UTQG file verified ${when} (UTC) has ${source} whose line name contains KO2, ${relation} ${grade} after exact duplicate grade rows are collapsed.`,
+  ];
+}
+
 export function guidesIndexAnswer(catalog, summary) {
   return [
     `These guides cover NHTSA's published list of ${formatNumber(catalog.stats.rows)} grade rows, ${formatNumber(catalog.stats.plants)} plant records, and the four-digit tire date code.`,

@@ -3,6 +3,7 @@ import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog } from "../src/lib/catalog.js";
 import { hubPaths } from "../src/lib/plant-hubs.js";
+import { NO_UTQG_PATH } from "../src/lib/utqg-exempt.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -155,6 +156,7 @@ for (const plant of catalog.plants) {
   if (!pageLocs.has(plant.url)) errors.push(`sitemap missing plant ${plant.url}`);
 }
 if (!pageLocs.has("/plants/")) errors.push("sitemap missing /plants/");
+if (!pageLocs.has(NO_UTQG_PATH)) errors.push(`sitemap missing ${NO_UTQG_PATH}`);
 for (const path of hubPaths) {
   if (!pageLocs.has(path)) errors.push(`sitemap missing hub ${path}`);
 }

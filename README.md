@@ -82,6 +82,8 @@ A short or broken response exits non-zero and leaves the saved files alone, so a
 
 `.github/workflows/refresh-data.yml` runs that fetch every Monday at 14:23 UTC, then tests, builds, checks links, and validates HTML. Only if those pass does it commit `data/` to `main` and deploy. A push made by `github-actions[bot]` does not start the regular deploy workflow, so the refresh workflow deploys the site itself.
 
+A push to `main` that changes `.github/refresh-request` starts the same workflow. Bump the `requested:` line in a pull request and merge it to rerun the refresh when `workflow_dispatch` cannot be called. The refresh commits only the `data/` JSON files with `GITHUB_TOKEN`, which does not start workflows and does not change the request file, so that push cannot start another refresh.
+
 `.github/workflows/deploy.yml` runs on other pushes to `main`. It builds the committed data and deploys. It does not call NHTSA, so a copy change can ship while the API is down.
 
 ## GitHub settings the owner has to turn on

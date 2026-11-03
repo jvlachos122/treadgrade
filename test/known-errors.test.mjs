@@ -12,6 +12,7 @@ import {
   refreshSchedule,
 } from "../src/lib/known-errors.js";
 import { brandKey, buildCatalog, nameKey } from "../src/lib/normalize.js";
+import { laterIso } from "../src/lib/structured.js";
 import { isImporterOrBrandOwnerExample } from "../src/lib/recalls.js";
 import { summarizeRecallRows } from "../src/lib/recalls.js";
 
@@ -62,10 +63,12 @@ function typesOf(value, found = []) {
 
 test("refresh schedule is read from the weekly workflow", () => {
   assert.deepEqual(refreshSchedule("0 14 * * 1"), { day: "Monday", time: "14:00", cron: "0 14 * * 1" });
+  assert.deepEqual(refreshSchedule("23 14 * * 1"), { day: "Monday", time: "14:23", cron: "23 14 * * 1" });
   assert.equal(refreshSchedule("not a cron"), null);
   const schedule = loadRefreshSchedule();
   assert.equal(schedule.day, "Monday");
-  assert.equal(schedule.time, "14:00");
+  assert.equal(schedule.time, "14:23");
+  assert.equal(schedule.cron, "23 14 * * 1");
 });
 
 test("known-error counts follow the rows that were passed in", () => {
@@ -233,7 +236,8 @@ test("committed files produce the known-error counts", () => {
   assert.equal(graph[1].publisher["@type"], "Organization");
   assert.equal(graph[0].url, `https://treadgrade.com${KNOWN_ERRORS_PATH}`);
   assert.equal(graph[1].mainEntityOfPage, `https://treadgrade.com${KNOWN_ERRORS_PATH}`);
-  assert.equal(graph[0].dateModified, savedMeta.verifiedAt);
+  assert.equal(graph[0].dateModified, laterIso(savedMeta.verifiedAt, savedMeta.recalls.retrievedAt));
+  assert.equal(graph[1].dateModified, graph[0].dateModified);
   assert.equal(graph[0].creator.name, "National Highway Traffic Safety Administration");
   assert.equal(report.examples.length > 0, true);
   for (const example of report.examples) {

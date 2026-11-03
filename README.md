@@ -80,7 +80,7 @@ It replaces the files only when:
 
 A short or broken response exits non-zero and leaves the saved files alone, so a bad API reply cannot wipe the site. `FETCH_ALLOW_ANY_COUNT=1` skips the relative check and still enforces the hard minimums.
 
-`.github/workflows/refresh-data.yml` runs that fetch every Monday at 14:00 UTC, then tests, builds, checks links, and validates HTML. Only if those pass does it commit `data/` to `main` and deploy. A push made by `github-actions[bot]` does not start the regular deploy workflow, so the refresh workflow deploys the site itself.
+`.github/workflows/refresh-data.yml` runs that fetch every Monday at 14:23 UTC, then tests, builds, checks links, and validates HTML. Only if those pass does it commit `data/` to `main` and deploy. A push made by `github-actions[bot]` does not start the regular deploy workflow, so the refresh workflow deploys the site itself.
 
 `.github/workflows/deploy.yml` runs on other pushes to `main`. It builds the committed data and deploys. It does not call NHTSA, so a copy change can ship while the API is down.
 

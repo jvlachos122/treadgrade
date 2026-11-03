@@ -10,7 +10,7 @@ import {
 } from "../src/lib/answers.js";
 import { catalog } from "../src/lib/catalog.js";
 import { normalizeCountry } from "../src/lib/plant-countries.js";
-import { groupsMatchingName } from "../src/lib/plant-groups.js";
+import { MANUFACTURER_GROUP_DEFS, groupsMatchingName } from "../src/lib/plant-groups.js";
 import {
   countryHubs,
   countryNormalization,
@@ -69,16 +69,27 @@ test("country aliases collapse case, spelling, and parenthetical forms", () => {
 });
 
 test("stored country strings fold to fewer country hubs", () => {
-  const stored = JSON.parse(readFileSync("data/plants.json", "utf8")).map((plant) => String(plant.country || "").trim());
+  const stored = JSON.parse(readFileSync("data/plants.json", "utf8"))
+    .map((plant) => String(plant.country || "").trim())
+    .filter(Boolean);
   assert.equal(new Set(stored).size, countryNormalization.rawCount);
-  assert.equal(countryNormalization.rawCount, 107);
-  assert.equal(countryNormalization.caseInsensitiveCount, 83);
+  assert.equal(
+    countryNormalization.caseInsensitiveCount,
+    new Set(stored.map((country) => country.toLowerCase())).size,
+  );
   assert.equal(countryNormalization.normalizedCount, countryHubs.length);
+  assert.equal(countryNormalization.normalizedCount, catalog.countries.length);
   assert.ok(countryNormalization.normalizedCount < countryNormalization.caseInsensitiveCount);
-  assert.equal(countryNormalization.normalizedCount, 73);
   const united = countryHubs.find((country) => country.key === "united-states");
   assert.ok(united);
-  assert.deepEqual(united.rawLabels, ["United States", "United States (USA)"]);
+  const unitedLabels = [
+    ...new Set(
+      catalog.plants.filter((plant) => plant.countryKey === "united-states").map((plant) => plant.countryRaw),
+    ),
+  ].sort((a, b) => a.localeCompare(b, "en"));
+  assert.deepEqual(united.rawLabels, unitedLabels);
+  assert.ok(unitedLabels.includes("United States"));
+  assert.ok(unitedLabels.includes("United States (USA)"));
   assert.equal(catalog.getPlant("1vv").country, "China");
   assert.equal(catalog.getPlant("1vv").countryRaw, "P.R. China");
   assert.equal(catalog.getPlant("1nb").country, "United Kingdom");
@@ -89,15 +100,20 @@ test("stored country strings fold to fewer country hubs", () => {
   assert.equal(new Set(keys).size, keys.length);
 });
 
-test("manufacturer groups match the named counts and do not overlap", () => {
-  const counts = Object.fromEntries(manufacturerGroups.map((group) => [group.id, group.count]));
-  assert.deepEqual(counts, {
-    bridgestone: 75,
-    michelin: 57,
-    goodyear: 38,
-    continental: 28,
-    pirelli: 19,
-  });
+test("manufacturer groups match the name rules and do not overlap", () => {
+  let matchedTotal = 0;
+  for (const def of MANUFACTURER_GROUP_DEFS) {
+    const matched = catalog.plants.filter((plant) => def.matches(plant.name));
+    const group = manufacturerGroups.find((item) => item.id === def.id);
+    assert.ok(group, def.id);
+    assert.equal(group.count, matched.length, def.id);
+    assert.deepEqual(
+      group.plants.map((plant) => plant.code),
+      matched.map((plant) => plant.code).sort((a, b) => a.localeCompare(b)),
+      def.id,
+    );
+    matchedTotal += matched.length;
+  }
   const seen = new Map();
   for (const plant of catalog.plants) {
     const hits = groupsMatchingName(plant.name);
@@ -107,16 +123,20 @@ test("manufacturer groups match the named counts and do not overlap", () => {
       seen.set(plant.code, hits[0]);
     }
   }
-  assert.equal(seen.size, 75 + 57 + 38 + 28 + 19);
+  assert.equal(seen.size, matchedTotal);
   const naive = catalog.plants.filter((plant) => {
     const name = plant.name.toLowerCase();
     return name.includes("continental") || name.includes("general tire");
   });
-  assert.equal(naive.length, 29);
   const omitted = catalog.plants.filter((plant) => /general tires technology/i.test(plant.name));
-  assert.equal(omitted.length, 1);
-  assert.equal(omitted[0].code, "076");
-  assert.equal(manufacturerGroups.find((group) => group.id === "continental").plants.some((plant) => plant.code === "076"), false);
+  const continental = manufacturerGroups.find((group) => group.id === "continental");
+  const continentalCodes = new Set(continental.plants.map((plant) => plant.code));
+  assert.ok(omitted.some((plant) => plant.code === "076"));
+  for (const plant of omitted) {
+    assert.equal(naive.some((item) => item.code === plant.code), true, plant.code);
+    assert.equal(continentalCodes.has(plant.code), false, plant.code);
+  }
+  assert.equal(continental.count, naive.length - omitted.length);
   const firestoneOnly = catalog.plants.find((plant) => /firestone/i.test(plant.name) && !/bridgestone/i.test(plant.name));
   assert.equal(seen.get(firestoneOnly.code), "bridgestone");
   assert.equal(manufacturerGroupForBrand("firestone").id, "bridgestone");

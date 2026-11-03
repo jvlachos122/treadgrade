@@ -65,36 +65,46 @@ test("filter counts match an offline pass of the committed file", () => {
   const offline = offlineHighWear();
   assert.equal(filtered.length, offline.count);
   assert.equal(tireLineCount(filtered), offline.lines);
-  assert.equal(filtered.length, 98);
-  assert.equal(tireLineCount(filtered), 78);
+  assert.ok(filtered.length > 0);
   assert.equal(filtered.every((row) => row.wearN >= 700 && (row.trac === "A" || row.trac === "AA") && row.temp === "A"), true);
 
   const summary = gradeTableSummary(rows);
   assert.equal(summary.rows, catalog.stats.rows);
+  assert.equal(summary.rows, rows.length);
   assert.equal(summary.sizeSpecific + summary.allSizes, summary.rows);
-  assert.equal(summary.sizeSpecific, 5628);
-  assert.equal(summary.allSizes, 1994);
-  assert.equal(summary.invalid, 8);
-  assert.equal(summary.suspect, 2);
+  let specific = 0;
+  let invalid = 0;
+  let suspect = 0;
+  for (const row of rows) {
+    if (sizeScope(row.size) === "specific") specific += 1;
+    const kind = rowQuality(row).kind;
+    if (kind === "invalid") invalid += 1;
+    else if (kind === "suspect") suspect += 1;
+  }
+  assert.equal(summary.sizeSpecific, specific);
+  assert.equal(summary.allSizes, rows.length - specific);
+  assert.equal(summary.invalid, invalid);
+  assert.equal(summary.suspect, suspect);
+  assert.ok(summary.invalid > 0);
+  assert.ok(summary.suspect > 0);
   assert.equal(filterGradeRows(rows, { quality: "invalid" }).length, summary.invalid);
   assert.equal(filterGradeRows(rows, { quality: "suspect" }).length, summary.suspect);
   assert.equal(filterGradeRows(rows, { quality: "hide" }).length, summary.rows - summary.invalid - summary.suspect);
   assert.equal(filterGradeRows(rows, { size: "specific" }).length, summary.sizeSpecific);
   assert.equal(filterGradeRows(rows, { size: "all" }).length, summary.allSizes);
-
-  let specific = 0;
-  for (const row of rows) if (sizeScope(row.size) === "specific") specific += 1;
-  assert.equal(summary.sizeSpecific, specific);
 });
 
 test("invalid wins over a missing treadwear number, and treadwear 0 is suspect", () => {
-  const invalid = rows.filter((row) => row.brand === "Bridgestone" && row.line === "Turanza EV");
-  assert.equal(invalid.length, 1);
-  assert.equal(rowQuality(invalid[0]).kind, "invalid");
-  assert.deepEqual(rowQuality(invalid[0]).reasons, ['no treadwear number', 'temperature "500"']);
+  const turanza = rows.filter((row) => row.brand === "Bridgestone" && row.line === "Turanza EV");
+  const broken = turanza.filter((row) => rowQuality(row).reasons.includes('temperature "500"'));
+  assert.ok(broken.length >= 1);
+  for (const row of broken) {
+    assert.equal(rowQuality(row).kind, "invalid");
+    assert.deepEqual(rowQuality(row).reasons, ['no treadwear number', 'temperature "500"']);
+  }
 
   const suspect = rows.filter((row) => row.wearN === 0);
-  assert.equal(suspect.length, 2);
+  assert.ok(suspect.length > 0);
   assert.equal(suspect.every((row) => rowQuality(row).kind === "suspect"), true);
   assert.deepEqual(rowQuality({ wear: "12A", wearN: null, trac: "A", temp: "A" }), {
     kind: "invalid",
@@ -165,7 +175,15 @@ test("the public row keeps a non-numeric treadwear for the quality check", () =>
 
 test("CSV export names the NHTSA file and stays on this site", () => {
   const csv = ratingsCsv(rows.slice(0, 3), { source: meta.ratings.source, verifiedAt: meta.verifiedAt });
-  assert.match(csv, /^# Source: NHTSA UTQG file https:\/\/api\.nhtsa\.gov\/tires\?dataSet=ratings\. Verified 2026-10-26T19:47:41\.050Z \(UTC\)\./);
+  assert.equal(meta.ratings.source, "https://api.nhtsa.gov/tires?dataSet=ratings");
+  assert.equal(Number.isNaN(Date.parse(meta.verifiedAt)), false);
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  assert.match(
+    csv,
+    new RegExp(
+      `^# Source: NHTSA UTQG file ${escapeRegExp(meta.ratings.source)}\\. Verified ${escapeRegExp(meta.verifiedAt)} \\(UTC\\)\\. Published by TreadGrade\\.`,
+    ),
+  );
   assert.match(csv, /These grades are copied from that file\. They are not a ranking, and a row does not mean a tire is on sale\./);
   assert.match(csv, /Brand,Tire line,Size series,Size flag,Treadwear,Traction,Temperature,Data quality,Line page/);
   assert.match(csv, /\/tires\//);

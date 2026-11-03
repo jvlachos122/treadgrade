@@ -3555,13 +3555,24 @@
   {
     "brand": "OTANI",
     "line": "OH-306",
-    "filer": "Foreign Tire Sales, Inc",
+    "filer": "Foreign Tire Sales, Inc.",
     "manufacturers": [
-      "Foreign Tire Sales, Inc"
+      "Foreign Tire Sales, Inc."
     ],
     "campaign": "20T019000",
     "reportDate": "2020-11-04",
     "units": 138
+  },
+  {
+    "brand": "OTANI",
+    "line": "WM1000",
+    "filer": "Foreign Tire Sales, Inc.",
+    "manufacturers": [
+      "Foreign Tire Sales, Inc."
+    ],
+    "campaign": "26T015000",
+    "reportDate": "2026-10-28",
+    "units": 84
   },
   {
     "brand": "PANTERA",

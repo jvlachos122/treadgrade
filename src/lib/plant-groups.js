@@ -1,16 +1,11 @@
 /**
  * Manufacturer hubs are a name match on the NHTSA registrant.
- * They are not the parent company's own factory list.
+ * They are not the parent company's own factory list. The count is however
+ * many committed plant records match the rule, so a refresh can change it.
  *
- * Counts on the committed plant file:
- * - Bridgestone or Firestone: 75
- * - Michelin: 57
- * - Goodyear: 38
- * - Continental, or General Tire except General Tires Technology: 28
- *   (a substring "general tire" also hits General Tires Technology
- *   (Cambodia), code 076, which is a different registrant and is left out;
- *   that naive substring total is 29)
- * - Pirelli: 19
+ * General Tires Technology (Cambodia), code 076, contains the substring
+ * "general tire" but is a different registrant. The Continental rule leaves
+ * that name out. A naive "general tire" substring would include it.
  *
  * Spot-check before treating a hub as the company's plants: Bridgestone's
  * location pages (as of the end of December 2025) count 46 new tire plants

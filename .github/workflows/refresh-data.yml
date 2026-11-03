@@ -2,7 +2,7 @@ name: Refresh NHTSA data
 
 on:
   schedule:
-    - cron: "0 14 * * 1"
+    - cron: "23 14 * * 1"
   workflow_dispatch:
 
 permissions:

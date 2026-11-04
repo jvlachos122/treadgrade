@@ -1,0 +1,86 @@
+---
+import Base from "../../../../../../layouts/Base.astro";
+import Answer from "../../../../../../components/Answer.astro";
+import CompareNote from "../../../../../../components/CompareNote.astro";
+import ComparePair from "../../../../../../components/ComparePair.astro";
+import SourceLine from "../../../../../../components/SourceLine.astro";
+import { sourceEntries } from "../../../../../../lib/answers.js";
+import { catalog } from "../../../../../../lib/catalog.js";
+import { exampleComparisons } from "../../../../../../lib/compare-pages.js";
+import { EXAMPLE_FAQS, compareAnswers, compareToolHref } from "../../../../../../lib/compare.js";
+import { dataset, laterIso } from "../../../../../../lib/structured.js";
+import { clampText } from "../../../../../../lib/text.js";
+
+export function getStaticPaths() {
+  return exampleComparisons.map((pair) => ({
+    params: {
+      aBrand: pair.left.brandSlug,
+      aLine: pair.left.lineSlug,
+      bBrand: pair.right.brandSlug,
+      bLine: pair.right.lineSlug,
+    },
+    props: { pair },
+  }));
+}
+
+const { pair } = Astro.props;
+const lines = [pair.left, pair.right];
+const answers = compareAnswers(lines);
+const description = clampText(answers.join(" "));
+const heading = `${pair.left.brand} ${pair.left.line} vs ${pair.right.brand} ${pair.right.line}`;
+const toolHref = compareToolHref([pair.left.id, pair.right.id]);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/compare/", label: "Compare" },
+  { href: pair.path, label: heading },
+];
+const jsonLd = [
+  dataset({
+    name: `UTQG grades for ${heading}`,
+    description: answers.join(" "),
+    path: pair.path,
+    dateModified: laterIso(catalog.meta.verifiedAt, catalog.meta.recalls.retrievedAt),
+    isBasedOn: [catalog.meta.ratings.source, catalog.meta.plants.source, catalog.meta.recalls.source],
+    keywords: ["UTQG", "treadwear", "NHTSA"],
+  }),
+  {
+    "@type": "FAQPage",
+    mainEntity: EXAMPLE_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.name,
+      acceptedAnswer: { "@type": "Answer", text: item.text },
+    })),
+  },
+];
+---
+
+<Base title={`${heading} UTQG grades`} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <p class="eyebrow">Example comparison · {pair.familyLabel}</p>
+    <h1>{heading}</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "recalls", "plants"])} />
+    <CompareNote />
+    <p>
+      This is one example comparison from the <a href="/compare/">tire line comparison</a>.
+      The token in the label above is the name-token list that selected the pair. It is not an NHTSA category.
+      <a href={toolHref}>Open these lines in the compare tool</a>.
+    </p>
+    <ComparePair lines={lines} />
+    <h2>Questions</h2>
+    {
+      EXAMPLE_FAQS.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+    <p>
+      <a href={pair.left.url}>{pair.left.brand} {pair.left.line}</a>
+      · <a href={pair.right.url}>{pair.right.brand} {pair.right.line}</a>
+      · <a href="/compare/">All example comparisons</a>
+      · <a href="/ratings/">Full ratings table</a>
+    </p>
+  </div>
+</Base>

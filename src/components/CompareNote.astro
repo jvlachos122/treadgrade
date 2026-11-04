@@ -1,0 +1,23 @@
+---
+import { catalog } from "../lib/catalog.js";
+import { formatVerified } from "../lib/format.js";
+
+const verified = formatVerified(catalog.meta.verifiedAt);
+---
+
+<div class="notice">
+  <p class="data-note-label">About this data</p>
+  <p>
+    UTQG grades are assigned by the manufacturer under <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104">49 CFR 575.104</a>.
+    Treadwear is a relative grade from a government test course, not a mileage figure.
+    Grades from different brands are only loosely comparable.
+    <a href="/guides/utqg-grades/">What treadwear, traction, and temperature mean</a>.
+    A tire that is not in the list is covered in <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
+    The ratings file has no category field.
+    Data last verified {verified} (UTC).
+  </p>
+  <p>
+    The treadwear median is the middle usable grade when the count is odd, and the mean of the two middle grades when the count is even.
+    A usable grade is a positive whole number. Size text is shown as NHTSA published it.
+  </p>
+</div>

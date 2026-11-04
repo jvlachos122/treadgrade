@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { catalog } from "../src/lib/catalog.js";
+import { exampleComparisonPaths } from "../src/lib/compare-pages.js";
 import { hubPaths } from "../src/lib/plant-hubs.js";
 import { NO_UTQG_PATH } from "../src/lib/utqg-exempt.js";
 
@@ -144,6 +145,7 @@ for (const name of sitemapFiles) {
   const xml = readFileSync(join(dist, name), "utf8");
   for (const match of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     const url = new URL(match[1]);
+    if (match[1].includes("?")) errors.push(`sitemap query ${match[1]}`);
     if (url.origin !== site) errors.push(`sitemap off-site ${match[1]}`);
     if (url.pathname === "/404.html" || url.pathname === "/404/") errors.push(`sitemap includes 404 ${match[1]}`);
     if (redirectPages.has(url.pathname)) errors.push(`sitemap includes retired ${match[1]}`);
@@ -156,9 +158,26 @@ for (const plant of catalog.plants) {
   if (!pageLocs.has(plant.url)) errors.push(`sitemap missing plant ${plant.url}`);
 }
 if (!pageLocs.has("/plants/")) errors.push("sitemap missing /plants/");
+if (!pageLocs.has("/compare/")) errors.push("sitemap missing /compare/");
 if (!pageLocs.has(NO_UTQG_PATH)) errors.push(`sitemap missing ${NO_UTQG_PATH}`);
+for (const path of exampleComparisonPaths) {
+  if (!pageLocs.has(path)) errors.push(`sitemap missing example ${path}`);
+}
 for (const path of hubPaths) {
   if (!pageLocs.has(path)) errors.push(`sitemap missing hub ${path}`);
+}
+
+const compareIndexPath = join(dist, "data/compare-index.json");
+if (!existsSync(compareIndexPath)) errors.push("missing dist/data/compare-index.json");
+else {
+  const compareIndex = JSON.parse(readFileSync(compareIndexPath, "utf8"));
+  const compareLines = Array.isArray(compareIndex.lines) ? compareIndex.lines : [];
+  if (!compareLines.length) errors.push("compare index is empty");
+  let missingSummaries = 0;
+  for (const line of compareLines) {
+    if (!existsSync(join(dist, "data/compare", `${line.id}.json`))) missingSummaries += 1;
+  }
+  if (missingSummaries) errors.push(`${missingSummaries} compare summaries missing`);
 }
 
 const robots = readFileSync(join(dist, "robots.txt"), "utf8");

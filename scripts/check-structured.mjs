@@ -84,8 +84,12 @@ function requirements(pathname) {
     req.types.push("Dataset", "Article");
     req.answer = true;
     req.source = true;
-  } else if (pathname === "/decoder/") {
+  } else if (pathname === "/decoder/" || pathname === "/compare/") {
     req.types.push("WebApplication");
+    req.answer = true;
+    req.source = true;
+  } else if (pathname.startsWith("/compare/")) {
+    req.types.push("Dataset");
     req.answer = true;
     req.source = true;
   } else if (pathname.startsWith("/guides/")) {

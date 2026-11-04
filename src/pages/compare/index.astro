@@ -1,0 +1,131 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import CompareNote from "../../components/CompareNote.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { exampleComparisons } from "../../lib/compare-pages.js";
+import { COMPARE_FAMILIES, TOOL_FAQS, exampleRuleParagraphs, toolAnswers } from "../../lib/compare.js";
+import { pageUrl, publisherOrg } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
+
+const answers = toolAnswers(catalog);
+const description = clampText(answers.join(" "));
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/compare/", label: "Compare" },
+];
+const canonical = pageUrl("/compare/");
+const jsonLd = [
+  {
+    "@type": "WebApplication",
+    name: "TreadGrade tire line comparison",
+    applicationCategory: "ReferenceApplication",
+    operatingSystem: "Any",
+    url: canonical,
+    description: answers.join(" "),
+    dateModified: catalog.meta.verifiedAt,
+    publisher: publisherOrg,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  },
+  {
+    "@type": "FAQPage",
+    mainEntity: TOOL_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.name,
+      acceptedAnswer: { "@type": "Answer", text: item.text },
+    })),
+  },
+];
+const rule = exampleRuleParagraphs();
+const grouped = COMPARE_FAMILIES.map((family) => ({
+  label: family.label,
+  pairs: exampleComparisons.filter((pair) => pair.familyId === family.id),
+})).filter((group) => group.pairs.length);
+---
+
+<Base title="Compare UTQG tire grades" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <script is:inline>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      if (!params.has("lines")) return;
+      var meta = document.createElement("meta");
+      meta.name = "robots";
+      meta.content = "no" + "index";
+      document.head.appendChild(meta);
+      var link = document.querySelector('link[rel="canonical"]');
+      if (!link) return;
+      var url = new URL(link.getAttribute("href"), location.href);
+      url.pathname = "/compare/";
+      url.search = "";
+      url.hash = "";
+      link.setAttribute("href", url.href);
+    })();
+  </script>
+  <div class="wrap" data-compare data-canonical={canonical} data-index="/data/compare-index.json">
+    <h1>Compare UTQG tire grades</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "recalls", "plants"])} />
+    <CompareNote />
+    <p class="lede">
+      Pick two to four tire lines. The page shows the UTQG grades NHTSA lists for each size, the size-row count, and the minimum, median, and maximum treadwear.
+      Recall rows appear when the tire-recall file matches the line. A plant appears only when its registrant name matches a company on one of those recall rows.
+    </p>
+    <form class="compare-form" action="/compare/" method="get">
+      <fieldset class="compare-picks" data-picks>
+        <legend>Tire lines</legend>
+      </fieldset>
+      <div class="filter-actions">
+        <button type="button" class="button-ghost" data-add>Add a tire line</button>
+        <button type="submit">Show grades</button>
+      </div>
+    </form>
+    <p class="status" data-status aria-live="polite"></p>
+    <noscript>
+      <p>
+        Choosing lines needs JavaScript. The example comparisons below are ordinary pages and stay readable without it.
+        Each tire line also links here from its own page.
+      </p>
+    </noscript>
+    <div data-results></div>
+    <h2>Example comparisons</h2>
+    <p>{rule[0]}</p>
+    <details>
+      <summary>Selection rule</summary>
+      <p>{rule[1]}</p>
+      <p>{rule[2]}</p>
+    </details>
+    {
+      grouped.map((group) => (
+        <>
+          <h3>{group.label}</h3>
+          <ul>
+            {group.pairs.map((pair) => (
+              <li>
+                <a href={pair.path}>
+                  {pair.left.brand} {pair.left.line} and {pair.right.brand} {pair.right.line}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      ))
+    }
+    <h2>Questions</h2>
+    {
+      TOOL_FAQS.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+  </div>
+</Base>
+
+<script>
+  import { initCompare } from "../../scripts/compare.js";
+  const root = document.querySelector("[data-compare]");
+  if (root) initCompare(root);
+</script>

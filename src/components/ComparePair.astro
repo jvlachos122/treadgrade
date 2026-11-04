@@ -1,0 +1,195 @@
+---
+import Grade from "./Grade.astro";
+import { formatMedian, formatWear } from "../lib/compare.js";
+import { formatNumber, formatUtcDate } from "../lib/format.js";
+
+const { lines } = Astro.props;
+
+function stat(value) {
+  if (value == null) return "Not reported";
+  return formatNumber(value);
+}
+
+function letters(values) {
+  return values.length ? values.join(", ") : "Not reported";
+}
+---
+
+<div class="table-wrap">
+  <table>
+    <caption>UTQG grades NHTSA lists for these lines</caption>
+    <thead>
+      <tr>
+        <th scope="col">Measure</th>
+        {
+          lines.map((line) => (
+            <th scope="col">
+              <a href={line.url}>
+                {line.brand} {line.line}
+              </a>
+            </th>
+          ))
+        }
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Size rows</th>
+        {lines.map((line) => <td class="num">{formatNumber(line.sizeCount)}</td>)}
+      </tr>
+      <tr>
+        <th scope="row">Treadwear minimum</th>
+        {lines.map((line) => <td class="num">{stat(line.wearMin)}</td>)}
+      </tr>
+      <tr>
+        <th scope="row">Treadwear median</th>
+        {lines.map((line) => <td class="num">{formatMedian(line.wearMedian)}</td>)}
+      </tr>
+      <tr>
+        <th scope="row">Treadwear maximum</th>
+        {lines.map((line) => <td class="num">{stat(line.wearMax)}</td>)}
+      </tr>
+      <tr>
+        <th scope="row">Traction</th>
+        {lines.map((line) => <td>{letters(line.traction)}</td>)}
+      </tr>
+      <tr>
+        <th scope="row">Temperature</th>
+        {lines.map((line) => <td>{letters(line.temperature)}</td>)}
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Grades by size</h2>
+<p>Size rows are listed per line. NHTSA's size text is not a shared size code, so the rows are not lined up as the same fitment.</p>
+{
+  lines.map((line) => (
+    <div class="table-wrap">
+      <table>
+        <caption>
+          Size rows NHTSA lists for {line.brand} {line.line}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Size series</th>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Traction</th>
+            <th scope="col">Temperature</th>
+          </tr>
+        </thead>
+        <tbody>
+          {line.sizes.map((row) => (
+            <tr>
+              <td class="tire-size">{row.size}</td>
+              <td class="num utqg">{formatWear(row.wear)}</td>
+              <td>
+                <Grade value={row.trac} kind="trac" />
+              </td>
+              <td>
+                <Grade value={row.temp} kind="temp" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ))
+}
+
+<h2>Recall campaigns</h2>
+<p>
+  A recall row is included only when NHTSA's tire-recall file uses this brand and this line name.
+  The match is the same brand and line spelling check used on the brand pages, narrowed to the line.
+  A filing covers that recalled line in that campaign. It does not cover the rest of the brand.
+</p>
+{
+  lines.map((line) =>
+    line.recalls.length ? (
+      <div class="table-wrap">
+        <table>
+          <caption>
+            Tire-recall rows whose brand and line match {line.brand} {line.line}. Units affected is the campaign total, repeated on each line of that campaign.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Campaign</th>
+              <th scope="col">Report date</th>
+              <th scope="col">Filer</th>
+              <th scope="col">Units</th>
+              <th scope="col">What the file says</th>
+            </tr>
+          </thead>
+          <tbody>
+            {line.recalls.map((row) => (
+              <tr>
+                <td>
+                  <a class="num" href={row.href}>{row.campaign}</a>
+                </td>
+                <td class="num">
+                  <time datetime={row.reportDate}>{formatUtcDate(row.reportDate)}</time>
+                </td>
+                <td>{row.filer}</td>
+                <td class="num">{formatNumber(row.units)}</td>
+                <td>
+                  {row.text}{" "}
+                  <a href={row.whoHref}>Filings for this brand</a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p>NHTSA's tire-recall file has no row whose brand and line match {line.brand} {line.line}.</p>
+    ),
+  )
+}
+
+<h2>Registrant plants</h2>
+<p>
+  A plant is listed only when its registrant name matches a company named on a recall row for that line.
+  The plant record has no brand field. The match is not proof that the plant made the line.
+  Status is the value stored in vPIC, not a finding that the plant is operating.
+</p>
+{
+  lines.map((line) =>
+    line.plants.length ? (
+      <div class="table-wrap">
+        <table>
+          <caption>
+            Plant records whose registrant name matches a company on a recall row for {line.brand} {line.line}. The record does not say the plant made the line.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Plant code</th>
+              <th scope="col">Registrant</th>
+              <th scope="col">City</th>
+              <th scope="col">Country</th>
+              <th scope="col">Status field</th>
+              <th scope="col">Matched company</th>
+            </tr>
+          </thead>
+          <tbody>
+            {line.plants.map((plant) => (
+              <tr>
+                <td>
+                  <a class="num" href={plant.url}>{plant.code}</a>
+                </td>
+                <td>{plant.name}</td>
+                <td>{plant.city || "Not reported"}</td>
+                <td>{plant.country || "Not reported"}</td>
+                <td>{plant.status || "Not reported"}</td>
+                <td>{plant.matchedCompany}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p>
+        No plant record is listed for {line.brand} {line.line}. A plant is listed only when a recall row for this line names a company that matches a registrant.
+      </p>
+    ),
+  )
+}

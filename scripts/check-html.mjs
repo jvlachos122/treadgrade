@@ -34,6 +34,18 @@ function expectedCanonical(file) {
   return site + rel;
 }
 
+function visibleText(html) {
+  return html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/\s+/g, " ");
+}
+
 function redirectTarget(html) {
   const match = html.match(/<meta http-equiv="refresh" content="0;url=([^"]+)">/);
   return match ? match[1] : "";
@@ -101,6 +113,10 @@ for (const file of files) {
   if (!html.includes('id="main"')) errors.push(`${rel}: main`);
   const path = publicPath(rel);
   if (path.startsWith("/plants/") && html.includes('content="noindex"')) errors.push(`${rel}: plant page is noindex`);
+  if (path === "/compare/" || path.startsWith("/compare/")) {
+    const banned = visibleText(html).match(/\b(best|better|winner|safest|popular)\b/i);
+    if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+  }
   if (!refresh && rel !== "/404.html" && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
   if (rel === "/404.html" && !html.includes('content="noindex"')) errors.push("404 should be noindex");
   if (rel === "/404.html" && refresh) errors.push("404 should not refresh");

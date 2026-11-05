@@ -1,14 +1,16 @@
 ---
 import Base from "../layouts/Base.astro";
-import { affiliatesConfigured } from "../lib/affiliates.js";
+import { affiliatesConfigured, gearConfigured, retailersConfigured } from "../lib/affiliates.js";
 import { contactEmail, site } from "../lib/site.js";
 
 const email = contactEmail();
 
+const retailers = retailersConfigured();
+const gear = gearConfigured();
 const enabled = affiliatesConfigured();
 const description = enabled
-  ? `${site.legalName} may earn a commission when a configured retailer link on TreadGrade is used. Grade pages are not ordered by that commission.`
-  : `Affiliate links are turned off. No retailer buttons are shown, and ${site.legalName} earns no commission from them.`;
+  ? `${site.legalName} may earn a commission when a configured retailer or AstroAI link on TreadGrade is used. Grade pages are not ordered by that commission.`
+  : `Affiliate links are turned off. No retailer buttons or AstroAI gear links are shown, and ${site.legalName} earns no commission from them.`;
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/affiliate-disclosure/", label: "Affiliate disclosure" },
@@ -20,7 +22,7 @@ const crumbs = [
     <h1>Affiliate disclosure</h1>
     <p>TreadGrade is operated by {site.legalName}, {site.operatorPlace}.</p>
     {
-      enabled ? (
+      retailers ? (
         <p>
           Some tire-line pages show "check price" buttons. Those links go to a retailer and include an affiliate id from the site configuration.
           If you buy through one, {site.legalName} may earn a commission. The price, if any, is on the retailer's site. This site does not display a price of its own.
@@ -32,8 +34,22 @@ const crumbs = [
         </p>
       )
     }
+    {
+      gear ? (
+        <p>
+          Some pages show roadside-gear links. Those links go to AstroAI through the Awin network.
+          If you buy through one, {site.legalName} may earn a commission. This site does not display a price, a rating, or a specification for those products, and it has not tested them.
+          The link is a plain https address. No Awin script, tracking pixel, or image is loaded on this site.
+        </p>
+      ) : (
+        <p>
+          Roadside-gear links to AstroAI through the Awin network are not configured. Each product address stays empty until an https link from Awin is added and the program is turned on.
+          No AstroAI link is shown, and no Awin script, tracking pixel, or image is loaded on this site.
+        </p>
+      )
+    }
     <p>
-      Grades, sort order, and which lines appear come from the NHTSA file. They are not arranged to favor a retailer. When a button is shown, the page says so next to the button and links here.
+      Grades, sort order, and which lines appear come from the NHTSA file. They are not arranged to favor a retailer or a gear link. When a link is shown, the page says so next to the link and links here.
     </p>
     <p>See also the <a href="/privacy/">privacy</a> page.</p>
     {

@@ -1,8 +1,11 @@
 ---
 import Base from "../layouts/Base.astro";
+import { gearConfigured, retailersConfigured } from "../lib/affiliates.js";
 import { analyticsSnippet, contactEmail, site } from "../lib/site.js";
 
 const email = contactEmail();
+const retailers = retailersConfigured();
+const gear = gearConfigured();
 
 const description =
   "What TreadGrade stores: a static site with no accounts, no cookies of its own, and no analytics unless Three Pines Company LLC adds a snippet.";
@@ -30,8 +33,32 @@ const crumbs = [
         <p>No analytics snippet is configured. This site does not load a third-party analytics script.</p>
       )
     }
+    {
+      retailers ? (
+        <p>
+          A configured "check price" button leaves this site for the retailer's site. That retailer has its own policy.
+        </p>
+      ) : (
+        <p>
+          Retailer buttons are off. They stay off unless an affiliate id and an https link template are configured.
+        </p>
+      )
+    }
+    {
+      gear ? (
+        <p>
+          A configured roadside-gear link leaves this site for AstroAI through the Awin network. Awin and AstroAI have their own policies.
+          The link is a plain address. This site does not load an Awin script, tracking pixel, or image.
+        </p>
+      ) : (
+        <p>
+          Roadside-gear links to AstroAI through Awin are off. No AstroAI address is configured.
+          This site does not load an Awin script, tracking pixel, or image.
+        </p>
+      )
+    }
     <p>
-      If {site.legalName} later turns on affiliate buttons, a click leaves this site for the retailer's site, and that retailer has its own policy. Those buttons are off unless an affiliate id is configured. See the <a href="/affiliate-disclosure/">affiliate disclosure</a>.
+      See the <a href="/affiliate-disclosure/">affiliate disclosure</a>.
     </p>
     {
       email ? (

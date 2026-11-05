@@ -41,6 +41,19 @@ export const site = {
       id: "",
       urlTemplate: "",
     },
+    // Fixed https addresses, not a search template. Paste each href from
+    // Awin > Links & Tools (publisher 3131988). Leave href "" until that
+    // deep link is copied. Do not invent an awclick URL. enabled stays false
+    // until those addresses are in place. No Awin script, pixel, or image is loaded.
+    astroai: {
+      name: "AstroAI",
+      network: "Awin",
+      enabled: false,
+      products: [
+        { key: "inflator", label: "Portable tire inflator", href: "" },
+        { key: "jump_starter", label: "Jump starter", href: "" },
+      ],
+    },
   },
 };
 

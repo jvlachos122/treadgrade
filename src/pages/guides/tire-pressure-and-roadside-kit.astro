@@ -1,0 +1,157 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import GearLinks from "../../components/GearLinks.astro";
+import { tirePressureGuideAnswer } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { formatVerified } from "../../lib/format.js";
+import { article } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
+
+const answers = tirePressureGuideAnswer();
+const description = clampText(answers.join(" "));
+// Article dateModified has to be a catalog timestamp. This date is when the
+// NHTSA pages cited below were read for this guide.
+const citationsUpdated = formatVerified("2026-11-05T00:00:00.000Z");
+const jsonLd = [
+  article({
+    headline: "Tire pressure and a roadside kit",
+    description: answers.join(" "),
+    path: "/guides/tire-pressure-and-roadside-kit/",
+    dateModified: catalog.meta.verifiedAt,
+  }),
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: "/guides/tire-pressure-and-roadside-kit/", label: "Tire pressure" },
+];
+const kit = [
+  "Cell phone and charger",
+  "First aid kit, including tourniquet",
+  "Flashlight",
+  "Flares and a white flag",
+  "Jumper cables",
+  "Tire pressure gauge",
+  "Jack (and ground mat) for changing a tire",
+  "Work gloves and a change of clothes",
+  "Basic repair tools and some duct tape (for temporarily repairing a hose leak)",
+  "Water and paper towels for cleaning up",
+  "Nonperishable food, drinking water, and medicines",
+  "Extra windshield washer fluid",
+  "Maps",
+  "Emergency blankets, towels and coats",
+];
+---
+
+<Base title="Tire pressure and a roadside kit" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>Tire pressure and a roadside kit</h1>
+    <Answer sentences={answers} />
+    <p class="source-line">
+      Source: NHTSA <a href="https://www.nhtsa.gov/vehicle-safety/tires">TireWise</a>,
+      <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-571/subpart-B/section-571.138">49 CFR 571.138</a>,
+      and <a href="https://www.nhtsa.gov/summer-driving-tips">summer driving tips</a>.
+      The citations on this page were last updated {citationsUpdated} (UTC).
+    </p>
+    <p>
+      The pressure, the telltale, and the kit list below are NHTSA's. This page does not grade a tire, and it does not say a tire is still sold.
+    </p>
+
+    <h2>The pressure on the placard</h2>
+    <p>
+      <a href="https://www.nhtsa.gov/vehicle-safety/tires">TireWise</a> says the pressure to use is the one the vehicle manufacturer lists, not the number on the tire.
+      That recommended pressure is on the Tire and Loading Information label or in the owner's manual.
+      On a new vehicle, TireWise places the label on the driver's side doorjamb (the B-pillar).
+      If the vehicle has no B-pillar, the same page says to look at the rear edge of the driver's door, or, when that edge is too narrow, on an inward-facing surface next to the driver's seating position.
+    </p>
+    <p>
+      <a href="https://www.law.cornell.edu/cfr/text/49/571.138">49 CFR 571.138</a>
+      (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-571/subpart-B/section-571.138">eCFR</a>)
+      defines the vehicle placard and the tire inflation pressure label as the sources of the manufacturer's recommended cold inflation pressure, and it points to
+      <a href="https://www.law.cornell.edu/cfr/text/49/571.110">49 CFR 571.110</a>
+      (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-571/subpart-B/section-571.110">eCFR</a>)
+      for that placard.
+      TireWise states the number on the tire itself is not that recommendation.
+      <a href="https://www.nhtsa.gov/summer-driving-tips">NHTSA's summer driving tips</a> say the sidewall number is the maximum pressure the tire can hold.
+    </p>
+
+    <h2>A cold reading</h2>
+    <p>
+      TireWise says to check the pressure of every tire, including the spare, at least once a month, when the tire is cold.
+      Cold means the vehicle has not been driven for at least three hours.
+      The summer driving tips use the same interval: at least three hours after driving.
+    </p>
+    <p>
+      The same TireWise section says a tire can lose pressure after a pothole or a curb, and that a radial tire can be low without looking low.
+      It says to keep a pressure gauge in the vehicle.
+    </p>
+    <p>
+      TireWise's check is: read the placard or the manual, measure every tire including the spare, let air out if a tire is above that pressure, add the missing pressure if it is below, and confirm that tires which are supposed to match do match.
+      Front and rear pressures can differ when the placard says so.
+      If the vehicle has been driven and a tire may be low, TireWise says to fill it to the placard cold pressure and to measure again when the tire is cold.
+      The fill after driving is a temporary step.
+    </p>
+
+    <h2>Underinflation</h2>
+    <p>
+      The temperature-grade explanation in 49 CFR 575.104, quoted on the
+      <a href="/guides/utqg-grades/#underinflation">UTQG grades</a> page, includes this warning:
+    </p>
+    <blockquote class="quote">
+      <p>
+        Warning: The temperature grade for this tire is established for a tire that is properly inflated and not overloaded. Excessive speed, underinflation, or excessive loading, either separately or in combination, can cause heat buildup and possible tire failure.
+      </p>
+    </blockquote>
+    <p>
+      The warning is the text in <a href="https://www.law.cornell.edu/cfr/text/49/575.104">49 CFR 575.104</a>
+      (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104">eCFR</a>).
+    </p>
+    <p>
+      The owner's-manual statement required by 49 CFR 571.138 S4.5 says that driving on a significantly under-inflated tire causes the tire to overheat and can lead to tire failure.
+      <a href="https://www.nhtsa.gov/summer-driving-tips">NHTSA's summer driving tips</a> say underinflation is the leading cause of tire failure, and that a tire does not have to be punctured to lose air.
+    </p>
+
+    <h2>The dashboard light</h2>
+    <p>
+      Standard No. 138 applies to passenger cars, multipurpose passenger vehicles, trucks, and buses with a gross vehicle weight rating of 4,536 kilograms (10,000 pounds) or less, except vehicles with dual wheels on an axle, on the phase-in schedule in S7 of that standard.
+      TireWise says passenger cars, light trucks, and vans of model year 2008 or newer are required to have the system, and that some model year 2006 and 2007 vehicles have it.
+    </p>
+    <p>
+      S4.2 requires the low-pressure telltale to light no more than 20 minutes after one to four tires are at or below the higher of two pressures: 25 percent below the manufacturer's recommended cold inflation pressure, or the pressure in the third column of Table 1 of the standard for that type of tire.
+      S4.2(b) keeps the telltale on while any of those tires is still at or below that pressure and the ignition is in "On" ("Run"), whether or not the engine is running, or until the driver resets it the way the manufacturer instructs.
+    </p>
+    <blockquote class="quote">
+      <p>
+        Please note that the TPMS is not a substitute for proper tire maintenance, and it is the driver's responsibility to maintain correct tire pressure, even if under-inflation has not reached the level to trigger illumination of the TPMS low tire pressure telltale.
+      </p>
+    </blockquote>
+    <p>
+      That sentence is part of the statement S4.5 requires in the owner's manual.
+      TireWise says the same thing in its own words: the symbol means at least one tire is significantly underinflated, and the monthly check with a gauge still has to be done.
+      For a combined telltale, S4.4(c) requires a malfunction to flash for at least 60 seconds and no longer than 90 seconds, then stay on, and to repeat that sequence at the next start until the fault is corrected.
+      TireWise describes that flash as 60 to 90 seconds.
+    </p>
+
+    <h2>The spare</h2>
+    <p>
+      TireWise includes the spare in the monthly pressure check.
+      It says spare tires age because they are seldom replaced, and it recommends that a full-size spare not be used in place of worn tires, except in an emergency such as a flat.
+      The summer driving tips say to have a spare tire and a jack kit, and to check the spare.
+    </p>
+
+    <h2>What NHTSA lists for an emergency kit</h2>
+    <p>
+      <a href="https://www.nhtsa.gov/summer-driving-tips">NHTSA's summer driving tips</a> recommend carrying an emergency roadside kit.
+      The contents on that page are:
+    </p>
+    <ul>
+      {kit.map((item) => <li>{item}</li>)}
+    </ul>
+    <p>
+      That list is NHTSA's. It is not a product pick from this site.
+      A link below, when the site configuration has one, is separate from the list.
+    </p>
+    <GearLinks />
+  </div>
+</Base>

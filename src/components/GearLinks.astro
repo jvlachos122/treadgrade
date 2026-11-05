@@ -1,0 +1,28 @@
+---
+import { gearLinks } from "../lib/affiliates.js";
+import { site } from "../lib/site.js";
+
+const program = site.affiliates.astroai;
+const links = gearLinks();
+const network = String(program?.network || "").trim();
+---
+
+{
+  links.length ? (
+    <aside class="card" aria-labelledby="gear-heading">
+      <h2 id="gear-heading">Roadside gear</h2>
+      <p>
+        These are affiliate links to {program?.name || "AstroAI"}
+        {network ? ` through the ${network} network` : ""}. If you buy after using one, the site may earn a commission.
+        TreadGrade has not tested these products. <a href="/affiliate-disclosure/">Affiliate disclosure</a>.
+      </p>
+      <div class="button-row">
+        {links.map((link) => (
+          <a class="button" href={link.href} rel="sponsored nofollow noopener">
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </aside>
+  ) : null
+}

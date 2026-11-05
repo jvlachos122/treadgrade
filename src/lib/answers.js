@@ -401,6 +401,14 @@ export function dateGuideAnswer() {
   ];
 }
 
+export function tirePressureGuideAnswer() {
+  return [
+    "NHTSA says to check every tire, including the spare, at least once a month when the tire is cold, and to use the vehicle placard pressure rather than the number on the sidewall.",
+    "49 CFR 571.138 requires a low-pressure telltale when a tire is at or below the higher of 25 percent under that placard pressure and the minimum in the standard's table, and it says the telltale is not a substitute for the monthly check.",
+    "NHTSA's summer driving tips list a spare, a jack, a tire-pressure gauge, and jumper cables among the items to carry in an emergency roadside kit.",
+  ];
+}
+
 export function noUtqgAnswer({ verifiedAt, checkedOn, ko2SourceRows, ko2GradeRows }) {
   const when = formatVerified(verifiedAt);
   const checked = formatUtcDate(checkedOn);

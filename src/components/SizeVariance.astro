@@ -1,0 +1,73 @@
+---
+import Grade from "./Grade.astro";
+import { compareToolHref } from "../lib/compare.js";
+import { formatNumber } from "../lib/format.js";
+import { ratingsTableHref } from "../lib/ratings-table.js";
+import { GRADE_VARIES_ID, GRADE_VARIES_LABEL, SIZE_VARIANCE_PATH, sizeVarianceParagraphs } from "../lib/size-variance.js";
+
+const { line, variance } = Astro.props;
+const paragraphs = sizeVarianceParagraphs(line, variance);
+const compareHref = compareToolHref([`${line.brandSlug}/${line.lineSlug}`]);
+const ratingsHref = ratingsTableHref({ q: `${line.brand} ${line.line}` });
+const ecfr = "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104";
+---
+
+<div class="notice" id={GRADE_VARIES_ID}>
+  <p class="data-note-label">{GRADE_VARIES_LABEL}</p>
+  {paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+  {
+    variance.wearVaries ? (
+      <div class="table-wrap">
+        <table>
+          <caption>Treadwear values NHTSA lists for this line, and how many size rows use each</caption>
+          <thead>
+            <tr>
+              <th scope="col">Treadwear</th>
+              <th scope="col">Size rows</th>
+            </tr>
+          </thead>
+          <tbody>
+            {variance.wears.map((item) => (
+              <tr>
+                <td class="num utqg">{item.value}</td>
+                <td class="num">{formatNumber(item.count)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : null
+  }
+  {
+    variance.tractionVaries ? (
+      <div class="table-wrap">
+        <table>
+          <caption>Traction grades NHTSA lists for this line, and how many size rows use each</caption>
+          <thead>
+            <tr>
+              <th scope="col">Traction</th>
+              <th scope="col">Size rows</th>
+            </tr>
+          </thead>
+          <tbody>
+            {variance.tractions.map((item) => (
+              <tr>
+                <td>
+                  <Grade value={item.value} kind="trac" />
+                </td>
+                <td class="num">{formatNumber(item.count)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : null
+  }
+  <p>
+    <a href={SIZE_VARIANCE_PATH}>Why treadwear can differ by size</a>
+    · <a href={ratingsHref}>Open this list in the table</a>
+    · <a href={compareHref}>Compare with other tires</a>
+    · <a href="/guides/utqg-grades/">What the grades mean</a>
+    · <a href={ecfr}>49 CFR 575.104</a>
+  </p>
+</div>

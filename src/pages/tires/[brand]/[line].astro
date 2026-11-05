@@ -9,9 +9,11 @@ import { lineAnswer, sourceEntries } from "../../../lib/answers.js";
 import { catalog } from "../../../lib/catalog.js";
 import { compareToolHref } from "../../../lib/compare.js";
 import { ratingsTableHref } from "../../../lib/ratings-table.js";
+import { lineSizeVariance } from "../../../lib/size-variance.js";
 import { dataset } from "../../../lib/structured.js";
 import { clampText } from "../../../lib/text.js";
 import RedirectNotice from "../../../components/RedirectNotice.astro";
+import SizeVariance from "../../../components/SizeVariance.astro";
 
 export function getStaticPaths() {
   return [
@@ -50,6 +52,7 @@ const safety = line
 const safetyTotal = safety.complaints + safety.recalls + safety.investigations + safety.communications;
 const activeMixed = line ? line.rows.some((row) => row.active) && line.rows.some((row) => !row.active) : false;
 const sameName = line ? line.sameName.slice(0, 12) : [];
+const variance = line ? lineSizeVariance(line) : null;
 const answers = line ? lineAnswer(line) : [];
 const description = line ? clampText(answers.join(" ")) : "";
 const jsonLd = line
@@ -85,7 +88,9 @@ const crumbs = line
     <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <Disclaimer />
     {
-      sameGrades ? (
+      variance.show ? (
+        <SizeVariance line={line} variance={variance} />
+      ) : sameGrades ? (
         <p>Every size series for this line carries the same grades in the NHTSA file. The size strings below are unchanged from that file.</p>
       ) : (
         <p>Grades can differ by the size series NHTSA published. Size text is shown as published, not converted into a standard size code.</p>
@@ -174,6 +179,7 @@ const crumbs = line
     <h2>Read the grades</h2>
     <p>
       <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
+      <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
       The numbers compare tires on a government test. They are not a mileage warranty.
       A tire that is not in the list is covered in <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
     </p>

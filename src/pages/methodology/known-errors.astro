@@ -244,6 +244,8 @@ const fieldList = report.ratingFields.length ? formatNameList(report.ratingField
     <p>
       {formatNumber(report.multiWearLines)} {report.multiWearLines === 1 ? "tire line has" : "tire lines have"} more than one treadwear number above 0.
       A single number for the line would hide that. The tire-line page keeps each size series, and it says when the grades differ.
+      When that difference is treadwear or traction, the page shows a grade-varies-by-size note and the count of size rows for each value.
+      <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
       The ratings table marks a row size-specific unless the size text is only “all”, “all size”, or “all sizes”.
       <a href={ratingsTableHref({ size: "specific" })}>Open this list in the table: size-specific grades</a>.
       <a href={ratingsTableHref({ size: "all" })}>Open this list in the table: all sizes</a>.

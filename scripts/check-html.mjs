@@ -2,6 +2,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HtmlValidate } from "html-validate";
+import { catalog } from "../src/lib/catalog.js";
+import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -80,6 +82,9 @@ const validator = new HtmlValidate({
   },
 });
 
+const linesByPath = new Map(catalog.lines.map((line) => [line.url, line]));
+const gradeVariesId = `id="${GRADE_VARIES_ID}"`;
+
 const files = walk(dist);
 for (const file of files) {
   const html = readFileSync(file, "utf8");
@@ -116,6 +121,16 @@ for (const file of files) {
   if (path === "/compare/" || path.startsWith("/compare/")) {
     const banned = visibleText(html).match(/\b(best|better|winner|safest|popular)\b/i);
     if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+  }
+  if (path === SIZE_VARIANCE_PATH) {
+    const banned = visibleText(html).match(BANNED_GRADE_WORD);
+    if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+  }
+  const gradeLine = linesByPath.get(path);
+  if (gradeLine && !refresh) {
+    const expected = lineSizeVariance(gradeLine).show;
+    const present = html.includes(gradeVariesId);
+    if (present !== expected) errors.push(`${rel}: grade-varies note is ${present ? "shown" : "hidden"}`);
   }
   if (!refresh && rel !== "/404.html" && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
   if (rel === "/404.html" && !html.includes('content="noindex"')) errors.push("404 should be noindex");

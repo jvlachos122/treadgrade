@@ -1,0 +1,176 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber, formatVerified } from "../../lib/format.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
+import { article, dataset } from "../../lib/structured.js";
+import { clampText } from "../../lib/text.js";
+import {
+  SIZE_VARIANCE_FAQS,
+  SIZE_VARIANCE_PATH,
+  sizeVarianceGuideAnswer,
+  sizeVarianceReport,
+  tractionLabel,
+  wearRangeLabel,
+} from "../../lib/size-variance.js";
+
+const report = sizeVarianceReport(catalog);
+const answers = sizeVarianceGuideAnswer(report);
+const description = clampText(answers.join(" "));
+const verified = formatVerified(report.verifiedAt);
+const ecfr = "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104";
+const jsonLd = [
+  dataset({
+    name: "UTQG treadwear and traction grades that differ by size in NHTSA's published list",
+    description: answers.join(" "),
+    path: SIZE_VARIANCE_PATH,
+    dateModified: report.verifiedAt,
+    isBasedOn: report.ratingsSource,
+    keywords: ["UTQG", "treadwear", "traction", "tire size", "NHTSA"],
+  }),
+  article({
+    headline: "Why treadwear can differ by size",
+    description: answers.join(" "),
+    path: SIZE_VARIANCE_PATH,
+    dateModified: report.verifiedAt,
+  }),
+  {
+    "@type": "FAQPage",
+    mainEntity: SIZE_VARIANCE_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.name,
+      acceptedAnswer: { "@type": "Answer", text: item.text },
+    })),
+  },
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: SIZE_VARIANCE_PATH, label: "Treadwear by size" },
+];
+const counts = [
+  ["More than one treadwear number above 0", report.multiWearLines],
+  ["More than one traction grade", report.multiTractionLines],
+  ["Grade varies by size (either of those)", report.notedLines],
+];
+---
+
+<Base title="Why treadwear can differ by size" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>Why treadwear can differ by size</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <p>
+      UTQG grades are assigned by the manufacturer under <a href={ecfr}>49 CFR 575.104</a>.
+      NHTSA's file stores a row for each size series it published. The treadwear number or the traction letter on that row can differ from another size of the same line.
+      Tire makers often assign the grade from a test of a representative size. The grade molded on the sidewall of the tire you buy is the grade for that tire.
+      A single number in a generic listing can hide the range NHTSA lists.
+      Treadwear is a relative grade from a government test course, not miles. Grades from different brands are only loosely comparable.
+    </p>
+    <p>
+      <a href="/ratings/">Open the ratings table</a>.
+      <a href="/compare/">Compare tire lines</a>.
+      <a href="/guides/utqg-grades/">What the grades mean</a>.
+    </p>
+
+    <h2 id="counts">How many lines in this file</h2>
+    <p>
+      The counts below group the committed ratings by the brand string and line name on this site, after letter case, spacing, and brand punctuation are normalized.
+      A size row with treadwear 0, no treadwear number, a treadwear value that is not a whole number, or a traction or temperature letter outside the usual grades is left out.
+      Those rows stay on the tire-line page. The usual traction letters are AA, A, B, and C. The usual temperature letters are A, B, and C.
+      A line name stored under more than one brand is counted under each brand string separately. That match is not evidence the tires are the same product.
+      <a href="/methodology/known-errors/#repeated-names">Repeated line names</a>.
+      <a href="/methodology/known-errors/#size-grades">Grades that vary by size</a>.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>Tire lines in the NHTSA UTQG file verified {verified} (UTC). Flagged rows are left out.</caption>
+        <thead>
+          <tr>
+            <th scope="col">What NHTSA lists</th>
+            <th scope="col">Tire lines</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            counts.map(([label, count]) => (
+              <tr>
+                <td>{label}</td>
+                <td class="num">{formatNumber(count)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="examples">Lines in this pull</h2>
+    <p>
+      Each row was found by looking up the line name in this pull. A name that is not in the file, or that has one treadwear number and one traction grade, is not listed.
+      The range is the values on that line's size rows after flagged rows are left out.
+    </p>
+    {
+      report.examples.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>Watched tire lines whose treadwear or traction differs by size in this pull.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Tire line</th>
+                <th scope="col">Treadwear NHTSA lists</th>
+                <th scope="col">Traction NHTSA lists</th>
+                <th scope="col">Size rows</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.examples.map(({ line, variance }) => (
+                  <tr>
+                    <td>
+                      <a href={`${line.url}#grade-varies`}>
+                        {line.brand} {line.line}
+                      </a>
+                    </td>
+                    <td class="num">{wearRangeLabel(variance)}</td>
+                    <td>{tractionLabel(variance)}</td>
+                    <td class="num">{formatNumber(variance.rowCount)}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>None of the watched lines has more than one treadwear or traction grade in this pull.</p>
+      )
+    }
+    <p>
+      <a href={ratingsTableHref({ size: "specific" })}>Open this list in the table: size-specific grades</a>.
+      <a href="/compare/">Compare two to four tire lines</a>.
+    </p>
+
+    <h2 id="sidewall">What to read on the tire</h2>
+    <p>
+      The grade molded on the sidewall is the grade for the tire you buy. A listing that prints one treadwear number for the whole line is not a substitute for that sidewall, and it is not a distance the tire will travel.
+      The tire-line page keeps every size series NHTSA published and, when treadwear or traction has more than one value, shows the count of size rows for each value.
+    </p>
+    <p>
+      <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
+      <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+      <a href="/methodology/">Data sources</a>.
+    </p>
+
+    <h2>Questions</h2>
+    {
+      SIZE_VARIANCE_FAQS.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+  </div>
+</Base>

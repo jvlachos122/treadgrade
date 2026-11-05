@@ -137,6 +137,8 @@ Affiliate ids and the analytics snippet live in `src/lib/site.js` and are empty 
 
 **Affiliates.** `tireRack`, `simpleTire`, and `amazon` each have `enabled`, `id`, and `urlTemplate`. A "Check price" button is rendered only when `enabled` is true, `id` is non-empty, and `urlTemplate` is an `https` URL. `{query}` is inserted already URL-encoded (the brand and line). `{id}` is URL-encoded. Use the link pattern from the affiliate program, and do not enable one until the application is approved. The button includes `rel="sponsored nofollow noopener"` and a short disclosure that links to `/affiliate-disclosure/`. Grades are never sorted by whether a button exists.
 
+`astroai` is separate: `name`, `network`, `enabled`, and `products` (`key`, `label`, `href`). A roadside-gear link is rendered only when `enabled` is true and that product's `href` is a non-empty `https` URL. Leave each `href` as `""` until the deep link is copied from Awin. Do not invent an awclick URL. The link is a plain `<a>` with the same `rel`. No Awin script, pixel, or image is loaded, and the page does not show a price, a rating, or a specification.
+
 **Analytics.** Paste a privacy-friendly snippet into `analyticsSnippet`. It is inserted raw into `<head>`. Leave it `""` and nothing is loaded. Update `/privacy/` if the snippet collects data the page does not already describe.
 
 **Search Console.** `treadgrade.com` is verified as a Domain property with a DNS record, so no HTML verification tag is used. Leave `searchConsoleVerification` empty. The layout prints `<meta name="google-site-verification">` only when that value is a token of letters, digits, `_`, and `-`. Do not paste the whole meta tag.

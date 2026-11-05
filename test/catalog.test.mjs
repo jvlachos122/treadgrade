@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { affiliateLinks } from "../src/lib/affiliates.js";
+import { affiliateLinks, affiliatesConfigured, gearConfigured, gearLinks } from "../src/lib/affiliates.js";
+import { site } from "../src/lib/site.js";
 import { brandKey, buildCatalog, nameKey } from "../src/lib/normalize.js";
 import { redirectCopy, refreshContent } from "../src/lib/redirects.js";
 import { searchRecords } from "../src/lib/search.js";
@@ -76,6 +77,69 @@ test("search prefers an exact plant code", () => {
 
 test("affiliate buttons stay off until an https template and id exist", () => {
   assert.deepEqual(affiliateLinks("Michelin Pilot Sport 4"), []);
+  assert.equal(affiliatesConfigured(), false);
+});
+
+test("AstroAI gear links render nothing until an https address is set", () => {
+  const program = site.affiliates.astroai;
+  assert.equal(program.enabled, false);
+  assert.equal(program.name, "AstroAI");
+  assert.equal(program.network, "Awin");
+  assert.deepEqual(
+    program.products.map((item) => [item.key, item.href]),
+    [
+      ["inflator", ""],
+      ["jump_starter", ""],
+    ],
+  );
+  for (const product of program.products) {
+    assert.ok(product.label);
+    assert.doesNotMatch(product.label, /\d|\$|psi|awclick/i);
+  }
+  assert.deepEqual(gearLinks(), []);
+  assert.equal(gearConfigured(), false);
+  assert.deepEqual(
+    gearLinks({
+      enabled: false,
+      name: "AstroAI",
+      network: "Awin",
+      products: [{ key: "inflator", label: "Portable tire inflator", href: "https://example.com/inflator" }],
+    }),
+    [],
+  );
+
+  const links = gearLinks({
+    enabled: true,
+    name: "AstroAI",
+    network: "Awin",
+    products: [
+      { key: "inflator", label: "Portable tire inflator", href: "http://example.com/inflator" },
+      { key: "jump_starter", label: "Jump starter", href: "" },
+      { key: "blank", label: "Blank", href: "   " },
+      { key: "bad", label: "Bad", href: "not-a-url" },
+      { key: "nolabel", label: "  ", href: "https://example.com/nolabel" },
+      { key: "ok", label: "  Portable compressor  ", href: "  https://example.com/compressor  " },
+    ],
+  });
+  assert.deepEqual(links, [{ key: "ok", label: "Portable compressor", href: "https://example.com/compressor" }]);
+
+  const component = readFileSync(new URL("../src/components/GearLinks.astro", import.meta.url), "utf8");
+  const guide = readFileSync(new URL("../src/pages/guides/tire-pressure-and-roadside-kit.astro", import.meta.url), "utf8");
+  assert.match(component, /links\.length \?/);
+  assert.match(component, /rel="sponsored nofollow noopener"/);
+  assert.match(component, /\/affiliate-disclosure\//);
+  assert.doesNotMatch(component, /<script/i);
+  assert.doesNotMatch(component, /<img/i);
+  assert.doesNotMatch(component, /awclick|awin1\.com/i);
+  assert.match(guide, /<GearLinks/);
+  assert.match(guide, /https:\/\/www\.nhtsa\.gov\/vehicle-safety\/tires/);
+  assert.match(guide, /571\.138/);
+  assert.match(guide, /summer-driving-tips/);
+  assert.match(guide, /\/guides\/utqg-grades\/#underinflation/);
+  assert.doesNotMatch(guide, /awclick|awin1\.com|astroai\.com/i);
+  assert.doesNotMatch(guide, /<script/i);
+  assert.match(readFileSync(new URL("../src/pages/guides/utqg-grades.astro", import.meta.url), "utf8"), /id="underinflation"/);
+  assert.match(readFileSync(new URL("../src/pages/affiliate-disclosure.astro", import.meta.url), "utf8"), /gearConfigured\(\)/);
 });
 
 test("committed NHTSA files build unique pages", () => {

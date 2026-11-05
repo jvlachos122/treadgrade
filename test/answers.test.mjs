@@ -5,6 +5,7 @@ import {
   brandAnswer,
   brandsIndexAnswer,
   dateGuideAnswer,
+  tirePressureGuideAnswer,
   decoderAnswer,
   homeAnswer,
   lineAnswer,
@@ -122,6 +123,18 @@ test("a repeated line name is not called a rebadge", () => {
   }).join(" ");
   assert.match(text, /2 other brand strings/);
   assert.match(text, /not evidence of rebadging/);
+});
+
+test("the tire-pressure guide cites the monthly check, the telltale, and the kit", () => {
+  const sentences = tirePressureGuideAnswer();
+  assertSentences(sentences, "tire pressure guide");
+  const text = sentences.join(" ");
+  assert.match(text, /once a month/);
+  assert.match(text, /placard/);
+  assert.match(text, /571\.138/);
+  assert.match(text, /not a substitute/);
+  assert.match(text, /roadside kit/);
+  assert.doesNotMatch(text, /AstroAI|Awin|\$|awclick/i);
 });
 
 test("the date-code guide states the week, the year, and the three-digit form", () => {

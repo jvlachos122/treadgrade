@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { HIGHEST_TREADWEAR_PATH } from "../src/lib/highest-treadwear.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -90,6 +91,10 @@ function requirements(pathname) {
     req.source = true;
   } else if (pathname.startsWith("/compare/")) {
     req.types.push("Dataset");
+    req.answer = true;
+    req.source = true;
+  } else if (pathname === HIGHEST_TREADWEAR_PATH) {
+    req.types.push("Dataset", "Article", "FAQPage");
     req.answer = true;
     req.source = true;
   } else if (pathname.startsWith("/guides/")) {

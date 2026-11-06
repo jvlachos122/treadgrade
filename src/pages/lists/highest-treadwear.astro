@@ -1,0 +1,229 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import Grade from "../../components/Grade.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { formatNumber } from "../../lib/format.js";
+import {
+  HIGHEST_TREADWEAR_PATH,
+  HIGH_TREADWEAR_MIN,
+  countsCaption,
+  exampleParagraph,
+  excludedParagraph,
+  gradeVariesHref,
+  highestTreadwearAnswer,
+  highestTreadwearCounts,
+  highestTreadwearFaqs,
+  highestTreadwearJsonLd,
+  highestTreadwearReport,
+  otherWearLabel,
+  rowsCaption,
+  sizeFlag,
+  varianceCaption,
+  varianceTractionLabel,
+  varianceWearLabel,
+} from "../../lib/highest-treadwear.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
+import { SIZE_VARIANCE_PATH } from "../../lib/size-variance.js";
+import { clampText } from "../../lib/text.js";
+
+const report = highestTreadwearReport(catalog);
+const answers = highestTreadwearAnswer(report);
+const faqs = highestTreadwearFaqs(report);
+const description = clampText(answers.join(" "));
+const jsonLd = highestTreadwearJsonLd(report);
+const counts = highestTreadwearCounts(report);
+const examples = exampleParagraph(report);
+const excluded = excludedParagraph(report);
+const ecfr = "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104";
+const tableQuery = { wearMin: String(HIGH_TREADWEAR_MIN), quality: "hide", sort: "wear-desc" };
+const ratingsAll = ratingsTableHref(tableQuery);
+const ratingsSpecific = ratingsTableHref({ ...tableQuery, size: "specific" });
+const ratingsAllSizes = ratingsTableHref({ ...tableQuery, size: "all" });
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/ratings/", label: "UTQG grades" },
+  { href: HIGHEST_TREADWEAR_PATH, label: "Highest treadwear" },
+];
+---
+
+<Base title="Highest treadwear grades NHTSA lists" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <div class="prose">
+    <h1>Highest treadwear grades NHTSA lists</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <div class="notice">
+      <p class="data-note-label">Not every line is in the file</p>
+      <p>
+        NHTSA's published UTQG list is not exhaustive. Some lines are missing from the file.
+        This page does not invent a grade for a missing line. Absence is not a grade, and it does not say the tire is unsold.
+        <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+        <a href="/guides/utqg-grades/#not-in-the-list">Lines the grade guide calls out</a>.
+        <a href="/methodology/known-errors/#coverage">Lines this file does not contain</a>.
+      </p>
+    </div>
+    <p>
+      UTQG treadwear is a comparative rating under <a href={ecfr}>49 CFR 575.104</a>.
+      A higher number means a slower wear rate on the government test course. It is not miles, and grades from different brands are only loosely comparable.
+      This page lists usable grade rows whose treadwear is {HIGH_TREADWEAR_MIN} or above.
+      A row with treadwear 0, no treadwear number, a treadwear value that is not a whole number, or a traction or temperature letter outside the usual grades is left out.
+      Those rows stay on the tire-line page.
+      The usual traction letters are AA, A, B, and C. The usual temperature letters are A, B, and C.
+    </p>
+    {excluded ? <p>{excluded}</p> : null}
+    <p>{examples}</p>
+    <p>
+      A line with a higher treadwear number comes before a line with a lower one, and lines with the same number are ordered by brand and line. A row does not mean the tire is on sale.
+      The table links hide rows outside the usual grades.
+    </p>
+    <p>
+      <a href={ratingsAll}>Open this list in the table: treadwear of at least {HIGH_TREADWEAR_MIN}</a>
+      · <a href={ratingsSpecific}>Open this list in the table: size-specific grades at that treadwear</a>
+      · <a href={ratingsAllSizes}>Open this list in the table: all-sizes rows at that treadwear</a>
+      · <a href="/compare/">Compare tire lines</a>
+      · <a href="/guides/utqg-grades/">What the grades mean</a>
+      · <a href={SIZE_VARIANCE_PATH}>Why treadwear can differ by size</a>
+    </p>
+    </div>
+
+    <h2 id="counts">How many rows</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>{countsCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">What NHTSA lists</th>
+            <th scope="col">Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            counts.map(([label, count]) => (
+              <tr>
+                <td>{label}</td>
+                <td class="num">{formatNumber(count)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="rows">Grade rows</h2>
+    <p>
+      Each row is a size series NHTSA published. The size text is shown as stored.
+      A row is all sizes only when that text, with extra spaces collapsed, is “all”, “all size”, or “all sizes”. Any other text is size-specific.
+      The tire-line link opens every size series on that line.
+    </p>
+    {
+      report.rows.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{rowsCaption(report)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Tire line</th>
+                <th scope="col">Treadwear</th>
+                <th scope="col">Size series</th>
+                <th scope="col">Size flag</th>
+                <th scope="col">Traction</th>
+                <th scope="col">Temperature</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.rows.map((row) => (
+                  <tr>
+                    <td>
+                      <a href={row.line.url}>
+                        {row.line.brand} {row.line.line}
+                      </a>
+                    </td>
+                    <td class="num utqg">{row.wearN}</td>
+                    <td class="tire-size">{row.size}</td>
+                    <td>{sizeFlag(row)}</td>
+                    <td>
+                      <Grade value={row.trac} kind="trac" />
+                    </td>
+                    <td>
+                      <Grade value={row.temp} kind="temp" />
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>NHTSA lists no usable grade row at treadwear of {HIGH_TREADWEAR_MIN} or above in this pull.</p>
+      )
+    }
+
+    <h2 id="by-size">Lines where the grade differs by size</h2>
+    <p>
+      A line is listed here when usable treadwear or traction has more than one value, after flagged rows are left out.
+      The link opens the note on the tire-line page.
+      Other usable treadwear is a number on that line below {HIGH_TREADWEAR_MIN}. “None” means every usable treadwear number on the line is in the table above.
+      <a href={SIZE_VARIANCE_PATH}>Why treadwear can differ by size</a>.
+    </p>
+    {
+      report.varying.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{varianceCaption(report)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Tire line</th>
+                <th scope="col">Treadwear NHTSA lists</th>
+                <th scope="col">Traction NHTSA lists</th>
+                <th scope="col">Rows at {HIGH_TREADWEAR_MIN} or above</th>
+                <th scope="col">Size-specific rows in that set</th>
+                <th scope="col">Other usable treadwear</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.varying.map((entry) => (
+                  <tr>
+                    <td>
+                      <a href={gradeVariesHref(entry.line)}>
+                        {entry.line.brand} {entry.line.line}
+                      </a>
+                    </td>
+                    <td class="num">{varianceWearLabel(entry)}</td>
+                    <td>{varianceTractionLabel(entry)}</td>
+                    <td class="num">{formatNumber(entry.rows.length)}</td>
+                    <td class="num">{formatNumber(entry.sizeSpecificRows)}</td>
+                    <td class="num">{otherWearLabel(entry)}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>None of these lines lists more than one usable treadwear or traction grade in this pull.</p>
+      )
+    }
+
+    <div class="prose">
+    <h2>Questions</h2>
+    {
+      faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+    <p>
+      <a href="/compare/">Compare two to four tire lines</a>.
+      <a href="/ratings/">All UTQG grades</a>.
+      <a href="/methodology/">Data sources</a>.
+    </p>
+    </div>
+  </div>
+</Base>

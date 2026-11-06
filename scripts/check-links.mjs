@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { catalog } from "../src/lib/catalog.js";
 import { exampleComparisonPaths } from "../src/lib/compare-pages.js";
 import { hubPaths } from "../src/lib/plant-hubs.js";
+import { HIGHEST_TREADWEAR_PATH } from "../src/lib/highest-treadwear.js";
 import { SIZE_VARIANCE_PATH } from "../src/lib/size-variance.js";
 import { NO_UTQG_PATH } from "../src/lib/utqg-exempt.js";
 
@@ -162,6 +163,7 @@ if (!pageLocs.has("/plants/")) errors.push("sitemap missing /plants/");
 if (!pageLocs.has("/compare/")) errors.push("sitemap missing /compare/");
 if (!pageLocs.has(NO_UTQG_PATH)) errors.push(`sitemap missing ${NO_UTQG_PATH}`);
 if (!pageLocs.has(SIZE_VARIANCE_PATH)) errors.push(`sitemap missing ${SIZE_VARIANCE_PATH}`);
+if (!pageLocs.has(HIGHEST_TREADWEAR_PATH)) errors.push(`sitemap missing ${HIGHEST_TREADWEAR_PATH}`);
 for (const path of exampleComparisonPaths) {
   if (!pageLocs.has(path)) errors.push(`sitemap missing example ${path}`);
 }

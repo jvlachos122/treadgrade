@@ -163,7 +163,7 @@ const jsonLd = [
       The field layout is <a href={recallMeta.layout}>{recallMeta.layout}</a>.
       The refresh downloads the ZIP, keeps rows whose RCLTYPECD is T, and stores MAKETXT, MODELTXT, MFGNAME, MFGTXT, CAMPNO, RCDATE, and POTAFF.
       Repeated rows for the same campaign, brand, and line are collapsed. In this pull that is {formatNumber(recallMeta.tireRows)} tire rows, {formatNumber(recallSummary.campaigns)} campaigns, {formatNumber(recallSummary.brands)} brand strings, and {formatNumber(recallSummary.lines)} table rows.
-      The recall file was retrieved {formatVerified(recallMeta.retrievedAt)} (UTC). The <a href="/who-makes-it/">Who makes it?</a> page is built from that snapshot.
+      The recall file was retrieved {formatVerified(recallMeta.retrievedAt)} (UTC). The <a href="/who-makes-it/">Who makes it?</a> page and the <a href="/recalls/">tire recalls</a> page are built from that snapshot.
     </p>
     <p>
       MFGNAME is the company that filed the Part 573 report. MFGTXT is the file's manufacturer field for the recalled tires. Units are the campaign total, so the same POTAFF value is repeated on every line of a campaign.

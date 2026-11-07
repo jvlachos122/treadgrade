@@ -1,0 +1,226 @@
+---
+import Base from "../layouts/Base.astro";
+import Answer from "../components/Answer.astro";
+import SourceLine from "../components/SourceLine.astro";
+import { sourceEntries } from "../lib/answers.js";
+import { catalog } from "../lib/catalog.js";
+import { formatNumber, formatUtcDate } from "../lib/format.js";
+import { recallMeta, recallRows } from "../lib/recall-catalog.js";
+import {
+  MISSING_VALUE,
+  NHTSA_RECALLS_URL,
+  RECALLS_PATH,
+  USTMA_RECALL_LOOKUP_URL,
+  buildRecallList,
+  countRatingRecallRows,
+  countsCaption,
+  dateSpanSentence,
+  exampleParagraph,
+  ratingRecallParagraph,
+  recallListAnswer,
+  recallListCounts,
+  recallListFaqs,
+  recallListJsonLd,
+  recallsTitle,
+  rowsCaption,
+  sizesNote,
+  tinParagraphs,
+} from "../lib/recall-list.js";
+import { clampText } from "../lib/text.js";
+import { whoMakesPages } from "../lib/who-makes-pages.js";
+
+const report = buildRecallList(recallRows, {
+  brands: catalog.brands,
+  lines: catalog.lines,
+  whoMakes: whoMakesPages,
+  retrievedAt: recallMeta.retrievedAt,
+  source: recallMeta.source,
+  ratingRecallRows: countRatingRecallRows(catalog),
+});
+const answers = recallListAnswer(report);
+const faqs = recallListFaqs(report);
+const title = recallsTitle(report.source);
+const description = clampText(answers.join(" "));
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: RECALLS_PATH, label: "Tire recalls" },
+];
+const sortColumns = [
+  ["brand", "Brand"],
+  ["line", "Recalled line"],
+  ...(report.showSizes ? [["sizes", "Sizes"]] : []),
+  ["filer", "Filing company"],
+  ["date", "Report date"],
+  ["units", "Units"],
+  ["campaign", "Campaign"],
+];
+---
+
+<Base title={title} description={description} breadcrumbs={crumbs} jsonLd={recallListJsonLd(report)}>
+  <div class="wrap">
+    <div class="prose">
+      <h1>{title}</h1>
+      <Answer sentences={answers} />
+      <SourceLine sources={sourceEntries(catalog.meta, ["recalls"])} />
+      <div class="notice">
+        <p class="data-note-label">About this data</p>
+        <p>
+          NHTSA lists these rows in <a href={report.source}>the flat recall file</a>.
+          The field layout is <a href={recallMeta.layout}>RCL.txt</a>.
+          Only tire campaigns are included, the rows marked RCLTYPECD T.
+          Brand, line, filer, report date, and units are copied from that file.
+          {dateSpanSentence(report)}
+          <a href="/methodology/#recall-filings">How this file is prepared</a>.
+          <a href="/who-makes-it/">Who filed each line</a>.
+        </p>
+      </div>
+      <h2 id="check-tin">How to check your TIN</h2>
+      {tinParagraphs().map((paragraph) => <p>{paragraph}</p>)}
+      <p>
+        <a href={USTMA_RECALL_LOOKUP_URL}>USTMA Tire Recall Lookup</a>
+        {" · "}
+        <a href={NHTSA_RECALLS_URL}>NHTSA recalls</a>
+        {" · "}
+        <a href="/decoder/">DOT decoder</a>
+        {" · "}
+        <a href="/guides/dot-code/">How to read a DOT code</a>
+        {" · "}
+        <a href="/guides/tire-date-code/">How to read a tire date code</a>
+      </p>
+      <p>{sizesNote(report)}</p>
+      <p data-source-names>{exampleParagraph(report)}</p>
+      <p>{ratingRecallParagraph(report)}</p>
+      <p>
+        A brand or line link opens the UTQG page when the name matches after capitalization and spacing are normalized.
+        That match is the name string. It does not say the recalled tire is the graded tire.
+        <a href="/brands/">UTQG brands</a>.
+        <a href="/methodology/">Data sources</a>.
+        <a href="/methodology/known-errors/">Known errors</a>.
+      </p>
+    </div>
+
+    <h2 id="counts">How many campaigns</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>{countsCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">What NHTSA lists</th>
+            <th scope="col">Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            recallListCounts(report).map(([label, count]) => (
+              <tr>
+                <td>{label}</td>
+                <td class="num">{formatNumber(count)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="campaigns">Campaign rows</h2>
+    {
+      report.rows.length ? (
+        <div data-recall-list>
+          <label>
+            Filter by brand, line, filing company, or campaign
+            <input data-recall-filter type="search" autocomplete="off" />
+          </label>
+          <p class="status small" data-recall-status aria-live="polite">
+            {formatNumber(report.rowCount)} rows, newest report date first.
+          </p>
+          <noscript>
+            <p>Sorting and filtering run in the browser. Without JavaScript the table stays in report-date order, newest first.</p>
+          </noscript>
+          <div class="table-wrap">
+            <table>
+              <caption>{rowsCaption(report)}</caption>
+              <thead>
+                <tr>
+                  {
+                    sortColumns.map(([key, label]) => (
+                      <th scope="col" aria-sort={key === "date" ? "descending" : "none"}>
+                        <button type="button" class="sort-button" data-sort={key} aria-pressed={key === "date" ? "true" : "false"}>
+                          {label}
+                        </button>
+                      </th>
+                    ))
+                  }
+                  <th scope="col">On this site</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  report.rows.map((row) => (
+                    <tr
+                      id={row.id}
+                      data-search={row.search}
+                      data-brand={row.brand}
+                      data-line={row.line}
+                      data-filer={row.filer}
+                      data-date={row.reportDate}
+                      data-units={row.unitsPresent ? String(row.units) : ""}
+                      data-campaign={row.campaign}
+                      data-sizes={row.sizes.join(" ")}
+                    >
+                      <td>{row.brandUrl ? <a href={row.brandUrl}>{row.brand}</a> : row.brand}</td>
+                      <td>{row.lineUrl ? <a href={row.lineUrl}>{row.line}</a> : row.line}</td>
+                      {report.showSizes ? <td>{row.sizes.length ? row.sizes.join(", ") : MISSING_VALUE}</td> : null}
+                      <td>{row.filer}</td>
+                      <td class="num">
+                        <time datetime={row.reportDate}>{formatUtcDate(row.reportDate)}</time>
+                      </td>
+                      <td class="num">{row.unitsPresent ? formatNumber(row.units) : MISSING_VALUE}</td>
+                      <td>
+                        <a class="num" href={row.campaignHref}>
+                          {row.campaign}
+                          <span class="visually-hidden"> on NHTSA</span>
+                        </a>
+                      </td>
+                      <td>
+                        <a href={row.whoMakesUrl || row.filingsHref}>
+                          {row.whoMakesUrl ? `Who makes ${row.brand}` : `Filings for ${row.brand}`}
+                        </a>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <p>NHTSA lists no tire campaign in the committed flat recall file.</p>
+      )
+    }
+
+    <div class="prose">
+      <h2>Questions</h2>
+      {
+        faqs.map((item) => (
+          <>
+            <h3>{item.name}</h3>
+            <p>{item.text}</p>
+          </>
+        ))
+      }
+      <p>
+        <a href="/who-makes-it/">Who makes it?</a>
+        {" · "}
+        <a href="/decoder/">DOT decoder</a>
+        {" · "}
+        <a href="/methodology/">Data sources</a>
+      </p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import { initRecallTable } from "../scripts/recall-table.js";
+  const root = document.querySelector("[data-recall-list]");
+  if (root) initRecallTable(root);
+</script>

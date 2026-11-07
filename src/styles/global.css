@@ -548,6 +548,24 @@ table { width: 100%; border-collapse: collapse; }
 caption { text-align: left; padding: 0.8rem 0.8rem 0; font-weight: 600; }
 th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+th .sort-button {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+th .sort-button:hover,
+th .sort-button[aria-pressed="true"] { background: transparent; color: var(--ink); }
+th[aria-sort="ascending"] .sort-button::after { content: " \2191"; }
+th[aria-sort="descending"] .sort-button::after { content: " \2193"; }
 tr[hidden] { display: none; }
 td a { font-weight: 600; }
 

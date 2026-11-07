@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HtmlValidate } from "html-validate";
 import { catalog } from "../src/lib/catalog.js";
+import { BANNED_RECALL_ADVICE, NHTSA_RECALLS_URL, RECALLS_PATH, TIN_LIMIT, USTMA_RECALL_LOOKUP_URL } from "../src/lib/recall-list.js";
 import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -125,6 +126,20 @@ for (const file of files) {
   if (path === SIZE_VARIANCE_PATH) {
     const banned = visibleText(html).match(BANNED_GRADE_WORD);
     if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+  }
+  if (path === RECALLS_PATH) {
+    const main = html.match(/<main\b[^>]*>([\s\S]*)<\/main>/);
+    const authored = (main ? main[1] : html)
+      .replace(/<p\b[^>]*\bdata-source-names\b[^>]*>[\s\S]*?<\/p>/gi, " ")
+      .replace(/<tbody\b[\s\S]*?<\/tbody>/gi, " ");
+    const text = visibleText(authored);
+    const banned = text.match(BANNED_RECALL_ADVICE);
+    if (banned) errors.push(`${rel}: banned advice ${banned[1]}`);
+    if (!text.includes(TIN_LIMIT)) errors.push(`${rel}: missing TIN limit`);
+    if (/this list is authoritative/i.test(text)) errors.push(`${rel}: claims the list is authoritative`);
+    if (!html.includes(USTMA_RECALL_LOOKUP_URL)) errors.push(`${rel}: missing USTMA lookup link`);
+    if (!html.includes(NHTSA_RECALLS_URL)) errors.push(`${rel}: missing NHTSA recalls link`);
+    if (!html.includes('href="/decoder/"')) errors.push(`${rel}: missing decoder link`);
   }
   const gradeLine = linesByPath.get(path);
   if (gradeLine && !refresh) {

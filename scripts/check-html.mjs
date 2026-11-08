@@ -5,6 +5,7 @@ import { HtmlValidate } from "html-validate";
 import { catalog } from "../src/lib/catalog.js";
 import { BANNED_RECALL_ADVICE, NHTSA_RECALLS_URL, RECALLS_PATH, TIN_LIMIT, USTMA_RECALL_LOOKUP_URL } from "../src/lib/recall-list.js";
 import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
+import { BANNED_VERDICT, MILES_FORMULA, TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -122,6 +123,20 @@ for (const file of files) {
   if (path === "/compare/" || path.startsWith("/compare/")) {
     const banned = visibleText(html).match(/\b(best|better|winner|safest|popular)\b/i);
     if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+  }
+  if (path === TREADWEAR_NUMBERS_PATH) {
+    const text = visibleText(html);
+    const banned = text.match(BANNED_VERDICT);
+    if (banned) errors.push(`${rel}: banned verdict ${banned[1]}`);
+    const miles = text.match(MILES_FORMULA);
+    if (miles) errors.push(`${rel}: treadwear-to-miles formula ${miles[0]}`);
+    if (!text.includes("not a mileage promise")) errors.push(`${rel}: missing mileage caveat`);
+    if (!html.includes('href="/ratings/"')) errors.push(`${rel}: missing ratings link`);
+    if (!html.includes('href="/lists/highest-treadwear/"')) errors.push(`${rel}: missing highest-treadwear link`);
+    if (!html.includes('href="/compare/"')) errors.push(`${rel}: missing compare link`);
+    if (!html.includes('href="/methodology/"')) errors.push(`${rel}: missing methodology link`);
+    if (!html.includes('href="/guides/utqg-grades/"')) errors.push(`${rel}: missing UTQG guide link`);
+    if (!html.includes(`href="${SIZE_VARIANCE_PATH}"`)) errors.push(`${rel}: missing size-variance link`);
   }
   if (path === SIZE_VARIANCE_PATH) {
     const banned = visibleText(html).match(BANNED_GRADE_WORD);

@@ -1,0 +1,217 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog, ratingRows } from "../../lib/catalog.js";
+import { formatNumber, percent } from "../../lib/format.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
+import { SIZE_VARIANCE_PATH } from "../../lib/size-variance.js";
+import { clampText } from "../../lib/text.js";
+import {
+  CONSUMER_GUIDE_HREF,
+  CONSUMER_GUIDE_TREADWEAR,
+  TIREWISE_CONTROL,
+  TIREWISE_HREF,
+  TREADWEAR_NUMBERS_PATH,
+  bandsCaption,
+  duplicateParagraph,
+  examplesCaption,
+  examplesIntro,
+  mileageFieldNote,
+  missingParagraph,
+  treadwearNumbersAnswer,
+  treadwearNumbersFaqs,
+  treadwearNumbersJsonLd,
+  treadwearNumbersReport,
+  zeroParagraph,
+} from "../../lib/treadwear-numbers.js";
+
+const report = treadwearNumbersReport(ratingRows, catalog);
+const answers = treadwearNumbersAnswer(report);
+const faqs = treadwearNumbersFaqs(report);
+const description = clampText(answers.join(" "));
+const jsonLd = treadwearNumbersJsonLd(report);
+const droppedNote = duplicateParagraph(report);
+const zeros = zeroParagraph(report);
+const missing = missingParagraph(report);
+const fieldsNote = mileageFieldNote(report.fields);
+const ecfr = "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104";
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: TREADWEAR_NUMBERS_PATH, label: "Treadwear numbers" },
+];
+---
+
+<Base title="What treadwear numbers mean" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>What treadwear numbers mean</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <p>
+      NHTSA lists a treadwear number on each UTQG source row in the committed file.
+      This page counts those numbers. A row does not mean the tire is on sale.
+      <a href="/methodology/">How the file is read</a>.
+    </p>
+
+    <h2 id="definition">What the grade compares</h2>
+    <p>
+      NHTSA's July 2024 Consumer Guide to Uniform Tire Quality Grading, report DOT HS 813 585, states the treadwear comparison:
+    </p>
+    <blockquote class="quote">
+      {CONSUMER_GUIDE_TREADWEAR.map((sentence) => <p>{sentence}</p>)}
+    </blockquote>
+    <p>
+      Source:
+      <a href={CONSUMER_GUIDE_HREF}>Consumer Guide to Uniform Tire Quality Grading, DOT HS 813 585 (July 2024)</a>.
+      The buyer text in <a href={ecfr}>49 CFR 575.104</a> is quoted on
+      <a href="/guides/utqg-grades/">what UTQG grades mean</a>.
+    </p>
+    <p>NHTSA's TireWise page describes that comparison as a control tire graded 100:</p>
+    <blockquote class="quote">
+      {TIREWISE_CONTROL.map((sentence) => <p>{sentence}</p>)}
+    </blockquote>
+    <p>
+      Source: <a href={TIREWISE_HREF}>NHTSA TireWise</a>.
+    </p>
+
+    <h2 id="not-a-mileage-promise">Why a treadwear number is not a mileage promise</h2>
+    <p>
+      The consumer guide says the relative performance of tires depends on the conditions of use, and may depart from the course test because of driving habits, service practices, roads, and climate.
+      The course comparison is not a mileage promise.
+    </p>
+    <p>{fieldsNote}</p>
+    <p>
+      This site does not convert a treadwear grade into miles. The committed file has no figure that turns a grade into a road distance.
+    </p>
+    <p>
+      Where a tire maker publishes a treadwear warranty, that warranty is the maker's own figure. It is not a UTQG treadwear number.
+      <a href="/guides/no-utqg-rating/#instead">What to use instead of a missing grade</a>.
+      This page does not list warranty miles. The committed file has none to cite.
+    </p>
+    <p>
+      The same line can list more than one treadwear number across the size rows NHTSA published.
+      <a href={SIZE_VARIANCE_PATH}>Why treadwear can differ by size</a>.
+      The grade molded on the sidewall of the tire you buy is the grade for that tire.
+    </p>
+
+    <h2 id="histogram">Where the numbers sit</h2>
+    <p>{droppedNote}</p>
+    {zeros ? <p>{zeros}</p> : null}
+    {
+      missing ? (
+        <p>
+          {missing} <a href="/methodology/known-errors/#invalid-fields">Values outside the usual grades</a>.
+        </p>
+      ) : null
+    }
+    <p>
+      Each band link opens that range in the ratings table. Shares use the {formatNumber(report.numeric)} numeric grades.
+      A blank treadwear stays out of the bands.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>{bandsCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Source rows</th>
+            <th scope="col">Share of numeric grades</th>
+            <th scope="col">Rows in the ratings table</th>
+            <th scope="col">Ratings table</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.bands.map((band) => (
+              <tr>
+                <td>{band.label}</td>
+                <td class="num">{formatNumber(band.count)}</td>
+                <td class="num">{percent(band.count, report.numeric)}</td>
+                <td class="num">{formatNumber(band.shown)}</td>
+                <td>
+                  <a href={band.href}>Open {band.label}</a>
+                </td>
+              </tr>
+            ))
+          }
+          {
+            report.missing ? (
+              <tr>
+                <td>No treadwear number</td>
+                <td class="num">{formatNumber(report.missing)}</td>
+                <td>Not in the share</td>
+                <td class="num">{formatNumber(report.missingShown)}</td>
+                <td>Kept on the tire-line page</td>
+              </tr>
+            ) : null
+          }
+          {
+            report.nonnumeric ? (
+              <tr>
+                <td>Not a whole number</td>
+                <td class="num">{formatNumber(report.nonnumeric)}</td>
+                <td>Not in the share</td>
+                <td class="num">{formatNumber(report.nonnumericShown)}</td>
+                <td>Kept on the tire-line page</td>
+              </tr>
+            ) : null
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <a href="/ratings/">All UTQG grades</a>
+      · <a href={ratingsTableHref({ wearMin: "500", wearMax: "599" })}>Open treadwear 500–599 in the table</a>
+      · <a href="/lists/highest-treadwear/">Highest treadwear grades NHTSA lists</a>
+      · <a href="/compare/">Compare tire lines</a>
+      · <a href="/guides/utqg-grades/">What UTQG grades mean</a>
+      · <a href={SIZE_VARIANCE_PATH}>Why treadwear can differ by size</a>
+      · <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>
+      · <a href="/methodology/">Data sources</a>
+    </p>
+
+    <h2 id="examples">Selected grades</h2>
+    <p>{examplesIntro(report)}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{examplesCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Source rows</th>
+            <th scope="col">Numeric grades below it</th>
+            <th scope="col">Share below it</th>
+            <th scope="col">Ratings table</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.placements.map((item) => (
+              <tr>
+                <td class="num">{item.grade}</td>
+                <td class="num">{formatNumber(item.exact)}</td>
+                <td class="num">{formatNumber(item.below)}</td>
+                <td class="num">{percent(item.below, report.numeric)}</td>
+                <td>
+                  <a href={item.href}>Open {item.grade}</a>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="questions">Questions</h2>
+    {
+      faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+  </div>
+</Base>

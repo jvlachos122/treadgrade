@@ -9,4 +9,9 @@ function readJson(name) {
   return JSON.parse(readFileSync(join(root, "data", name), "utf8"));
 }
 
-export const catalog = buildCatalog(readJson("ratings.json"), readJson("plants.json"), readJson("meta.json"));
+const ratings = readJson("ratings.json");
+
+/** Committed UTQG rows, before exact duplicate grade rows are dropped. */
+export const ratingRows = ratings;
+
+export const catalog = buildCatalog(ratings, readJson("plants.json"), readJson("meta.json"));

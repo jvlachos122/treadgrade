@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HIGHEST_TREADWEAR_PATH } from "../src/lib/highest-treadwear.js";
+import { TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
 import { RECALLS_PATH } from "../src/lib/recall-list.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -94,7 +95,7 @@ function requirements(pathname) {
     req.types.push("Dataset");
     req.answer = true;
     req.source = true;
-  } else if (pathname === HIGHEST_TREADWEAR_PATH || pathname === RECALLS_PATH) {
+  } else if (pathname === HIGHEST_TREADWEAR_PATH || pathname === RECALLS_PATH || pathname === TREADWEAR_NUMBERS_PATH) {
     req.types.push("Dataset", "Article", "FAQPage");
     req.answer = true;
     req.source = true;

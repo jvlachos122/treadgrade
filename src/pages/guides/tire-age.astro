@@ -1,0 +1,124 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import { catalog } from "../../lib/catalog.js";
+import { clampText } from "../../lib/text.js";
+import {
+  TIRE_AGE_PATH,
+  TIRE_AGE_SOURCES,
+  dateCodeExample,
+  dateSectionSentences,
+  otherSourceSentence,
+  positionsCaption,
+  quotedPosition,
+  tireAgeAnswer,
+  tireAgeFaqs,
+  tireAgeJsonLd,
+  tireAgeRetrievedLabel,
+  tireAgeSource,
+  tireAgeSourceLine,
+  unknownSectionSentences,
+} from "../../lib/tire-age.js";
+
+const sources = TIRE_AGE_SOURCES;
+const example = dateCodeExample();
+const answers = tireAgeAnswer(sources);
+const faqs = tireAgeFaqs(example, sources);
+const description = clampText(answers.join(" "));
+const retrievedLabel = tireAgeRetrievedLabel(sources[0].retrieved);
+const jsonLd = tireAgeJsonLd({
+  description: answers.join(" "),
+  dateModified: catalog.meta.verifiedAt,
+  faqs,
+});
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: TIRE_AGE_PATH, label: "Tire age" },
+];
+const tirewise = tireAgeSource("nhtsa-tirewise", sources);
+const summer = tireAgeSource("nhtsa-summer", sources);
+const dateSentences = dateSectionSentences(example);
+const unknown = unknownSectionSentences();
+---
+
+<Base title="How old is too old for tires" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>How old is too old for tires</h1>
+    <Answer sentences={answers} />
+    <p class="source-line">
+      Source: NHTSA <a href={tirewise.url}>{tirewise.pageLabel}</a> and <a href={summer.url}>{summer.pageLabel}</a>, last updated {retrievedLabel} (UTC).
+    </p>
+    <p>{otherSourceSentence(sources)}</p>
+
+    <h2 id="positions">Published positions</h2>
+    <p>
+      Each quoted sentence was on the linked page on {retrievedLabel}. The organisation column names who the sentence is about.
+      A page that could not be opened is not in the table.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>{positionsCaption(sources)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Organisation</th>
+            <th scope="col">Published position</th>
+            <th scope="col">Page</th>
+            <th scope="col">Retrieved</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            sources.map((source) => (
+              <tr>
+                <th scope="row">
+                  {source.organisation}
+                  {source.detail ? <span class="small"> {source.detail}</span> : null}
+                </th>
+                <td>{quotedPosition(source)}</td>
+                <td>
+                  <a href={source.url}>{source.pageLabel}</a>
+                </td>
+                <td>{tireAgeRetrievedLabel(source.retrieved)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="date-code">How to read the date code</h2>
+    <p>{dateSentences[0]}</p>
+    <p>
+      <a href="/guides/tire-date-code/">How to read a tire date code</a> covers the Sunday-through-Saturday week, where the code sits on the sidewall, and the older three-digit form.
+      <a href="/guides/dot-code/">How to read a DOT code</a> covers the rest of the number.
+      {dateSentences[1]}
+    </p>
+    <p>{dateSentences[2]}</p>
+    <p>
+      <a href={`/decoder/?tin=${example.code}`}>Open {example.code} in the decoder</a>.
+      <a href="/decoder/">The decoder</a> applies that week rule to the digits you enter.
+    </p>
+    <p>
+      {dateSentences[3]} "{dateSentences[4]}"
+    </p>
+
+    <h2 id="what-we-dont-know">What we don't know</h2>
+    {unknown.map((sentence) => <p>{sentence}</p>)}
+    <p>
+      <a href="/guides/dot-code/#age">NHTSA's note on tire age</a> is in the DOT guide.
+      <a href="/recalls/">Tire recalls</a> lists campaigns and does not match a date code.
+      <a href="/methodology/">Data sources</a> describes the files this site copies.
+    </p>
+
+    <h2 id="questions">Questions</h2>
+    {
+      faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+  </div>
+</Base>

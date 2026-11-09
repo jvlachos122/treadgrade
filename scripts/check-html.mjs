@@ -6,6 +6,7 @@ import { catalog } from "../src/lib/catalog.js";
 import { BANNED_RECALL_ADVICE, NHTSA_RECALLS_URL, RECALLS_PATH, TIN_LIMIT, USTMA_RECALL_LOOKUP_URL } from "../src/lib/recall-list.js";
 import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
 import { BANNED_VERDICT, MILES_FORMULA, TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
+import { BANNED_AGE_VERDICT, TIRE_AGE_PATH, TIRE_AGE_SOURCES, tireAgeRetrievedLabel } from "../src/lib/tire-age.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -137,6 +138,28 @@ for (const file of files) {
     if (!html.includes('href="/methodology/"')) errors.push(`${rel}: missing methodology link`);
     if (!html.includes('href="/guides/utqg-grades/"')) errors.push(`${rel}: missing UTQG guide link`);
     if (!html.includes(`href="${SIZE_VARIANCE_PATH}"`)) errors.push(`${rel}: missing size-variance link`);
+  }
+  if (path === TIRE_AGE_PATH) {
+    const text = visibleText(html);
+    const banned = text.match(BANNED_AGE_VERDICT);
+    if (banned) errors.push(`${rel}: banned age verdict ${banned[1]}`);
+    const table = html.match(/<table\b[\s\S]*?<\/table>/);
+    const body = table?.[0].match(/<tbody>([\s\S]*?)<\/tbody>/);
+    const rows = body ? [...body[1].matchAll(/<tr\b[\s\S]*?<\/tr>/g)] : [];
+    if (rows.length !== TIRE_AGE_SOURCES.length) errors.push(`${rel}: ${rows.length} position rows`);
+    const retrieved = tireAgeRetrievedLabel(TIRE_AGE_SOURCES[0].retrieved);
+    rows.forEach((row, index) => {
+      const source = TIRE_AGE_SOURCES[index];
+      if (!row[0].includes(`href="${source.url}"`)) errors.push(`${rel}: row ${index} missing ${source.url}`);
+      if (!row[0].includes(retrieved)) errors.push(`${rel}: row ${index} missing retrieval date`);
+      if (!row[0].includes(source.organisation)) errors.push(`${rel}: row ${index} missing organisation`);
+    });
+    for (const href of ["/decoder/", "/guides/tire-date-code/", "/guides/dot-code/#age", "/recalls/", "/methodology/"]) {
+      if (!html.includes(`href="${href}"`) && !html.includes(`href="${href.split("#")[0]}`)) {
+        errors.push(`${rel}: missing ${href}`);
+      }
+    }
+    if (!html.includes('href="/decoder/?tin=2319"')) errors.push(`${rel}: missing 2319 decoder link`);
   }
   if (path === SIZE_VARIANCE_PATH) {
     const banned = visibleText(html).match(BANNED_GRADE_WORD);

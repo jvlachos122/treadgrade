@@ -8,8 +8,9 @@ const email = contactEmail();
 const retailers = retailersConfigured();
 const gear = gearConfigured();
 const enabled = affiliatesConfigured();
+const commissionSubject = [retailers ? "a configured retailer link" : "", gear ? "an AstroAI link" : ""].filter(Boolean);
 const description = enabled
-  ? `${site.legalName} may earn a commission when a configured retailer or AstroAI link on TreadGrade is used. Grade pages are not ordered by that commission.`
+  ? `${site.legalName} may earn a commission when ${commissionSubject.join(" or ")} on TreadGrade is used. Grade pages are not ordered by that commission.`
   : `Affiliate links are turned off. No retailer buttons or AstroAI gear links are shown, and ${site.legalName} earns no commission from them.`;
 const crumbs = [
   { href: "/", label: "Home" },

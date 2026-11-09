@@ -1,6 +1,6 @@
 /**
- * Site-wide settings. Affiliate IDs and analytics ship empty on purpose.
- * See README.md before filling them in.
+ * Site-wide settings. Retailer affiliate IDs and analytics ship empty on purpose.
+ * AstroAI gear links are the Awin addresses below. See README.md before changing them.
  */
 export const site = {
   name: "TreadGrade",
@@ -41,17 +41,24 @@ export const site = {
       id: "",
       urlTemplate: "",
     },
-    // Fixed https addresses, not a search template. Paste each href from
-    // Awin > Links & Tools (publisher 3131988). Leave href "" until that
-    // deep link is copied. Do not invent an awclick URL. enabled stays false
-    // until those addresses are in place. No Awin script, pixel, or image is loaded.
+    // Fixed https addresses from Awin Link Builder (publisher 3131988).
+    // Keep each href character for character: no clickref and no re-encoding.
+    // No Awin script, pixel, or image is loaded.
     astroai: {
       name: "AstroAI",
       network: "Awin",
-      enabled: false,
+      enabled: true,
       products: [
-        { key: "inflator", label: "Portable tire inflator", href: "" },
-        { key: "jump_starter", label: "Jump starter", href: "" },
+        {
+          key: "inflator",
+          label: "AstroAI L7 portable tire inflator",
+          href: "https://www.awin1.com/cread.php?awinmid=43671&awinaffid=3131988&ued=https%3A%2F%2Fwww.astroai.com%2Fl7-tire-inflator%2Fap%2F1000347761",
+        },
+        {
+          key: "jump_starter",
+          label: "AstroAI S8 Air jump starter with tire inflator",
+          href: "https://www.awin1.com/cread.php?awinmid=43671&awinaffid=3131988&ued=https%3A%2F%2Fwww.astroai.com%2Fs8-air-jump-starter-1500a%2Fap%2F1000426592",
+        },
       ],
     },
   },

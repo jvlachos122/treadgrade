@@ -40,7 +40,7 @@ Shared code lives in `src/lib/`:
 - `normalize.js` groups brands and tire lines and builds plant records.
 - `recalls.js` keeps tire campaigns from the flat recall file and decides "made by" versus "recall filed by."
 - `tin.js` parses a TIN, including a pre-2000 three-digit date.
-- `site.js` and `affiliates.js` hold the empty affiliate, analytics, and contact settings.
+- `site.js` and `affiliates.js` hold the affiliate, analytics, and contact settings. Retailer slots and analytics stay empty. AstroAI gear links use the Awin addresses in `site.affiliates.astroai`.
 
 Canonical URLs use `https://treadgrade.com`. The build writes `sitemap-index.xml`, `robots.txt`, and `public/CNAME`.
 
@@ -137,7 +137,7 @@ Affiliate ids and the analytics snippet live in `src/lib/site.js` and are empty 
 
 **Affiliates.** `tireRack`, `simpleTire`, and `amazon` each have `enabled`, `id`, and `urlTemplate`. A "Check price" button is rendered only when `enabled` is true, `id` is non-empty, and `urlTemplate` is an `https` URL. `{query}` is inserted already URL-encoded (the brand and line). `{id}` is URL-encoded. Use the link pattern from the affiliate program, and do not enable one until the application is approved. The button includes `rel="sponsored nofollow noopener"` and a short disclosure that links to `/affiliate-disclosure/`. Grades are never sorted by whether a button exists.
 
-`astroai` is separate: `name`, `network`, `enabled`, and `products` (`key`, `label`, `href`). A roadside-gear link is rendered only when `enabled` is true and that product's `href` is a non-empty `https` URL. Leave each `href` as `""` until the deep link is copied from Awin. Do not invent an awclick URL. The link is a plain `<a>` with the same `rel`. No Awin script, pixel, or image is loaded, and the page does not show a price, a rating, or a specification.
+`astroai` is separate: `name`, `network`, `enabled`, and `products` (`key`, `label`, `href`). A roadside-gear link is rendered only when `enabled` is true and that product's `href` is a non-empty `https` URL. The inflator and jump-starter hrefs are the Awin `cread.php` links for publisher 3131988, and `enabled` is true. Do not add a clickref, re-encode the href, or invent an awclick URL. The link is a plain `<a>` with the same `rel`. No Awin script, pixel, or image is loaded, and the page does not show a price, a rating, or a specification.
 
 **Analytics.** Paste a privacy-friendly snippet into `analyticsSnippet`. It is inserted raw into `<head>`. Leave it `""` and nothing is loaded. Update `/privacy/` if the snippet collects data the page does not already describe.
 

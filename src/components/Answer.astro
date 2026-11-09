@@ -4,7 +4,7 @@ const { sentences = [] } = Astro.props;
 
 {
   sentences.length ? (
-    <aside class="answer">
+    <aside class="answer" aria-label="Answer">
       <p class="answer-label">Answer</p>
       {sentences.map((sentence) => (
         <p>{sentence}</p>

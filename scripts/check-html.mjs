@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HtmlValidate } from "html-validate";
+import { gearLinks } from "../src/lib/affiliates.js";
 import { catalog } from "../src/lib/catalog.js";
 import { BANNED_RECALL_ADVICE, NHTSA_RECALLS_URL, RECALLS_PATH, TIN_LIMIT, USTMA_RECALL_LOOKUP_URL } from "../src/lib/recall-list.js";
 import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
@@ -87,6 +88,63 @@ const validator = new HtmlValidate({
 
 const linesByPath = new Map(catalog.lines.map((line) => [line.url, line]));
 const gradeVariesId = `id="${GRADE_VARIES_ID}"`;
+const gearHrefs = gearLinks().map((link) => link.href);
+const gearPages = new Set(["/guides/utqg-grades/", "/guides/tire-pressure-and-roadside-kit/"]);
+
+function hrefForms(href) {
+  return new Set([href, href.replaceAll("&", "&amp;"), href.replaceAll("&", "&#38;"), href.replaceAll("&", "&#038;")]);
+}
+
+function checkGearPage(path, rel, html) {
+  if (gearPages.has(path)) {
+    const attrs = [...html.matchAll(/\bhref="([^"]*)"/g)].map((match) => match[1]);
+    gearHrefs.forEach((href) => {
+      if (!attrs.some((attr) => hrefForms(href).has(attr))) errors.push(`${rel}: gear href is not the Awin URL (${href})`);
+    });
+    const block = html.match(/<aside class="card" aria-labelledby="gear-heading">[\s\S]*?<\/aside>/);
+    if (!block) errors.push(`${rel}: missing roadside gear block`);
+    else {
+      if (!block[0].includes('rel="sponsored nofollow noopener"')) errors.push(`${rel}: gear link rel`);
+      if (/<(?:script|img)\b/i.test(block[0])) errors.push(`${rel}: gear block has a script or image`);
+      const text = visibleText(block[0]);
+      if (/\$|\bpsi\b|\brating\b|\bstars\b/i.test(text)) errors.push(`${rel}: gear block shows a price, spec, or rating`);
+      if (!text.includes("AstroAI through the Awin network")) errors.push(`${rel}: gear disclosure`);
+    }
+    return;
+  }
+  if (html.includes("awin1.com")) errors.push(`${rel}: unexpected Awin URL`);
+  if (path === "/affiliate-disclosure/") {
+    if (!html.includes("an AstroAI link on TreadGrade is used.")) {
+      errors.push(`${rel}: disclosure description`);
+    }
+    if (!html.includes("Those links go to AstroAI through the Awin network.")) {
+      errors.push(`${rel}: disclosure does not name AstroAI through Awin`);
+    }
+    if (html.includes("Roadside-gear links to AstroAI through the Awin network are not configured.")) {
+      errors.push(`${rel}: disclosure still says AstroAI links are off`);
+    }
+    if (!html.includes("No Awin script, tracking pixel, or image is loaded on this site.")) {
+      errors.push(`${rel}: disclosure script sentence`);
+    }
+  }
+  if (path === "/privacy/") {
+    if (!html.includes("leaves this site for AstroAI through the Awin network.")) {
+      errors.push(`${rel}: privacy does not name the AstroAI link`);
+    }
+    if (!html.includes("This site does not load an Awin script, tracking pixel, or image.")) {
+      errors.push(`${rel}: privacy script sentence`);
+    }
+    if (html.includes("Roadside-gear links to AstroAI through Awin are off.")) {
+      errors.push(`${rel}: privacy still says AstroAI links are off`);
+    }
+  }
+  if (path === "/about/") {
+    if (!html.includes("AstroAI roadside-gear links are labeled and disclosed. This site does not load an Awin script.")) {
+      errors.push(`${rel}: about wording`);
+    }
+    if (html.includes("AstroAI gear links are off.")) errors.push(`${rel}: about still says AstroAI links are off`);
+  }
+}
 
 const files = walk(dist);
 for (const file of files) {
@@ -188,6 +246,18 @@ for (const file of files) {
   if (!refresh && rel !== "/404.html" && html.includes('content="noindex"')) errors.push(`${rel}: unexpected noindex`);
   if (rel === "/404.html" && !html.includes('content="noindex"')) errors.push("404 should be noindex");
   if (rel === "/404.html" && refresh) errors.push("404 should not refresh");
+  for (const match of html.matchAll(/<script\b([^>]*)>/gi)) {
+    const src = match[1].match(/\bsrc\s*=\s*"([^"]*)"/i);
+    if (!src) continue;
+    const value = src[1];
+    if (/^(?:https?:)?\/\//i.test(value) && !value.startsWith(site)) {
+      errors.push(`${rel}: third-party script ${value}`);
+    }
+  }
+  if (/<(?:script|img|iframe|noscript)\b[^>]*(?:awin|astroai)/i.test(html)) {
+    errors.push(`${rel}: third-party AstroAI or Awin tag`);
+  }
+  checkGearPage(path, rel, html);
 }
 
 let reported = 0;

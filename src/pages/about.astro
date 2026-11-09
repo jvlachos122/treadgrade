@@ -1,5 +1,15 @@
 ---
 import Base from "../layouts/Base.astro";
+import { gearConfigured, retailersConfigured } from "../lib/affiliates.js";
+
+const gear = gearConfigured();
+const retailers = retailersConfigured();
+const gearSentence = gear
+  ? "AstroAI roadside-gear links are labeled and disclosed. This site does not load an Awin script."
+  : "AstroAI gear links are off. This site does not load an Awin script.";
+const retailerSentence = retailers
+  ? "Retailer buttons are labeled and disclosed."
+  : "Retailer buttons stay off until an affiliate id and an https link template are configured.";
 
 const description =
   "TreadGrade is an independent reference for NHTSA UTQG tire grades and DOT plant codes. It is not a tire seller and it is not a government site.";
@@ -24,7 +34,7 @@ const crumbs = [
     <h2 id="who-runs-this-site">Who runs this site</h2>
     <p>TreadGrade is operated by Three Pines Company LLC, Frankfort, Illinois.</p>
     <p>
-      If affiliate links are turned on later, they are labeled and disclosed. Retailer buttons and AstroAI gear links are off in the default configuration. Sorts order the grades in NHTSA's list. They are not a ranking of the best tire, and they are not ordered by a commission.
+      {gearSentence} {retailerSentence} Sorts order the grades in NHTSA's list. They are not a ranking of the best tire, and they are not ordered by a commission.
     </p>
     <p><a href="/contact/">Contact</a> · <a href="/privacy/">Privacy</a> · <a href="/affiliate-disclosure/">Affiliate disclosure</a></p>
   </div>

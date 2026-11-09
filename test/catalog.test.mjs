@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { affiliateLinks, affiliatesConfigured, gearConfigured, gearLinks } from "../src/lib/affiliates.js";
+import { affiliateLinks, affiliatesConfigured, gearConfigured, gearLinks, retailersConfigured } from "../src/lib/affiliates.js";
 import { site } from "../src/lib/site.js";
 import { brandKey, buildCatalog, nameKey } from "../src/lib/normalize.js";
 import { redirectCopy, refreshContent } from "../src/lib/redirects.js";
@@ -77,27 +77,42 @@ test("search prefers an exact plant code", () => {
 
 test("affiliate buttons stay off until an https template and id exist", () => {
   assert.deepEqual(affiliateLinks("Michelin Pilot Sport 4"), []);
-  assert.equal(affiliatesConfigured(), false);
+  assert.equal(retailersConfigured(), false);
 });
 
-test("AstroAI gear links render nothing until an https address is set", () => {
+const awinPrefix = "https://www.awin1.com/cread.php?awinmid=43671&awinaffid=3131988";
+const astroaiHrefs = {
+  inflator:
+    "https://www.awin1.com/cread.php?awinmid=43671&awinaffid=3131988&ued=https%3A%2F%2Fwww.astroai.com%2Fl7-tire-inflator%2Fap%2F1000347761",
+  jump_starter:
+    "https://www.awin1.com/cread.php?awinmid=43671&awinaffid=3131988&ued=https%3A%2F%2Fwww.astroai.com%2Fs8-air-jump-starter-1500a%2Fap%2F1000426592",
+};
+
+test("AstroAI gear links use the approved Awin addresses", () => {
   const program = site.affiliates.astroai;
-  assert.equal(program.enabled, false);
+  assert.equal(program.enabled, true);
   assert.equal(program.name, "AstroAI");
   assert.equal(program.network, "Awin");
   assert.deepEqual(
-    program.products.map((item) => [item.key, item.href]),
+    program.products.map((item) => [item.key, item.label, item.href]),
     [
-      ["inflator", ""],
-      ["jump_starter", ""],
+      ["inflator", "AstroAI L7 portable tire inflator", astroaiHrefs.inflator],
+      ["jump_starter", "AstroAI S8 Air jump starter with tire inflator", astroaiHrefs.jump_starter],
     ],
   );
-  for (const product of program.products) {
-    assert.ok(product.label);
-    assert.doesNotMatch(product.label, /\d|\$|psi|awclick/i);
+  const links = gearLinks();
+  assert.deepEqual(
+    links,
+    program.products.map((item) => ({ key: item.key, label: item.label, href: item.href })),
+  );
+  for (const link of links) {
+    assert.equal(link.href.startsWith(awinPrefix), true);
+    assert.equal(link.href.includes("clickref"), false);
+    assert.doesNotMatch(link.href, /awclick/i);
+    assert.doesNotMatch(link.label, /\$|\bpsi\b|rating|stars|awclick/i);
   }
-  assert.deepEqual(gearLinks(), []);
-  assert.equal(gearConfigured(), false);
+  assert.equal(gearConfigured(), true);
+  assert.equal(affiliatesConfigured(), true);
   assert.deepEqual(
     gearLinks({
       enabled: false,
@@ -108,7 +123,7 @@ test("AstroAI gear links render nothing until an https address is set", () => {
     [],
   );
 
-  const links = gearLinks({
+  const filtered = gearLinks({
     enabled: true,
     name: "AstroAI",
     network: "Awin",
@@ -121,7 +136,7 @@ test("AstroAI gear links render nothing until an https address is set", () => {
       { key: "ok", label: "  Portable compressor  ", href: "  https://example.com/compressor  " },
     ],
   });
-  assert.deepEqual(links, [{ key: "ok", label: "Portable compressor", href: "https://example.com/compressor" }]);
+  assert.deepEqual(filtered, [{ key: "ok", label: "Portable compressor", href: "https://example.com/compressor" }]);
 
   const component = readFileSync(new URL("../src/components/GearLinks.astro", import.meta.url), "utf8");
   const guide = readFileSync(new URL("../src/pages/guides/tire-pressure-and-roadside-kit.astro", import.meta.url), "utf8");

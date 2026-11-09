@@ -51,10 +51,11 @@ export function gearLinks(program = site.affiliates.astroai) {
       continue;
     }
     if (url.protocol !== "https:") continue;
+    // Keep the configured characters. URL.href can rewrite percent-encoding.
     links.push({
       key: String(product?.key || "").trim(),
       label,
-      href: url.href,
+      href: raw,
     });
   }
   return links;

@@ -13704,5 +13704,27 @@
     "postalCode": "054600",
     "country": "CHINA",
     "status": "Active"
+  },
+  {
+    "dotCode": "0AU",
+    "oldDotCode": "",
+    "name": "DONGGUAN RUITUO TECHNOLOGY CO., LTD.",
+    "address": "Room 302, Building 4, No. 1 Longrong Street, Qingxi Town",
+    "city": "Dongguan",
+    "stateProvince": "Guangdong",
+    "postalCode": "523000",
+    "country": "CHINA",
+    "status": "Active"
+  },
+  {
+    "dotCode": "0AW",
+    "oldDotCode": "",
+    "name": "QINGDAO DONGHENGDA RUBBER PRODUCTS CO., LTD.",
+    "address": "No.212 Yuquan Road, Tieshan Industrial Park,",
+    "city": "Qingdao",
+    "stateProvince": "SHANDONG",
+    "postalCode": "266400",
+    "country": "CHINA",
+    "status": "Active"
   }
 ]

@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-11-03T20:29:50.519Z",
+  "verifiedAt": "2026-11-09T23:29:02.775Z",
   "ratings": {
     "source": "https://api.nhtsa.gov/tires?dataSet=ratings",
     "rows": 7628,
@@ -24,8 +24,8 @@
   "plants": {
     "source": "https://vpic.nhtsa.dot.gov/api/vehicles/GetEquipmentPlantCodes?year=2026&equipmentType=1&reportType=All&format=json",
     "yearRequested": 2026,
-    "rows": 1246,
-    "countReported": 1246,
+    "rows": 1248,
+    "countReported": 1248,
     "searchCriteria": "Year:2026 | Equipment Type:1 | Report Type: All",
     "fields": [
       "dotCode",
@@ -42,7 +42,7 @@
   "recalls": {
     "source": "https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip",
     "layout": "https://static.nhtsa.gov/odi/ffdd/rcl/RCL.txt",
-    "retrievedAt": "2026-11-03T20:29:50.519Z",
+    "retrievedAt": "2026-11-09T23:29:02.775Z",
     "tireRows": 20283,
     "campaigns": 201,
     "brands": 112,

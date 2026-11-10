@@ -114,6 +114,37 @@ test("invalid grades are quoted and not stated as the grade", () => {
   assert.doesNotMatch(zeroText, /from 0 to 400/);
 });
 
+test("a comparison sentence is kept inside the three-sentence answer", () => {
+  const comparison =
+    "Among 4 Acme lines with one usable treadwear number, treadwear 300 ranks 2 of 4 when a higher number is ordered first.";
+  const plain = lineAnswer(
+    {
+      brand: "Acme",
+      line: "Beta",
+      sameName: [],
+      rows: [row("300", "AA", "A")],
+    },
+    { comparison },
+  );
+  assertSentences(plain, "comparison");
+  assert.equal(plain.length, 3);
+  assert.match(plain[1], /ranks 2 of 4/);
+  assert.match(plain[2], /does not say whether this tire is still sold/);
+
+  const named = lineAnswer(
+    {
+      brand: "Acme",
+      line: "Beta",
+      sameName: [{ brand: "Other" }],
+      rows: [row("300", "AA", "A")],
+    },
+    { comparison },
+  );
+  assertSentences(named, "comparison with a shared name");
+  assert.equal(named[1], comparison);
+  assert.match(named[2], /not evidence of rebadging/);
+});
+
 test("a repeated line name is not called a rebadge", () => {
   const text = lineAnswer({
     brand: "Yokohama",

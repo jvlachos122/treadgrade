@@ -3,6 +3,7 @@ import { formatNameList, companyCore } from "./recalls.js";
 import { recallRows } from "./recall-catalog.js";
 import { article, dataset } from "./structured.js";
 import { plantAnswer } from "./answers.js";
+import { plantDateFaq } from "./plant-date-faq.js";
 import { BRAND_SLUG_TO_GROUP, MANUFACTURER_GROUP_DEFS } from "./plant-groups.js";
 
 /**
@@ -199,6 +200,7 @@ export const countryNormalization = {
 
 export function plantJsonLd(plant, extra) {
   const answers = plantAnswer(plant);
+  const faq = plantDateFaq(plant.code);
   const basedOn = [catalog.meta.plants.source];
   if (extra.recalls.length) basedOn.push(catalog.meta.recalls.source);
   return [
@@ -210,6 +212,16 @@ export function plantJsonLd(plant, extra) {
       isBasedOn: basedOn,
       keywords: ["DOT", "plant code", "NHTSA", plant.code],
     }),
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: faq.name,
+          acceptedAnswer: { "@type": "Answer", text: faq.text },
+        },
+      ],
+    },
     article({
       headline: `How to find plant code ${plant.code} on a tire`,
       description: `The plant code is the first group of the tire identification number. On a current new tire, ${plant.code} is the 3-symbol plant code in 49 CFR 574.5.`,

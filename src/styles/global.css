@@ -245,6 +245,7 @@ code, .code, .dot-code, .tire-size, .utqg, .num {
 .filter-row select,
 input[type="search"],
 input[type="text"],
+input[type="date"],
 input[type="email"],
 textarea,
 select {
@@ -659,6 +660,20 @@ td a { font-weight: 600; }
   accent-color: var(--pine);
   flex: 0 0 auto;
 }
+.decoder-form .decoder-span { grid-column: 1 / -1; }
+h2 label { font: inherit; letter-spacing: inherit; color: inherit; }
+.decoder-remind {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  margin: 0.2rem 0 1rem;
+  padding: 0.8rem 1rem 0.2rem;
+}
+.decoder-remind legend {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+.plant-decoder h2:first-child { margin-top: 1.2rem; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

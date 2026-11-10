@@ -70,6 +70,26 @@ const shirakawaCountry = shirakawa?.countryKey ? countryByKey.get(shirakawa.coun
         <input name="triangle" type="checkbox" />
         <span>A triangle is molded after a three-digit date</span>
       </label>
+      <label class="decoder-span">
+        Purchase or install date, optional
+        <input id="purchased" type="date" />
+      </label>
+      <p class="small decoder-span">
+        Manufacturers stamp a production week, not a single day, so an age is a range.
+        A DOT date is not an ISO week: ISO weeks start on Monday, and this site uses the Sunday–Saturday week in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>.
+        The optional date is a UTC calendar day, the same clock as the production week.
+        <a href="/guides/tire-age/">How old is too old</a> quotes published positions. This page calculates dates. It does not decide whether a tire should stay in service.
+      </p>
+      <fieldset class="decoder-span decoder-remind">
+        <legend>Calendar file from the manufacture week</legend>
+        <p class="small">The file is built in this browser. Nothing is saved or sent. 5, 6, and 10 years are separate choices, counted from the production week.</p>
+        <div class="button-row">
+          <button type="button" class="button-ghost" data-remind="5">5 years</button>
+          <button type="button" class="button-ghost" data-remind="6">6 years</button>
+          <button type="button" class="button-ghost" data-remind="10">10 years</button>
+        </div>
+        <p class="small" data-remind-status>Decode a date code, then choose 5, 6, or 10 years if you want a calendar file.</p>
+      </fieldset>
     </form>
     <div class="button-row">
       <button type="button" class="button-ghost" data-example="1U2">Example: plant code 1U2</button>

@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import Answer from "../../components/Answer.astro";
 import HowToFindCode from "../../components/HowToFindCode.astro";
+import PlantMiniDecoder from "../../components/PlantMiniDecoder.astro";
 import PlantNote from "../../components/PlantNote.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { plantAnswer, sourceEntries } from "../../lib/answers.js";
@@ -44,6 +45,7 @@ const recallCaptionFilers = extra.filerNames.length ? formatNameList(extra.filer
     <h1>DOT plant code <span class="code">{plant.code}</span></h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
+    <PlantMiniDecoder code={plant.code} />
     <PlantNote />
     <dl class="facts">
       <div>

@@ -1,0 +1,48 @@
+---
+import { plantDateFaq } from "../lib/plant-date-faq.js";
+
+const { code } = Astro.props;
+const faq = plantDateFaq(code);
+---
+
+<section class="plant-decoder" data-plant-decoder data-plant-code={code} aria-labelledby="plant-decoder-heading">
+  <h2 id="plant-decoder-heading"><label for="plant-dot-tin">Paste your full DOT code</label></h2>
+  <form class="decoder-form" action="/decoder/" method="get">
+    <input
+      id="plant-dot-tin"
+      name="tin"
+      type="text"
+      autocapitalize="characters"
+      autocomplete="off"
+      spellcheck="false"
+      inputmode="text"
+    />
+    <button type="submit">Decode</button>
+    <label class="decoder-check">
+      <input name="triangle" type="checkbox" value="1" />
+      <span>A triangle is molded after a three-digit date</span>
+    </label>
+  </form>
+  <p class="small muted">
+    Example shape: DOT 05H 9T5R 2319. It is not one tire's number. Manufacturers stamp a production week, not a single day, so the age is a range.
+    This site reads that week as Sunday through Saturday under <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>, not as an ISO week.
+    Nothing you type is stored or sent.
+  </p>
+  <noscript>
+    <p>Decoding what you type runs in your browser. Decode still opens the full decoder.</p>
+  </noscript>
+  <div data-output aria-live="polite"></div>
+  <p>
+    <a data-full-decoder href={`/decoder/?tin=${code}`}>Full decoder</a>
+    {" · "}
+    <a href="/guides/tire-age/">How old is too old</a>
+  </p>
+  <h2>{faq.name}</h2>
+  <p>{faq.text}</p>
+</section>
+
+<script>
+  import { initPlantDecoder } from "../scripts/plant-decoder.js";
+  const root = document.querySelector("[data-plant-decoder]");
+  if (root) initPlantDecoder(root);
+</script>

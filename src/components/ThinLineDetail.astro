@@ -1,0 +1,151 @@
+---
+import { NHTSA_RECALLS_URL } from "../lib/recall-list.js";
+
+const { report } = Astro.props;
+---
+
+<h2>How the grades compare</h2>
+<h3>{report.brand.name}</h3>
+<p>{report.brand.text}</p>
+<p>{report.tractionText}</p>
+<p>{report.temperatureText}</p>
+{report.fileText ? <p>{report.fileText}</p> : null}
+<h3>{report.size.name}</h3>
+<p>{report.size.text}</p>
+
+<h2>Other lines</h2>
+<p>{report.siblingText}</p>
+{
+  report.siblingLinks.length ? (
+    <ul>
+      {report.siblingLinks.map((item) => (
+        <li>
+          <a href={item.href}>{item.label}</a>
+        </li>
+      ))}
+    </ul>
+  ) : null
+}
+{
+  report.compareHref ? (
+    <p>
+      <a href={report.compareHref}>Compare {report.lineName} with {report.compareName}</a>.
+    </p>
+  ) : null
+}
+<p>
+  <a href={report.brandUrl}>All {report.brandName} lines</a>
+</p>
+{report.peerText ? <p>{report.peerText}</p> : null}
+{
+  report.peerLinks.length ? (
+    <ul>
+      {report.peerLinks.map((item) => (
+        <li>
+          <a href={item.href}>{item.label}</a>
+        </li>
+      ))}
+    </ul>
+  ) : null
+}
+{report.sameSizeText ? <p>{report.sameSizeText}</p> : null}
+{
+  report.sameSizeLinks.length ? (
+    <ul>
+      {report.sameSizeLinks.map((item) => (
+        <li>
+          <a href={item.href}>{item.label}</a>
+        </li>
+      ))}
+    </ul>
+  ) : null
+}
+
+<h2>Recalls and complaints</h2>
+<h3>{report.recall.name}</h3>
+<p>{report.recall.text}</p>
+<p>
+  Confirm a campaign on <a href={NHTSA_RECALLS_URL}>NHTSA's recall search</a>.
+  The campaigns named in <a href="/recalls/">the tire-recall file on this site</a> are a separate list from the counts on the ratings row.
+  {report.filingsHref ? <a href={report.filingsHref}>Filings for this brand</a> : null}
+</p>
+{
+  report.recallRows.length ? (
+    <div class="table-wrap">
+      <table>
+        <caption>Tire-recall rows that match this brand and line. Units are the campaign total.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Campaign</th>
+            <th scope="col">Reported</th>
+            <th scope="col">Filer</th>
+            <th scope="col">Units</th>
+            <th scope="col">Wording</th>
+          </tr>
+        </thead>
+        <tbody>
+          {report.recallRows.map((row) => (
+            <tr>
+              <td>
+                <a href={row.href}>{row.campaign}</a>
+              </td>
+              <td>
+                <time datetime={row.reportDate}>{row.reportLabel}</time>
+              </td>
+              <td>{row.filer}</td>
+              <td class="num">{row.unitsLabel}</td>
+              <td>{row.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : null
+}
+<p>{report.plantText}</p>
+{
+  report.plantRows.length ? (
+    <div class="table-wrap">
+      <table>
+        <caption>Plant records matched from a recall row for this line. The record does not say the plant made the line.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Plant code</th>
+            <th scope="col">Registrant</th>
+            <th scope="col">City</th>
+            <th scope="col">Country</th>
+            <th scope="col">Status field</th>
+            <th scope="col">Matched company</th>
+          </tr>
+        </thead>
+        <tbody>
+          {report.plantRows.map((plant) => (
+            <tr>
+              <td>
+                <a href={plant.url}>{plant.code}</a>
+              </td>
+              <td>{plant.name}</td>
+              <td>{plant.city}</td>
+              <td>{plant.country}</td>
+              <td>{plant.status}</td>
+              <td>{plant.matchedCompany}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : null
+}
+
+<h2>Read the grades</h2>
+<h3>{report.grades.name}</h3>
+<p>{report.grades.text}</p>
+<p>{report.meaningText}</p>
+<p>
+  <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
+  <a href="/guides/treadwear-numbers/">What treadwear numbers mean</a>.
+  <a href="/guides/tire-age/">How old is too old for tires</a>.
+  <a href="/decoder/">DOT code decoder</a>.
+  <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
+  <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+</p>

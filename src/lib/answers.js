@@ -126,7 +126,7 @@ function sizeClause(count) {
   return `across its ${formatNumber(count)} size rows`;
 }
 
-export function lineAnswer(line) {
+export function lineAnswer(line, options = {}) {
   if (!line.rows?.length) {
     return [`${line.brand} ${line.line} has no grade rows in NHTSA's published UTQG list.`];
   }
@@ -136,6 +136,8 @@ export function lineAnswer(line) {
   ];
   const flag = flagSentence(facts);
   if (flag) sentences.push(flag);
+  const comparison = typeof options.comparison === "string" ? options.comparison.trim() : "";
+  if (comparison && sentences.length < 3) sentences.push(comparison);
   const sameName = sameNameSentence(line);
   if (sameName && sentences.length < 3) sentences.push(sameName);
   if (sentences.length < 3) {

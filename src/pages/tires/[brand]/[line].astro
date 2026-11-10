@@ -9,28 +9,35 @@ import { lineAnswer, sourceEntries } from "../../../lib/answers.js";
 import { catalog } from "../../../lib/catalog.js";
 import { compareToolHref } from "../../../lib/compare.js";
 import { ratingsTableHref } from "../../../lib/ratings-table.js";
+import { recallSummary } from "../../../lib/recall-catalog.js";
 import { lineSizeVariance } from "../../../lib/size-variance.js";
-import { dataset } from "../../../lib/structured.js";
+import { dataset, laterIso } from "../../../lib/structured.js";
 import { clampText } from "../../../lib/text.js";
+import { buildThinIndex, describeThinLine, isThinLine } from "../../../lib/thin-line.js";
 import RedirectNotice from "../../../components/RedirectNotice.astro";
 import SizeVariance from "../../../components/SizeVariance.astro";
+import ThinLineDetail from "../../../components/ThinLineDetail.astro";
 
 export function getStaticPaths() {
+  const index = buildThinIndex(catalog.lines, { plants: catalog.plants, recallSummary });
   return [
     ...catalog.lines.map((line) => ({
       params: { brand: line.brandSlug, line: line.lineSlug },
-      props: { redirect: null },
+      props: {
+        redirect: null,
+        report: isThinLine(line) ? describeThinLine(line, index) : null,
+      },
     })),
     ...catalog.redirects
       .filter((item) => item.kind === "line")
       .map((item) => ({
         params: { brand: item.brandSlug, line: item.lineSlug },
-        props: { redirect: item },
+        props: { redirect: item, report: null },
       })),
   ];
 }
 
-const { redirect = null } = Astro.props;
+const { redirect = null, report = null } = Astro.props;
 const line = redirect ? null : catalog.getLine(Astro.params.brand, Astro.params.line);
 const sameGrades = line
   ? line.rows.length > 1 &&
@@ -53,18 +60,32 @@ const safetyTotal = safety.complaints + safety.recalls + safety.investigations +
 const activeMixed = line ? line.rows.some((row) => row.active) && line.rows.some((row) => !row.active) : false;
 const sameName = line ? line.sameName.slice(0, 12) : [];
 const variance = line ? lineSizeVariance(line) : null;
-const answers = line ? lineAnswer(line) : [];
+const answers = line ? lineAnswer(line, report ? { comparison: report.comparisonSentence } : {}) : [];
 const description = line ? clampText(answers.join(" ")) : "";
+const sourceKinds = report ? report.sources : ["ratings"];
+const basedOn = sourceKinds.map((kind) => catalog.meta[kind].source);
 const jsonLd = line
   ? [
       dataset({
         name: `UTQG grades for ${line.brand} ${line.line}`,
         description: answers.join(" "),
         path: line.url,
-        dateModified: catalog.meta.verifiedAt,
-        isBasedOn: catalog.meta.ratings.source,
+        dateModified: report ? laterIso(catalog.meta.verifiedAt, catalog.meta.recalls?.retrievedAt) : catalog.meta.verifiedAt,
+        isBasedOn: basedOn.length === 1 ? basedOn[0] : basedOn,
         keywords: ["UTQG", "treadwear", "NHTSA"],
       }),
+      ...(report
+        ? [
+            {
+              "@type": "FAQPage",
+              mainEntity: report.faqs.map((item) => ({
+                "@type": "Question",
+                name: item.name,
+                acceptedAnswer: { "@type": "Answer", text: item.text },
+              })),
+            },
+          ]
+        : []),
     ]
   : [];
 const crumbs = line
@@ -85,10 +106,12 @@ const crumbs = line
   <div class="wrap">
     <h1>{line.brand} {line.line}</h1>
     <Answer sentences={answers} />
-    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
     <Disclaimer />
     {
-      variance.show ? (
+      report ? (
+        <p>{report.intro}</p>
+      ) : variance.show ? (
         <SizeVariance line={line} variance={variance} />
       ) : sameGrades ? (
         <p>Every size series for this line carries the same grades in the NHTSA file. The size strings below are unchanged from that file.</p>
@@ -104,12 +127,12 @@ const crumbs = line
       ) : null
     }
     {
-      safetyTotal > 0 ? (
+      report || safetyTotal === 0 ? null : (
         <p>
           The ratings API included non-zero counts on rows in this line: {safety.complaints} complaints, {safety.recalls} recalls, {safety.investigations} investigations, and {safety.communications} manufacturer communications.
           Confirm any recall on <a href="https://www.nhtsa.gov/recalls">NHTSA's recall search</a> before relying on it.
         </p>
-      ) : null
+      )
     }
     {
       line.nonstandard ? (
@@ -152,6 +175,7 @@ const crumbs = line
         </tbody>
       </table>
     </div>
+    {report ? <ThinLineDetail report={report} /> : null}
     {
       line.sameName.length ? (
         <>
@@ -176,13 +200,19 @@ const crumbs = line
       ) : null
     }
     <CheckPrice query={`${line.brand} ${line.line}`} />
-    <h2>Read the grades</h2>
-    <p>
-      <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
-      <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
-      The numbers compare tires on a government test. They are not a mileage warranty.
-      A tire that is not in the list is covered in <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
-    </p>
+    {
+      report ? null : (
+        <>
+          <h2>Read the grades</h2>
+          <p>
+            <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
+            <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
+            The numbers compare tires on a government test. They are not a mileage warranty.
+            A tire that is not in the list is covered in <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
+          </p>
+        </>
+      )
+    }
     <p>
       <a href={compareToolHref([`${line.brandSlug}/${line.lineSlug}`])}>Compare with other tires</a>
       · <a href={`/brands/${line.brandSlug}/`}>All {line.brand} lines</a>

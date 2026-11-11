@@ -1,0 +1,134 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import Grade from "../../components/Grade.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog } from "../../lib/catalog.js";
+import { HIGHEST_TREADWEAR_PATH } from "../../lib/highest-treadwear.js";
+import {
+  LONG_TREADWEAR_MIN,
+  LONG_TREADWEAR_PATH,
+  LONG_TREADWEAR_TITLE,
+  caveatText,
+  longTreadwearAnswer,
+  longTreadwearFaqs,
+  longTreadwearJsonLd,
+  longTreadwearReport,
+  rowsCaption,
+  sizeFlag,
+  tableIntro,
+} from "../../lib/long-treadwear.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
+import { SIZE_VARIANCE_PATH } from "../../lib/size-variance.js";
+import { clampText } from "../../lib/text.js";
+
+const report = longTreadwearReport(catalog);
+const answers = longTreadwearAnswer(report);
+const faqs = longTreadwearFaqs(report);
+const description = clampText(answers.join(" "));
+const jsonLd = longTreadwearJsonLd(report);
+const ecfr = "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-575/section-575.104";
+const ratingsHref = ratingsTableHref({
+  wearMin: String(LONG_TREADWEAR_MIN),
+  traction: ["AA", "A"],
+  temp: ["A"],
+  quality: "hide",
+  sort: "wear-desc",
+});
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/ratings/", label: "UTQG grades" },
+  { href: LONG_TREADWEAR_PATH, label: "Treadwear 700 and traction A or AA" },
+];
+---
+
+<Base title={LONG_TREADWEAR_TITLE} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <div class="prose">
+      <h1>{LONG_TREADWEAR_TITLE}</h1>
+      <Answer sentences={answers} />
+      <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+      <p>
+        {caveatText()}
+        {" "}
+        <a href={ecfr}>Read 49 CFR 575.104</a>.
+        {" "}
+        <a href="/guides/treadwear-numbers/">What treadwear numbers mean</a>.
+        {" "}
+        <a href="/guides/utqg-grades/">Traction and temperature grades</a>.
+      </p>
+      <p>{tableIntro()}</p>
+      <p>
+        <a href={ratingsHref}>Open this list in the table: treadwear of at least {LONG_TREADWEAR_MIN}, traction AA or A, temperature A</a>
+        · <a href={HIGHEST_TREADWEAR_PATH}>Highest treadwear grades NHTSA lists</a>
+        · <a href="/guides/">Guides</a>
+        · <a href={SIZE_VARIANCE_PATH}>Why treadwear can differ by size</a>
+        · <a href="/ratings/">All UTQG grades</a>
+      </p>
+    </div>
+
+    <h2 id="lines">Tire lines</h2>
+    {
+      report.lines.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{rowsCaption(report)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Brand</th>
+                <th scope="col">Tire line</th>
+                <th scope="col">Treadwear</th>
+                <th scope="col">Traction</th>
+                <th scope="col">Temperature</th>
+                <th scope="col">Size rows</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.lines.map((entry) => (
+                  <tr>
+                    <td>{entry.line.brand}</td>
+                    <td>
+                      <a href={entry.line.url}>{entry.line.line}</a>
+                    </td>
+                    <td class="num">{entry.wearLabel}</td>
+                    <td>
+                      {entry.tractions.map((value) => (
+                        <Grade value={value} kind="trac" />
+                      ))}
+                    </td>
+                    <td>
+                      {entry.temps.map((value) => (
+                        <Grade value={value} kind="temp" />
+                      ))}
+                    </td>
+                    <td>{sizeFlag(entry)}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>NHTSA's published UTQG list has no tire line that meets this filter in this pull.</p>
+      )
+    }
+
+    <div class="prose">
+      <h2>Questions</h2>
+      {
+        faqs.map((item) => (
+          <>
+            <h3>{item.name}</h3>
+            <p>{item.text}</p>
+          </>
+        ))
+      }
+      <p>
+        <a href="/methodology/">Data sources</a>.
+        <a href="/compare/">Compare tire lines</a>.
+      </p>
+    </div>
+  </div>
+</Base>

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { HtmlValidate } from "html-validate";
 import { gearLinks } from "../src/lib/affiliates.js";
 import { catalog } from "../src/lib/catalog.js";
+import { BANNED_LONG_WORD, LONG_TREADWEAR_PATH, longTreadwearReport } from "../src/lib/long-treadwear.js";
 import { BANNED_RECALL_ADVICE, NHTSA_RECALLS_URL, RECALLS_PATH, TIN_LIMIT, USTMA_RECALL_LOOKUP_URL } from "../src/lib/recall-list.js";
 import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
 import { BANNED_VERDICT, MILES_FORMULA, TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
@@ -87,6 +88,7 @@ const validator = new HtmlValidate({
 });
 
 const linesByPath = new Map(catalog.lines.map((line) => [line.url, line]));
+const longTreadwear = longTreadwearReport(catalog);
 const gradeVariesId = `id="${GRADE_VARIES_ID}"`;
 const gearHrefs = gearLinks().map((link) => link.href);
 const gearPages = new Set(["/guides/utqg-grades/", "/guides/tire-pressure-and-roadside-kit/"]);
@@ -222,6 +224,35 @@ for (const file of files) {
   if (path === SIZE_VARIANCE_PATH) {
     const banned = visibleText(html).match(BANNED_GRADE_WORD);
     if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+  }
+  if (path === LONG_TREADWEAR_PATH) {
+    const text = visibleText(html);
+    const banned = text.match(BANNED_LONG_WORD);
+    if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+    if (!text.includes("assigned by the manufacturer")) errors.push(`${rel}: missing manufacturer-assigned caveat`);
+    if (!text.includes("some sizes") && longTreadwear.someSizesCount) errors.push(`${rel}: missing some-sizes flag`);
+    const body = html.match(/<tbody>([\s\S]*?)<\/tbody>/);
+    const rows = body ? [...body[1].matchAll(/<tr\b/g)] : [];
+    if (rows.length !== longTreadwear.lineCount) errors.push(`${rel}: ${rows.length} table rows`);
+    for (const href of ["/guides/treadwear-numbers/", "/guides/utqg-grades/", "/lists/highest-treadwear/", "/guides/", "/ratings/"]) {
+      if (!html.includes(`href="${href}"`)) errors.push(`${rel}: missing ${href}`);
+    }
+    const hrefs = [...html.matchAll(/\bhref="([^"]*)"/g)].map((match) => match[1].replaceAll("&amp;", "&").replaceAll("&#38;", "&"));
+    if (
+      !hrefs.some(
+        (href) =>
+          href.startsWith("/ratings/?") &&
+          href.includes("wearMin=700") &&
+          href.includes("traction=AA") &&
+          href.includes("traction=A") &&
+          href.includes("temp=A"),
+      )
+    ) {
+      errors.push(`${rel}: missing ratings filter link`);
+    }
+    for (const entry of longTreadwear.lines) {
+      if (!html.includes(`href="${entry.line.url}"`)) errors.push(`${rel}: missing tire line ${entry.line.url}`);
+    }
   }
   if (path === RECALLS_PATH) {
     const main = html.match(/<main\b[^>]*>([\s\S]*)<\/main>/);

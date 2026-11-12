@@ -610,7 +610,27 @@ td a { font-weight: 600; }
 }
 .brand-list { list-style: none; padding: 0; margin: 0; }
 .brand-list li { border-bottom: 1px solid var(--line); }
-.brand-list a { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0; text-decoration: none; min-height: var(--tap-min); align-items: center; }
+.brand-list a { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0; text-decoration: none; min-height: var(--tap-min); align-items: center; flex-wrap: wrap; }
+.brand-list .folded { flex: 1 1 14rem; text-align: right; }
+.hist {
+  display: block;
+  width: 100%;
+  height: 0.55rem;
+  margin: 0 0 0.3rem;
+  background: var(--chip);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.hist-bar {
+  display: block;
+  height: 100%;
+  background: var(--pine);
+  border-radius: 999px;
+}
+.share-cell { min-width: 8.5rem; }
+@media (max-width: 48rem) {
+  .brand-list .folded { text-align: left; }
+}
 .visually-hidden {
   position: absolute;
   width: 1px;

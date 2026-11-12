@@ -3,19 +3,30 @@ import Base from "../../layouts/Base.astro";
 import Answer from "../../components/Answer.astro";
 import Disclaimer from "../../components/Disclaimer.astro";
 import Grade from "../../components/Grade.astro";
+import RedirectNotice from "../../components/RedirectNotice.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { brandAnswer, sourceEntries } from "../../lib/answers.js";
+import {
+  BRAND_PLANT_RULE,
+  BRAND_RECALL_RULE,
+  GRADE_SHARE_NOTE,
+  NOT_IN_SHARE,
+  NOT_STORED,
+  TREADWEAR_BAND_NOTE,
+  WIDER_GROUP_NOTE,
+  brandFaqLd,
+  brandProfile,
+} from "../../lib/brand-pages.js";
 import { catalog } from "../../lib/catalog.js";
-import { formatNumber, wearRange } from "../../lib/format.js";
+import { formatNumber, formatUtcDate, wearRange } from "../../lib/format.js";
 import { nameKey } from "../../lib/normalize.js";
-import { recallSummary } from "../../lib/recall-catalog.js";
-import { formatNameList } from "../../lib/recalls.js";
+import { manufacturerGroupForBrand } from "../../lib/plant-hubs.js";
 import { ratingsTableHref } from "../../lib/ratings-table.js";
+import { recallSummary } from "../../lib/recall-catalog.js";
+import { formatNameList, recallAnchor } from "../../lib/recalls.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
-import { manufacturerGroupForBrand } from "../../lib/plant-hubs.js";
 import { whoMakesByKey } from "../../lib/who-makes-pages.js";
-import RedirectNotice from "../../components/RedirectNotice.astro";
 
 export function getStaticPaths() {
   return [
@@ -29,13 +40,18 @@ export function getStaticPaths() {
 const { redirect = null } = Astro.props;
 const brand = redirect ? null : catalog.getBrand(Astro.params.brand);
 const lines = brand ? catalog.getBrandLines(brand.slug) : [];
+const profile = brand ? brandProfile(brand.slug) : null;
 const filings = brand ? recallSummary.byBrand.get(nameKey(brand.name)) || null : null;
 const whoPage = brand ? whoMakesByKey.get(nameKey(brand.name)) || null : null;
 const plantGroup = brand ? manufacturerGroupForBrand(brand.slug) : null;
 const aliasRows = brand ? brand.aliases.reduce((sum, alias) => sum + alias.count, 0) : 0;
 const aliasNames = brand && brand.aliases.length ? formatNameList(brand.aliases.map((alias) => alias.name)) : "";
-const answers = brand ? brandAnswer(brand, lines, filings) : [];
+const answers = brand ? brandAnswer(brand, lines, filings, catalog.meta.verifiedAt) : [];
 const description = brand ? clampText(answers.join(" ")) : "";
+const sourceKinds = ["ratings"];
+if (profile?.plants.length) sourceKinds.push("plants");
+if (profile?.recalls.length || filings) sourceKinds.push("recalls");
+const recallHash = filings ? filings.anchor : brand ? recallAnchor(brand.name) : "";
 const jsonLd = brand
   ? [
       dataset({
@@ -46,6 +62,7 @@ const jsonLd = brand
         isBasedOn: catalog.meta.ratings.source,
         keywords: ["UTQG", "treadwear", "NHTSA"],
       }),
+      ...(profile.faqs.length ? [brandFaqLd(profile)] : []),
     ]
   : [];
 const crumbs = brand
@@ -65,7 +82,7 @@ const crumbs = brand
   <div class="wrap">
     <h1>{brand.name}</h1>
     <Answer sentences={answers} />
-    <SourceLine sources={sourceEntries(catalog.meta, filings ? ["ratings", "recalls"] : ["ratings"])} />
+    <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
     <Disclaimer />
     {
       brand.aliases.length ? (
@@ -78,35 +95,157 @@ const crumbs = brand
       ) : null
     }
     {
-      filings ? (
-        <div class="notice">
-          <p class="data-note-label">Data-quality note</p>
-          <p>
-            NHTSA's tire-recall file names {brand.name} on {formatNumber(filings.rows.length)} recalled {filings.rows.length === 1 ? "line" : "lines"}
-            across {formatNumber(filings.campaigns)} {filings.campaigns === 1 ? "campaign" : "campaigns"}.
-            The filing {filings.filers.length === 1 ? "company is" : "companies are"} {formatNameList(filings.filers)}.
-            <a href={`/who-makes-it/#${filings.anchor}`}>Those filings are on Who makes it?</a>
-            {
-              whoPage ? (
-                <>
-                  {" "}
-                  <a href={whoPage.url}>Who makes {brand.name} tires?</a> repeats the filings for this brand.
-                </>
-              ) : null
-            }
-            {" "}
-            A filing covers the recalled line in that campaign. It does not say who makes every {brand.name} tire.
-          </p>
-        </div>
+      profile.uplink ? (
+        <p>
+          {profile.uplink.before}
+          <a href={profile.indexHref}>A–Z index</a>
+          {profile.uplink.after}
+        </p>
       ) : null
     }
+
+    <h2 id="summary">Line count and treadwear</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>{profile.summaryCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Figure</th>
+            <th scope="col">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Tire lines</th>
+            <td class="num">{formatNumber(profile.lineCount)}</td>
+          </tr>
+          <tr>
+            <th scope="row">Size rows</th>
+            <td class="num">{formatNumber(profile.rowCount)}</td>
+          </tr>
+          <tr>
+            <th scope="row">Median treadwear</th>
+            <td class="num">{profile.medianText}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="treadwear">Treadwear distribution</h2>
+    <p>
+      {TREADWEAR_BAND_NOTE}
+      {" "}
+      <a href="/guides/treadwear-numbers/#histogram">Open the treadwear bands</a>.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>{profile.treadwearCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Treadwear</th>
+            <th scope="col">Size rows</th>
+            <th scope="col">Share of usable treadwear</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            profile.bands.map((band) => (
+              <tr>
+                <th scope="row">{band.label}</th>
+                <td class="num">{formatNumber(band.count)}</td>
+                <td class="share-cell">
+                  <span class="hist" aria-hidden="true"><span class="hist-bar" style={`width: ${band.width}%`}></span></span>
+                  {band.share}
+                </td>
+              </tr>
+            ))
+          }
+          {
+            profile.excludedWear ? (
+              <tr>
+                <th scope="row">No usable treadwear number</th>
+                <td class="num">{formatNumber(profile.excludedWear)}</td>
+                <td>{NOT_IN_SHARE}</td>
+              </tr>
+            ) : null
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="grades">Traction and temperature</h2>
+    <p>{GRADE_SHARE_NOTE}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{profile.gradesCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Grade</th>
+            <th scope="col">Size rows</th>
+            <th scope="col">Share of size rows</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            profile.traction.map((item) => (
+              <tr>
+                <th scope="row">{`Traction ${item.grade}`}</th>
+                <td class="num">{formatNumber(item.count)}</td>
+                <td class="share-cell">
+                  <span class="hist" aria-hidden="true"><span class="hist-bar" style={`width: ${item.width}%`}></span></span>
+                  {item.share}
+                </td>
+              </tr>
+            ))
+          }
+          {
+            profile.tractionOther ? (
+              <tr>
+                <th scope="row">Traction other</th>
+                <td class="num">{formatNumber(profile.tractionOther.count)}</td>
+                <td class="share-cell">
+                  <span class="hist" aria-hidden="true"><span class="hist-bar" style={`width: ${profile.tractionOther.width}%`}></span></span>
+                  {profile.tractionOther.share}
+                </td>
+              </tr>
+            ) : null
+          }
+          {
+            profile.temperature.map((item) => (
+              <tr>
+                <th scope="row">{`Temperature ${item.grade}`}</th>
+                <td class="num">{formatNumber(item.count)}</td>
+                <td class="share-cell">
+                  <span class="hist" aria-hidden="true"><span class="hist-bar" style={`width: ${item.width}%`}></span></span>
+                  {item.share}
+                </td>
+              </tr>
+            ))
+          }
+          {
+            profile.temperatureOther ? (
+              <tr>
+                <th scope="row">Temperature other</th>
+                <td class="num">{formatNumber(profile.temperatureOther.count)}</td>
+                <td class="share-cell">
+                  <span class="hist" aria-hidden="true"><span class="hist-bar" style={`width: ${profile.temperatureOther.width}%`}></span></span>
+                  {profile.temperatureOther.share}
+                </td>
+              </tr>
+            ) : null
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="lines">Tire lines</h2>
     <label>
       Filter lines
       <input id="line-filter" type="search" autocomplete="off" />
     </label>
     <p class="status small" id="line-filter-status" aria-live="polite"></p>
     <div class="table-wrap">
-      <table>
+      <table id="line-table">
         <caption>{brand.name} tire lines</caption>
         <thead>
           <tr>
@@ -142,14 +281,121 @@ const crumbs = brand
         </tbody>
       </table>
     </div>
+
     {
-      plantGroup ? (
+      profile.plants.length ? (
+        <>
+          <h2 id="plants">Registered plants</h2>
+          <p>{BRAND_PLANT_RULE}</p>
+          <div class="table-wrap">
+            <table>
+              <caption>{profile.plantsCaption}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Code</th>
+                  <th scope="col">Registrant</th>
+                  <th scope="col">City</th>
+                  <th scope="col">Country</th>
+                  <th scope="col">vPIC status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  profile.plants.map((plant) => (
+                    <tr>
+                      <td><a href={plant.url}>{plant.code}</a></td>
+                      <td>{plant.name}</td>
+                      <td>{plant.city || NOT_STORED}</td>
+                      <td>{plant.country || NOT_STORED}</td>
+                      <td>{plant.status || NOT_STORED}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+          {
+            plantGroup ? (
+              <p>
+                {WIDER_GROUP_NOTE}
+                {" "}
+                <a href={plantGroup.url}>{plantGroup.linkLabel} plant codes</a>.
+              </p>
+            ) : null
+          }
+        </>
+      ) : plantGroup ? (
         <p>
           <a href={plantGroup.url}>{plantGroup.linkLabel} plant codes</a> lists NHTSA plant records whose registrant name matches that group.
           A plant record does not say it makes {brand.name} tires.
         </p>
       ) : null
     }
+
+    {
+      profile.recalls.length ? (
+        <>
+          <h2 id="recalls">Recall history</h2>
+          <p>
+            {BRAND_RECALL_RULE}
+            {
+              filings ? (
+                <>
+                  {" "}
+                  <a href={`/who-makes-it/#${recallHash}`}>Those filings are on Who makes it?</a>
+                </>
+              ) : null
+            }
+            {
+              whoPage ? (
+                <>
+                  {" "}
+                  <a href={whoPage.url}>Who makes {brand.name} tires?</a>
+                </>
+              ) : null
+            }
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>{profile.recallsCaption}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Campaign</th>
+                  <th scope="col">Recalled line</th>
+                  <th scope="col">Report date</th>
+                  <th scope="col">Filing company</th>
+                  <th scope="col">Units</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  profile.recalls.map((row) => (
+                    <tr>
+                      <td><a href={row.href}>{row.campaign}</a></td>
+                      <td>{row.lineUrl ? <a href={row.lineUrl}>{row.line}</a> : row.line}</td>
+                      <td>{row.reportDate ? formatUtcDate(row.reportDate) : profile.missingValue}</td>
+                      <td>{row.filer}</td>
+                      <td class="num">{row.unitsPresent ? formatNumber(row.units) : profile.missingValue}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : null
+    }
+
+    <h2 id="questions">Questions</h2>
+    {
+      profile.faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+
     <p>
       <a href={ratingsTableHref({ q: brand.name })}>Open this list in the table</a>
       · <a href="/ratings/">All grades</a>
@@ -161,7 +407,7 @@ const crumbs = brand
 
 <script>
   const input = document.querySelector("#line-filter");
-  const body = document.querySelector("tbody");
+  const body = document.querySelector("#line-table tbody");
   const status = document.querySelector("#line-filter-status");
   if (input && body && status) {
     const rows = [...body.rows];

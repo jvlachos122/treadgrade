@@ -18,6 +18,7 @@ import {
 import { buildCatalog } from "../src/lib/normalize.js";
 import { nameKey } from "../src/lib/normalize.js";
 import { summarizeRecallRows } from "../src/lib/recalls.js";
+import { formatVerified } from "../src/lib/format.js";
 import { dataset, PUBLIC_DOMAIN_LICENSE } from "../src/lib/structured.js";
 
 const TRACTION = new Set(["AA", "A", "B", "C"]);
@@ -211,7 +212,8 @@ test("recall filings name the filer and do not assign the whole brand", () => {
     ],
     { rows: [{}, {}, {}], filers: ["Michelin North America, Inc.", "Centropneus SRL"] },
   ).join(" ");
-  assert.match(text, /2 tire lines and 2 grade rows/);
+  assert.match(text, /2 tire lines and 2 size rows/);
+  assert.match(text, /median treadwear on rows with a usable number is 490/);
   assert.match(text, /from 140 to 840/);
   assert.match(text, /Michelin North America, Inc\. and Centropneus SRL/);
   assert.match(text, /an importer, or the brand owner/);
@@ -318,8 +320,10 @@ test("committed files produce answer boxes that follow the grade rules", () => {
 
   for (const brand of catalog.brands) {
     const filings = summary.byBrand.get(nameKey(brand.name)) || null;
-    const sentences = brandAnswer(brand, catalog.getBrandLines(brand.slug), filings);
+    const sentences = brandAnswer(brand, catalog.getBrandLines(brand.slug), filings, catalog.meta.verifiedAt);
     assertSentences(sentences, brand.url);
+    assert.match(sentences[0], new RegExp(`verified ${formatVerified(catalog.meta.verifiedAt)} \\(UTC\\)`), brand.url);
+    assert.match(sentences[1], /median treadwear|not reported as a usable number/, brand.url);
     assert.doesNotMatch(sentences.join(" "), /made by/i, brand.url);
   }
 

@@ -10,6 +10,7 @@ import { TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
 import { TIRE_AGE_PATH } from "../src/lib/tire-age.js";
 import { RECALLS_PATH } from "../src/lib/recall-list.js";
 import { SIZE_VARIANCE_PATH } from "../src/lib/size-variance.js";
+import { indexablePathSet } from "../src/lib/sitemap.js";
 import { NO_UTQG_PATH } from "../src/lib/utqg-exempt.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -178,6 +179,19 @@ for (const path of exampleComparisonPaths) {
 for (const path of hubPaths) {
   if (!pageLocs.has(path)) errors.push(`sitemap missing hub ${path}`);
 }
+const expectedPaths = indexablePathSet();
+if (pageLocs.size !== expectedPaths.size) {
+  errors.push(`sitemap URL count ${pageLocs.size} expected ${expectedPaths.size}`);
+}
+for (const path of expectedPaths) {
+  if (!pageLocs.has(path)) errors.push(`sitemap missing ${path}`);
+}
+for (const path of pageLocs) {
+  if (!expectedPaths.has(path)) errors.push(`sitemap extra ${path}`);
+}
+for (const brand of catalog.brands) {
+  if (!pageLocs.has(brand.url)) errors.push(`sitemap missing brand ${brand.url}`);
+}
 
 const compareIndexPath = join(dist, "data/compare-index.json");
 if (!existsSync(compareIndexPath)) errors.push("missing dist/data/compare-index.json");
@@ -200,4 +214,4 @@ if (errors.length) {
   console.error(`${errors.length} link errors`);
   process.exit(1);
 }
-console.log(`Links OK across ${files.length} HTML files.`);
+console.log(`Links OK across ${files.length} HTML files. Sitemap URLs: ${pageLocs.size}.`);

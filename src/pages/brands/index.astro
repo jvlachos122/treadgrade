@@ -8,12 +8,12 @@ import { formatNumber, wearRange } from "../../lib/format.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 import InlineList from "../../components/InlineList.astro";
+import { BRAND_PLANT_RULE, INDEX_FOLD_NOTE, brandIndexLetter, brandProfile, foldedIndexText } from "../../lib/brand-pages.js";
 import { whoMakesPages } from "../../lib/who-makes-pages.js";
 
 const groups = new Map();
 for (const brand of catalog.brands) {
-  const letter = brand.name.slice(0, 1).toUpperCase();
-  const key = /[A-Z]/.test(letter) ? letter : "#";
+  const key = brandIndexLetter(brand.name);
   if (!groups.has(key)) groups.set(key, []);
   groups.get(key).push(brand);
 }
@@ -57,6 +57,11 @@ const crumbs = [
       <a href="/methodology/known-errors/#brand-strings">Known errors</a>. <a href="/methodology/#data-quality">Data-quality notes</a>.
       <a href="/ratings/">Open this list in the table</a>.
     </p>
+    <p>
+      {BRAND_PLANT_RULE}
+      {" "}
+      {INDEX_FOLD_NOTE}
+    </p>
     <nav class="letter-nav" aria-label="Brand letters">
       {letters.map((letter) => <a href={`#letter-${letter}`}>{letter}</a>)}
     </nav>
@@ -70,16 +75,20 @@ const crumbs = [
         <section>
           <h2 id={`letter-${letter}`}>{letter}</h2>
           <ul class="brand-list" data-brand-list>
-            {groups.get(letter).map((brand) => (
-                <li data-search={[brand.name, ...brand.aliases.map((alias) => alias.name)].join(" ").toLowerCase()}>
-                <a href={brand.url}>
-                  <span>{brand.name}</span>
-                  <span class="muted">
-                    {formatNumber(brand.lineCount)} lines · treadwear {wearRange(brand.wearMin, brand.wearMax)}
-                  </span>
-                </a>
-              </li>
-            ))}
+            {groups.get(letter).map((brand) => {
+              const profile = brandProfile(brand.slug);
+              const folded = foldedIndexText(profile);
+              return (
+                <li data-search={[brand.name, profile.singleLine?.name, ...brand.aliases.map((alias) => alias.name)].filter(Boolean).join(" ").toLowerCase()}>
+                  <a href={brand.url}>
+                    <span>{brand.name}</span>
+                    <span class={folded ? "muted folded" : "muted"}>
+                      {folded || `${formatNumber(brand.lineCount)} lines · treadwear ${wearRange(brand.wearMin, brand.wearMax)}`}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ))

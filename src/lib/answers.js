@@ -146,14 +146,36 @@ export function lineAnswer(line, options = {}) {
   return sentences;
 }
 
-function brandWearSentence(facts) {
-  const excluded = facts.wearInvalid.length || facts.tracInvalid.length || facts.tempInvalid.length;
-  if (!facts.wearValid.length) return "Treadwear is not reported as a usable number on those rows.";
+/**
+ * Usable treadwear is a positive whole number. The median is the middle
+ * value when the count is odd, and the mean of the two middle values when
+ * the count is even. The same rule is used on comparison pages.
+ */
+export function treadwearMedian(values) {
+  const wears = (values || []).filter((value) => Number.isInteger(value) && value > 0).sort((a, b) => a - b);
+  if (!wears.length) return null;
+  const mid = Math.floor(wears.length / 2);
+  return wears.length % 2 === 1 ? wears[mid] : (wears[mid - 1] + wears[mid]) / 2;
+}
+
+export function formatTreadwearMedian(value) {
+  if (value == null || Number.isNaN(value)) return "Not reported";
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(1);
+}
+
+function brandWearSentence(facts, median) {
+  if (median == null) return "Treadwear is not reported as a usable number on those rows.";
   const min = Math.min(...facts.wearValid);
   const max = Math.max(...facts.wearValid);
-  const range = min === max ? `is ${min}` : `runs from ${min} to ${max}`;
-  const tail = excluded ? ", leaving out values outside the usual grades" : "";
-  return `Treadwear on those rows ${range}${tail}.`;
+  let tail = "";
+  if (facts.wearInvalid.length && facts.wearMissing) {
+    tail = ", leaving out values outside the usual grades and rows without a usable treadwear number";
+  } else if (facts.wearInvalid.length) tail = ", leaving out values outside the usual grades";
+  else if (facts.wearMissing) tail = ", leaving out rows without a usable treadwear number";
+  const med = formatTreadwearMedian(median);
+  if (min === max) return `The median treadwear on rows with a usable number is ${med}${tail}.`;
+  return `The median treadwear on rows with a usable number is ${med}, and treadwear runs from ${min} to ${max}${tail}.`;
 }
 
 function filingSentence(brand, filings) {
@@ -163,15 +185,17 @@ function filingSentence(brand, filings) {
   return `NHTSA tire-recall filings name ${brand.name} on ${lineNoun}, with ${formatNameList(filings.filers)} as the ${filerNoun}, and a filer can be the factory, an importer, or the brand owner for that recalled line only.`;
 }
 
-export function brandAnswer(brand, lines, filings) {
+export function brandAnswer(brand, lines, filings, verifiedAt = "") {
   const rows = [];
-  for (const line of lines) rows.push(...line.rows);
+  for (const line of lines) rows.push(...(line.rows || []));
   const facts = collectGradeFacts(rows);
+  const median = treadwearMedian(rows.map((row) => row.wearN));
   const lineNoun = brand.lineCount === 1 ? "tire line" : "tire lines";
-  const rowNoun = brand.rowCount === 1 ? "grade row" : "grade rows";
+  const rowNoun = brand.rowCount === 1 ? "size row" : "size rows";
+  const when = verifiedAt ? `, verified ${formatVerified(verifiedAt)} (UTC)` : "";
   return [
-    `${brand.name} has ${formatNumber(brand.lineCount)} ${lineNoun} and ${formatNumber(brand.rowCount)} ${rowNoun} in NHTSA's published UTQG list.`,
-    brandWearSentence(facts),
+    `${brand.name} has ${formatNumber(brand.lineCount)} ${lineNoun} and ${formatNumber(brand.rowCount)} ${rowNoun} in NHTSA's published UTQG list${when}.`,
+    brandWearSentence(facts, median),
     filings
       ? filingSentence(brand, filings)
       : "The ratings file does not say which of these lines are still sold.",

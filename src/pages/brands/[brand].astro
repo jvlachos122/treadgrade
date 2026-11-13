@@ -20,6 +20,7 @@ import {
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber, formatUtcDate, wearRange } from "../../lib/format.js";
 import { nameKey } from "../../lib/normalize.js";
+import { makerCountryBrandLine } from "../../lib/plant-makers.js";
 import { manufacturerGroupForBrand } from "../../lib/plant-hubs.js";
 import { ratingsTableHref } from "../../lib/ratings-table.js";
 import { recallSummary } from "../../lib/recall-catalog.js";
@@ -44,6 +45,7 @@ const profile = brand ? brandProfile(brand.slug) : null;
 const filings = brand ? recallSummary.byBrand.get(nameKey(brand.name)) || null : null;
 const whoPage = brand ? whoMakesByKey.get(nameKey(brand.name)) || null : null;
 const plantGroup = brand ? manufacturerGroupForBrand(brand.slug) : null;
+const makerLine = brand ? makerCountryBrandLine(brand.slug) : null;
 const aliasRows = brand ? brand.aliases.reduce((sum, alias) => sum + alias.count, 0) : 0;
 const aliasNames = brand && brand.aliases.length ? formatNameList(brand.aliases.map((alias) => alias.name)) : "";
 const answers = brand ? brandAnswer(brand, lines, filings, catalog.meta.verifiedAt) : [];
@@ -328,6 +330,14 @@ const crumbs = brand
         <p>
           <a href={plantGroup.url}>{plantGroup.linkLabel} plant codes</a> lists NHTSA plant records whose registrant name matches that group.
           A plant record does not say it makes {brand.name} tires.
+        </p>
+      ) : null
+    }
+
+    {
+      makerLine ? (
+        <p>
+          <a href={makerLine.href}>{makerLine.text}</a>.
         </p>
       ) : null
     }

@@ -1,4 +1,5 @@
 import { brandAnswer, formatTreadwearMedian, treadwearMedian } from "./answers.js";
+import { makerCountryBrandLine } from "./plant-makers.js";
 import { catalog } from "./catalog.js";
 import { formatNumber, formatVerified, percent } from "./format.js";
 import { brandKey } from "./normalize.js";
@@ -373,6 +374,7 @@ export function brandPageCopy(profile, answers = []) {
     profile.plantsCaption,
     profile.recallsCaption,
     profile.plants.length ? BRAND_PLANT_RULE : "",
+    makerCountryBrandLine(profile.slug)?.text,
     profile.recalls.length ? BRAND_RECALL_RULE : "",
     profile.folded ? foldedIndexText(profile) : "",
     TREADWEAR_BAND_NOTE,

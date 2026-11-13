@@ -1,0 +1,145 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Answer from "../../../components/Answer.astro";
+import PlantNote from "../../../components/PlantNote.astro";
+import SourceLine from "../../../components/SourceLine.astro";
+import {
+  makerCountryAnswer,
+  makerCountryBelowMinText,
+  makerCountryCaption,
+  makerCountryFaqLd,
+  makerCountryFaqs,
+  makerCountryIntro,
+  sourceEntries,
+} from "../../../lib/answers.js";
+import { catalog } from "../../../lib/catalog.js";
+import { formatNumber } from "../../../lib/format.js";
+import { makerCountryReport } from "../../../lib/plant-makers.js";
+import { hubDataset } from "../../../lib/plant-hubs.js";
+import { clampText } from "../../../lib/text.js";
+
+const report = makerCountryReport;
+const answers = makerCountryAnswer(report);
+const intro = makerCountryIntro(report);
+const belowMin = makerCountryBelowMinText(report);
+const faqs = makerCountryFaqs(report);
+const description = clampText(answers.join(" "));
+const jsonLd = [
+  hubDataset({
+    name: "Registered plant codes by maker and country",
+    description: answers.join(" "),
+    path: report.path,
+    keywords: ["DOT", "plant code", "NHTSA", ...report.groups.map((group) => group.name)],
+  }),
+  makerCountryFaqLd(faqs),
+];
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/plants/", label: "Plant codes" },
+  { href: report.path, label: "By maker and country" },
+];
+---
+
+<Base title="Registered plant codes by maker and country" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap">
+    <h1>Registered plant codes by maker and country</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
+    <PlantNote />
+    {intro.map((sentence) => <p>{sentence}</p>)}
+    {belowMin ? <p>{belowMin}</p> : null}
+    {
+      report.groups.some((group) => group.omitted.length) ? (
+        <div class="notice">
+          <p class="data-note-label">Left out of a name match</p>
+          <ul>
+            {
+              report.groups.flatMap((group) =>
+                group.omitted.map((plant) => (
+                  <li>
+                    <a href={plant.url}>{plant.code}</a> {plant.name.replace(/[.!?]$/, "")}. {group.omissionReason}
+                  </li>
+                )),
+              )
+            }
+          </ul>
+        </div>
+      ) : null
+    }
+    <div class="table-wrap">
+      <table>
+        <caption>{makerCountryCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Group</th>
+            <th scope="col">Name match</th>
+            <th scope="col">Country</th>
+            <th scope="col">Registered plant codes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.groups.flatMap((group) =>
+              group.countries.map((country, index) => (
+                <tr>
+                  {
+                    index === 0 ? (
+                      <th scope="rowgroup" rowspan={group.countries.length} id={group.id}>
+                        {
+                          group.brands.length === 1 ? (
+                            <a href={group.brands[0].url}>{group.linkLabel}</a>
+                          ) : (
+                            group.brands.map((brand, brandIndex) => (
+                              <span>
+                                {brandIndex === 0 ? "" : " and "}
+                                <a href={brand.url}>{brand.name}</a>
+                              </span>
+                            ))
+                          )
+                        }
+                        {
+                          group.hubUrl ? (
+                            <>
+                              {" "}
+                              · <a href={group.hubUrl}>code list</a>
+                            </>
+                          ) : null
+                        }
+                        <br />
+                        <span class="small">{formatNumber(group.count)} registered plant codes</span>
+                      </th>
+                    ) : null
+                  }
+                  {index === 0 ? <td rowspan={group.countries.length}>{group.rule}</td> : null}
+                  <td>{country.url ? <a href={country.url}>{country.label}</a> : country.label}</td>
+                  <td class="num">{formatNumber(country.count)}</td>
+                </tr>
+              )),
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The plant code is the first group of the tire identification number on the sidewall.
+      <a href="/decoder/">The DOT decoder</a> reads that code against NHTSA's plant list.
+      <a href="/guides/dot-code/">How a plant code fits into a DOT number</a>.
+      A code registered to a maker does not show where a given tire was made.
+    </p>
+    <h2 id="questions">Questions</h2>
+    {
+      faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+    <p>
+      <a href="/plants/">All plant codes</a>
+      · <a href="/plants/manufacturer/">Manufacturer name groups</a>
+      · <a href="/plants/country/">Plant codes by country</a>
+      · <a href="/decoder/">DOT decoder</a>
+    </p>
+  </div>
+</Base>

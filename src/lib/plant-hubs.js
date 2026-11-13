@@ -4,6 +4,7 @@ import { recallRows } from "./recall-catalog.js";
 import { article, dataset } from "./structured.js";
 import { plantAnswer } from "./answers.js";
 import { plantDateFaq } from "./plant-date-faq.js";
+import { MAKER_COUNTRY_PATH } from "./plant-makers.js";
 import { BRAND_SLUG_TO_GROUP, MANUFACTURER_GROUP_DEFS } from "./plant-groups.js";
 
 /**
@@ -186,6 +187,7 @@ export const plantByCode = extras;
 export const hubPaths = new Set([
   "/plants/manufacturer/",
   "/plants/country/",
+  MAKER_COUNTRY_PATH,
   ...manufacturerGroups.map((group) => group.url),
   ...countryHubs.map((country) => country.url),
 ]);

@@ -254,6 +254,7 @@ test("each plant template source has one h1 and one answer box", () => {
     "src/pages/plants/manufacturer/index.astro",
     "src/pages/plants/country/[country].astro",
     "src/pages/plants/country/index.astro",
+    "src/pages/plants/by-maker/index.astro",
   ];
   for (const file of templates) {
     const source = readFileSync(file, "utf8");

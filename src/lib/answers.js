@@ -295,6 +295,122 @@ export function manufacturerIndexAnswer(groups) {
   ];
 }
 
+function spotlightClause(group) {
+  const places = group.headlineCountries
+    .map((key) => group.countries.find((country) => country.key === key))
+    .filter((country) => country && country.count)
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "en"))
+    .map((country) => `${formatNumber(country.count)} in ${countryInPhrase(country.label)}`);
+  const where = places.length ? ` (${listWords(places)})` : "";
+  const noun = group.count === 1 ? "code" : "codes";
+  return `${group.nameNote} is the registrant on ${formatNumber(group.count)} ${noun}${where}`;
+}
+
+export function makerCountryAnswer(report) {
+  const place = countryInPhrase(report.topCountry.label);
+  const more = report.topCountryIsStrict ? ", more than any other country in the list" : "";
+  const sentences = [
+    `NHTSA's equipment plant list, verified ${formatVerified(report.verifiedAt)} (UTC), has ${formatNumber(report.plantCount)} registered plant codes, and ${place} has ${formatNumber(report.topCountry.count)} of them${more}.`,
+  ];
+  const clauses = report.spotlight.map(spotlightClause);
+  if (clauses.length) sentences.push(`${listWords(clauses)}.`);
+  sentences.push(
+    "The figures are registered plant codes, including closed and historic codes, and a code does not show where a given tire was made.",
+  );
+  if (sentences.length > 3) throw new Error(`Maker-country answer has ${sentences.length} sentences`);
+  return sentences;
+}
+
+export function makerCountryIntro(report) {
+  const hubs = report.groups.filter((group) => group.hubUrl).map((group) => group.name);
+  return [
+    `A row counts registered plant codes whose registrant name matches that group. ${formatNameList(hubs)} use the manufacturer name groups. Firestone is grouped with Bridgestone, and General Tire with Continental.`,
+    `A group is listed when the match has at least ${formatNumber(report.min)} registered plant codes. America, Private, and National are not groups, because those words appear inside many registrants. The count is not a company's own factory list.`,
+  ];
+}
+
+export function makerCountryBelowMinText(report) {
+  if (!report.belowMin.length) return "";
+  const names = formatNameList(
+    report.belowMin.map((group) => `${group.nameNote} (${formatNumber(group.count)})`),
+  );
+  const verb = report.belowMin.length === 1 ? "is" : "are";
+  const those = report.belowMin.length === 1 ? "that name is" : "those names are";
+  return `${names} ${verb} under ${formatNumber(report.min)} registered plant codes, so ${those} not in the table.`;
+}
+
+export function makerCountryCaption(report) {
+  return `Registered plant codes by country. A group is a name match with at least ${formatNumber(report.min)} codes. NHTSA's plant list was verified ${formatVerified(report.verifiedAt)} (UTC). Counts include closed and historic codes.`;
+}
+
+function countryCount(group, key) {
+  return group?.countries.find((country) => country.key === key) || null;
+}
+
+export function makerCountryFaqs(report) {
+  const faqs = [];
+  const michelin = report.groups.find((group) => group.id === "michelin");
+  const france = countryCount(michelin, "france");
+  const michelinUs = countryCount(michelin, "united-states");
+  if (michelin && france && michelinUs) {
+    faqs.push({
+      name: "Which countries have registered plant codes under Michelin?",
+      text: `The registrant name contains Michelin on ${formatNumber(michelin.count)} registered plant codes, including ${formatNumber(france.count)} in France and ${formatNumber(michelinUs.count)} in the United States. A registered code can be closed or historic, and it does not show where a given tire was made.`,
+    });
+  }
+  const goodyear = report.groups.find((group) => group.id === "goodyear");
+  const goodyearUs = countryCount(goodyear, "united-states");
+  if (goodyear && goodyearUs) {
+    faqs.push({
+      name: "How many Goodyear registered plant codes are in the United States?",
+      text: `${formatNumber(goodyearUs.count)} of the ${formatNumber(goodyear.count)} registered plant codes whose registrant name contains Goodyear are in the United States. That count includes closed and historic codes. It does not show where a given tire was made.`,
+    });
+  }
+  faqs.push({
+    name: "Does a registered plant code show where a tire was made?",
+    text: "A registered plant code is the company and address on NHTSA's plant record, and the record can be closed or historic. It does not show where a given tire was made. The plant code is the first group of the tire identification number on the sidewall. The DOT decoder reads that code against this list.",
+  });
+  faqs.push({
+    name: "Why are some registrants left out of this table?",
+    text: `A group is listed when the registrant name matches that group and the match has at least ${formatNumber(report.min)} registered plant codes. America, Private, and National are not groups. Closed and historic codes stay in a group that is listed.`,
+  });
+  if (faqs.length < 2 || faqs.length > 4) throw new Error(`Maker-country FAQ count ${faqs.length}`);
+  return faqs;
+}
+
+export function makerCountryFaqLd(faqs) {
+  return {
+    "@type": "FAQPage",
+    mainEntity: faqs.map((item) => ({
+      "@type": "Question",
+      name: item.name,
+      acceptedAnswer: { "@type": "Answer", text: item.text },
+    })),
+  };
+}
+
+export function makerCountryCopy(report) {
+  return [
+    ...makerCountryAnswer(report),
+    ...makerCountryIntro(report),
+    makerCountryBelowMinText(report),
+    makerCountryCaption(report),
+    ...report.groups.flatMap((group) => [
+      group.linkLabel,
+      group.rule,
+      group.nameNote,
+      group.omissionReason,
+      ...group.brands.map((brand) => brand.name),
+      ...group.countries.map((country) => country.label),
+      ...group.omitted.map((plant) => plant.name),
+    ]),
+    ...report.belowMin.flatMap((group) => [group.linkLabel, group.rule]),
+    ...makerCountryFaqs(report).flatMap((item) => [item.name, item.text]),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function countryHubAnswer(country) {
   const noun = country.count === 1 ? "record" : "records";
   const sentences = [

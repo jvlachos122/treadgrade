@@ -6,6 +6,7 @@ import SourceLine from "../../../components/SourceLine.astro";
 import { manufacturerHubAnswer, sourceEntries } from "../../../lib/answers.js";
 import { catalog } from "../../../lib/catalog.js";
 import { formatNumber } from "../../../lib/format.js";
+import { makerCountryReport } from "../../../lib/plant-makers.js";
 import { hubDataset, manufacturerGroups } from "../../../lib/plant-hubs.js";
 import { clampText } from "../../../lib/text.js";
 
@@ -15,6 +16,7 @@ export function getStaticPaths() {
 
 const group = manufacturerGroups.find((item) => item.id === Astro.params.group);
 if (!group) throw new Error(`Missing manufacturer group ${Astro.params.group}`);
+const makerCountry = makerCountryReport.groups.find((item) => item.id === group.id) || null;
 const answers = manufacturerHubAnswer(group);
 const description = clampText(answers.join(" "));
 const jsonLd = [
@@ -95,6 +97,7 @@ const crumbs = [
     </div>
     <p>
       <a href="/plants/manufacturer/">All manufacturer name groups</a>
+      · <a href={makerCountry ? `${makerCountryReport.path}#${group.id}` : makerCountryReport.path}>Registered plant codes by country</a>
       · <a href="/plants/">All plant codes</a>
       · <a href="/decoder/">DOT decoder</a>
     </p>

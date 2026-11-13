@@ -4,6 +4,7 @@ import Answer from "../components/Answer.astro";
 import SourceLine from "../components/SourceLine.astro";
 import { methodologyAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
+import { MAKER_COUNTRY_MIN } from "../lib/plant-groups.js";
 import { countryNormalization, manufacturerGroups } from "../lib/plant-hubs.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
 import { recallMeta, recallSummary } from "../lib/recall-catalog.js";
@@ -154,6 +155,7 @@ const jsonLd = [
       <a href="/plants/manufacturer/">Manufacturer name groups</a> and <a href="/plants/country/">country groups</a> are built from those same records.
       A manufacturer group keeps a record when the registrant name contains the group name. Firestone is grouped with Bridgestone ({formatNumber(manufacturerGroups.find((group) => group.id === "bridgestone").count)} records), and General Tire with Continental ({formatNumber(manufacturerGroups.find((group) => group.id === "continental").count)} records), except a Cambodia registrant named General Tires Technology.
       Michelin has {formatNumber(manufacturerGroups.find((group) => group.id === "michelin").count)} records, Goodyear {formatNumber(manufacturerGroups.find((group) => group.id === "goodyear").count)}, and Pirelli {formatNumber(manufacturerGroups.find((group) => group.id === "pirelli").count)}.
+      <a href="/plants/by-maker/">Registered plant codes by maker and country</a> counts these name groups, and other maker-name matches with at least {formatNumber(MAKER_COUNTRY_MIN)} registered plant codes, by country.
       {formatNumber(countryNormalization.rawCount)} stored country strings are grouped as {formatNumber(countryNormalization.normalizedCount)} countries, including case, the spelling Austrailia, and aliases such as United States (USA).
       The groups are not a company's own factory list.
       On October 21, 2026, the plant-code table at wfirm.com included a row with codes XXXX and XXXXXX for Wetherington Law Firm and www.wfirm.com. That row is not in the NHTSA file. This site does not use that table.

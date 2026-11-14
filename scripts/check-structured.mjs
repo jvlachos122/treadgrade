@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { HIGHEST_TREADWEAR_PATH } from "../src/lib/highest-treadwear.js";
 import { LONG_TREADWEAR_PATH } from "../src/lib/long-treadwear.js";
 import { TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
+import { TRACTION_GRADES_PATH } from "../src/lib/traction-grades.js";
 import { RECALLS_PATH } from "../src/lib/recall-list.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -100,7 +101,8 @@ function requirements(pathname) {
     pathname === HIGHEST_TREADWEAR_PATH ||
     pathname === LONG_TREADWEAR_PATH ||
     pathname === RECALLS_PATH ||
-    pathname === TREADWEAR_NUMBERS_PATH
+    pathname === TREADWEAR_NUMBERS_PATH ||
+    pathname === TRACTION_GRADES_PATH
   ) {
     req.types.push("Dataset", "Article", "FAQPage");
     req.answer = true;

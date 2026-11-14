@@ -1,0 +1,436 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import Grade from "../../components/Grade.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog, ratingRows } from "../../lib/catalog.js";
+import { formatNumber, percent } from "../../lib/format.js";
+import { ratingsTableHref } from "../../lib/ratings-table.js";
+import { clampText } from "../../lib/text.js";
+import {
+  ASPHALT_FORMULA,
+  CONCRETE_FORMULA,
+  CONCRETE_REPEAT_QUOTE,
+  ECFR_TRACTION_URL,
+  FIGURE_2_TRACTION,
+  FR_PEAK_TRACTION,
+  FR_TRACTION_URL,
+  LOCKED_WHEEL_QUOTE,
+  SNOW_EXCLUSION_QUOTE,
+  SURFACE_COEFFICIENT_QUOTE,
+  TRACTION_GRADES_PATH,
+  TRACTION_LETTERS,
+  TRACTION_RULES,
+  WETTING_QUOTE,
+  bandCaption,
+  bandNote,
+  duplicateParagraph,
+  ecfrRetrievedLabel,
+  frRetrievedLabel,
+  lineCaption,
+  lineNote,
+  medianCaption,
+  medianNote,
+  outsideCaption,
+  rowCaption,
+  thresholdCaption,
+  tractionGradesAnswer,
+  tractionGradesFaqs,
+  tractionGradesJsonLd,
+  tractionGradesReport,
+  unmappedNote,
+  watchedCaption,
+} from "../../lib/traction-grades.js";
+
+const report = tractionGradesReport(ratingRows, catalog);
+const answers = tractionGradesAnswer(report);
+const faqs = tractionGradesFaqs(report);
+const description = clampText(answers.join(" "));
+const jsonLd = tractionGradesJsonLd(report);
+const droppedNote = duplicateParagraph(report);
+const linesNote = lineNote(report);
+const unmapped = unmappedNote(report);
+const mediansNote = medianNote(report);
+const bandsNote = bandNote(report);
+const ecfrRetrieved = ecfrRetrievedLabel();
+const frRetrieved = frRetrievedLabel();
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: TRACTION_GRADES_PATH, label: "Traction grades" },
+];
+const presetLinks = TRACTION_LETTERS.map((grade) => ({
+  grade,
+  href: ratingsTableHref({ traction: [grade] }),
+}));
+---
+
+<Base title="What UTQG traction grades mean" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>What UTQG traction grades mean</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <p>
+      UTQG traction grades are assigned by the manufacturer under
+      <a href={ECFR_TRACTION_URL}>49 CFR 575.104</a>
+      (eCFR, retrieved {ecfrRetrieved}).
+      The treadwear, traction, and temperature grades together are on
+      <a href="/guides/utqg-grades/">what UTQG grades mean</a>.
+      <a href="/guides/treadwear-numbers/">What treadwear numbers mean</a>.
+      <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+      <a href="/methodology/">How the file is read</a>.
+    </p>
+
+    <h2 id="test">What the test measures</h2>
+    <p>
+      Paragraph (f) of
+      <a href={ECFR_TRACTION_URL}>49 CFR 575.104</a>
+      (eCFR, retrieved {ecfrRetrieved}) sets the traction test. The trailer is towed at 40 mph, one wheel is locked, and the locked-wheel traction coefficient is recorded after lockup. The same wheel is then locked on concrete. The pavement is wetted.
+    </p>
+    <blockquote class="quote">
+      <p>{LOCKED_WHEEL_QUOTE}</p>
+      <p>{CONCRETE_REPEAT_QUOTE}</p>
+      <p>{WETTING_QUOTE}</p>
+      <p>{SURFACE_COEFFICIENT_QUOTE}</p>
+    </blockquote>
+    <p>
+      Figure 2 describes that test as the tire's ability to stop on wet pavement. The grade uses the adjusted traction coefficient. Paragraph (f)(2)(ix) prints the asphalt adjustment as:
+    </p>
+    <blockquote class="quote">
+      <p>{ASPHALT_FORMULA}</p>
+    </blockquote>
+    <p>
+      Paragraph (f)(2)(x) prints the concrete adjustment as follows, including the μ after 0.35. The asphalt formula uses a minus sign in that position.
+    </p>
+    <blockquote class="quote">
+      <p>{CONCRETE_FORMULA}</p>
+    </blockquote>
+
+    <h2 id="letters">What each letter requires</h2>
+    <p>
+      Paragraph (d)(2)(ii) of
+      <a href={ECFR_TRACTION_URL}>49 CFR 575.104</a>
+      (eCFR, retrieved {ecfrRetrieved}) states the four letters. C is the grade when either surface is at its figure or below. B, A, and AA use “may,” and each of those letters is permitted only when both surfaces clear that letter's figures. The AA paragraphs print a Greek μ immediately after 0.54 and 0.38. The adjustment formulas use μ, with a subscript, as the name of the adjusted coefficient.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>{thresholdCaption()}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Grade</th>
+            <th scope="col">Rule printed in the section</th>
+            <th scope="col">Asphalt</th>
+            <th scope="col">Concrete</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            TRACTION_RULES.map((rule) => (
+              <tr>
+                <td><Grade value={rule.id} /></td>
+                <td>{rule.verb}</td>
+                <td>{rule.asphalt}</td>
+                <td>{rule.concrete}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    {
+      TRACTION_RULES.map((rule) => (
+        <>
+          <h3>Grade {rule.id}</h3>
+          <blockquote class="quote">
+            {rule.quotes.map((sentence) => <p>{sentence}</p>)}
+          </blockquote>
+        </>
+      ))
+    }
+
+    <h2 id="not-included">What the grade does not include</h2>
+    <p>
+      Figure 2 of
+      <a href={ECFR_TRACTION_URL}>49 CFR 575.104</a>
+      (eCFR, retrieved {ecfrRetrieved}) is the explanation tire buyers are shown. Where it says the grades run from highest to lowest, that is the regulation's ordering of the letters.
+    </p>
+    <blockquote class="quote">
+      <p>{FIGURE_2_TRACTION}</p>
+    </blockquote>
+    <p>
+      The procedure names a wetted asphalt surface and a wetted concrete surface, a locked wheel, and a record taken after lockup. It does not name a dry surface, snow, or ice. Paragraph (c)(1) of
+      <a href={ECFR_TRACTION_URL}>49 CFR 575.104</a>
+      (eCFR, retrieved {ecfrRetrieved}) excludes winter-type snow tires from the section:
+    </p>
+    <blockquote class="quote">
+      <p>{SNOW_EXCLUSION_QUOTE}</p>
+    </blockquote>
+    <p>
+      <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+      <a href="/guides/utqg-grades/#not-in-the-list">Lines the grade guide calls out</a>.
+    </p>
+    <p>
+      The locked-wheel record is taken after lockup. Figure 2 excludes peak traction. The final rule of September 9, 1996 (61 FR 47437), which added the AA grade, says in a footnote:
+    </p>
+    <blockquote class="quote">
+      <p>{FR_PEAK_TRACTION}</p>
+    </blockquote>
+    <p>
+      Source:
+      <a href={FR_TRACTION_URL}>Federal Register, September 9, 1996, 61 FR 47437</a>
+      (retrieved {frRetrieved}).
+    </p>
+
+    <h2 id="counts">How this file splits the letters</h2>
+    <p>
+      NHTSA lists a traction value on each UTQG source row in the committed file. This page counts those values. A row does not mean the tire is on sale.
+    </p>
+    <p>{droppedNote}</p>
+    {unmapped ? <p>{unmapped}</p> : null}
+    <div class="table-wrap">
+      <table>
+        <caption>{rowCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Traction</th>
+            <th scope="col">Source rows</th>
+            <th scope="col">Share of source rows</th>
+            <th scope="col">Rows in the ratings table</th>
+            <th scope="col">Ratings table</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.grades.map((grade) => (
+              <tr>
+                <td>{grade.id === "outside" ? grade.label : <Grade value={grade.id} />}</td>
+                <td class="num">{formatNumber(grade.rows)}</td>
+                <td class="num">{percent(grade.rows, report.sourceRows)}</td>
+                <td class="num">{formatNumber(grade.shown)}</td>
+                <td>
+                  {
+                    grade.href ? (
+                      <a href={grade.href}>Open {grade.label}</a>
+                    ) : (
+                      <a href="/methodology/known-errors/#invalid-fields">Values outside the usual grades</a>
+                    )
+                  }
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>{linesNote}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{lineCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Traction</th>
+            <th scope="col">Tire lines with at least one row</th>
+            <th scope="col">Share of tire lines</th>
+            <th scope="col">Tire lines with only that value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.grades.map((grade) => (
+              <tr>
+                <td>{grade.id === "outside" ? grade.label : <Grade value={grade.id} />}</td>
+                <td class="num">{formatNumber(grade.linesAtLeast)}</td>
+                <td class="num">{percent(grade.linesAtLeast, report.lineCount)}</td>
+                <td class="num">{formatNumber(grade.linesOnly)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      {
+        presetLinks.map((item, index) => (
+          <>
+            {index ? " · " : ""}
+            <a href={item.href}>Open traction {item.grade} in the table</a>
+          </>
+        ))
+      }
+      {" · "}
+      <a href="/lists/long-treadwear-high-traction/">Treadwear of 700 or above with traction A or AA and temperature A</a>
+      {" · "}
+      <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>
+      {" · "}
+      <a href="/ratings/">All UTQG grades</a>
+    </p>
+    {
+      report.outsideRows.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{outsideCaption(report)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Brand</th>
+                <th scope="col">Tire line</th>
+                <th scope="col">Size series</th>
+                <th scope="col">Published traction</th>
+                <th scope="col">Treadwear</th>
+                <th scope="col">Temperature</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.outsideRows.map((row) => (
+                  <tr>
+                    <td>{row.brand}</td>
+                    <td>
+                      {row.url ? <a href={row.url}>{row.line}</a> : row.line}
+                    </td>
+                    <td>{row.size}</td>
+                    <td>{row.trac === "" ? "Not reported" : `“${row.trac}”`}</td>
+                    <td class="num">{row.wear === "" ? "Not reported" : row.wear}</td>
+                    <td>{row.temp === "" ? "Not reported" : row.temp}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : null
+    }
+
+    <h2 id="treadwear">Traction next to treadwear</h2>
+    <p>{mediansNote}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{medianCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Traction</th>
+            <th scope="col">Rows in the median</th>
+            <th scope="col">Median treadwear</th>
+            <th scope="col">Minimum</th>
+            <th scope="col">Maximum</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            report.grades.map((grade) => (
+              <tr>
+                <td>{grade.id === "outside" ? grade.label : <Grade value={grade.id} />}</td>
+                <td class="num">{formatNumber(grade.medianRows)}</td>
+                <td class="num">{grade.medianText}</td>
+                <td class="num">{grade.medianMin == null ? "Not reported" : formatNumber(grade.medianMin)}</td>
+                <td class="num">{grade.medianMax == null ? "Not reported" : formatNumber(grade.medianMax)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>{bandsNote}</p>
+    {
+      report.bands.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{bandCaption(report)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Treadwear</th>
+                {report.grades.map((grade) => <th scope="col">{grade.label}</th>)}
+                <th scope="col">Ratings table</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.bands.map((band) => (
+                  <tr>
+                    <td>{band.label}</td>
+                    {
+                      report.grades.map((grade) => (
+                        <td class="num">
+                          {
+                            grade.id !== "outside" && band.counts[grade.id] ? (
+                              <a href={band.hrefs[grade.id]}>{formatNumber(band.counts[grade.id])}</a>
+                            ) : (
+                              formatNumber(band.counts[grade.id])
+                            )
+                          }
+                        </td>
+                      ))
+                    }
+                    <td>
+                      <a href={band.href}>Open {band.label}</a>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : null
+    }
+
+    {
+      report.watched.map((item, index) => (
+        <>
+          <h2 id={index === 0 ? "watched-line" : `watched-line-${index}`}>{item.brand} {item.line} in this file</h2>
+          <p>
+            {item.brand} {item.line} is one tire line in the committed file. The size rows below are the rows on its tire-line page. The question further down states the traction value on those rows.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>{watchedCaption(item, report)}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Size series</th>
+                  <th scope="col">Treadwear</th>
+                  <th scope="col">Traction</th>
+                  <th scope="col">Temperature</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  item.rows.map((row) => (
+                    <tr>
+                      <td>{row.size}</td>
+                      <td class="num">{row.wear}</td>
+                      <td>{TRACTION_LETTERS.includes(row.trac) ? <Grade value={row.trac} /> : row.trac}</td>
+                      <td>{row.temp}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <a href={item.url}>{item.brand} {item.line}</a>
+            {" · "}
+            <a href={item.tableHref}>Open {item.line} in the ratings table</a>
+          </p>
+        </>
+      ))
+    }
+
+    <h2 id="questions">Questions</h2>
+    {
+      faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+          {
+            item.url ? (
+              <p>
+                <a href={item.url}>{item.linkLabel}</a>
+                {" · "}
+                <a href={item.tableHref}>Open {item.linkLabel} in the ratings table</a>
+              </p>
+            ) : null
+          }
+        </>
+      ))
+    }
+  </div>
+</Base>

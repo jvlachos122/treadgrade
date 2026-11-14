@@ -3,11 +3,22 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HtmlValidate } from "html-validate";
 import { gearLinks } from "../src/lib/affiliates.js";
-import { catalog } from "../src/lib/catalog.js";
+import { catalog, ratingRows } from "../src/lib/catalog.js";
 import { BANNED_LONG_WORD, LONG_TREADWEAR_PATH, longTreadwearReport } from "../src/lib/long-treadwear.js";
 import { BANNED_RECALL_ADVICE, NHTSA_RECALLS_URL, RECALLS_PATH, TIN_LIMIT, USTMA_RECALL_LOOKUP_URL } from "../src/lib/recall-list.js";
 import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
 import { BANNED_VERDICT, MILES_FORMULA, TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
+import {
+  BANNED_VERDICT as BANNED_TRACTION,
+  ECFR_RETRIEVED,
+  ECFR_TRACTION_URL,
+  FR_RETRIEVED,
+  FR_TRACTION_URL,
+  TRACTION_GRADES_PATH,
+  ecfrRetrievedLabel,
+  frRetrievedLabel,
+  tractionGradesReport,
+} from "../src/lib/traction-grades.js";
 import { BANNED_AGE_VERDICT, TIRE_AGE_PATH, TIRE_AGE_SOURCES, tireAgeRetrievedLabel } from "../src/lib/tire-age.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -184,6 +195,42 @@ for (const file of files) {
   if (path === "/compare/" || path.startsWith("/compare/")) {
     const banned = visibleText(html).match(/\b(best|better|winner|safest|popular)\b/i);
     if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+  }
+  if (path === TRACTION_GRADES_PATH) {
+    const text = visibleText(html);
+    const banned = text.match(BANNED_TRACTION);
+    if (banned) errors.push(`${rel}: banned traction verdict ${banned[1]}`);
+    if (!text.includes("assigned by the manufacturer")) errors.push(`${rel}: missing manufacturer-assigned caveat`);
+    const retrieved = ecfrRetrievedLabel(ECFR_RETRIEVED);
+    const frRetrieved = frRetrievedLabel(FR_RETRIEVED);
+    if (!html.includes(ECFR_TRACTION_URL)) errors.push(`${rel}: missing eCFR URL`);
+    if (!text.includes(retrieved)) errors.push(`${rel}: missing eCFR retrieved date`);
+    if (!html.includes(FR_TRACTION_URL)) errors.push(`${rel}: missing Federal Register URL`);
+    if (!text.includes(frRetrieved)) errors.push(`${rel}: missing Federal Register retrieved date`);
+    const plain = html.replaceAll("&amp;", "&");
+    for (const match of plain.matchAll(/href="(https:\/\/www\.ecfr\.gov[^"]*)"/g)) {
+      const at = match.index ?? 0;
+      const window = visibleText(plain.slice(Math.max(0, at - 500), at + 700));
+      if (!window.includes(retrieved)) errors.push(`${rel}: eCFR link missing retrieved date`);
+    }
+    for (const match of plain.matchAll(/href="(https:\/\/www\.govinfo\.gov[^"]*FR-1996-09-09[^"]*)"/g)) {
+      const at = match.index ?? 0;
+      const window = visibleText(plain.slice(Math.max(0, at - 500), at + 700));
+      if (!window.includes(frRetrieved)) errors.push(`${rel}: Federal Register link missing retrieved date`);
+    }
+    const tractionReport = tractionGradesReport(ratingRows, catalog);
+    for (const item of tractionReport.watched) {
+      if (!html.includes(`href="${item.url}"`)) errors.push(`${rel}: missing tire line ${item.url}`);
+    }
+    for (const row of tractionReport.outsideRows) {
+      if (row.url && !html.includes(`href="${row.url}"`)) errors.push(`${rel}: missing outside line ${row.url}`);
+    }
+    for (const href of ["/guides/utqg-grades/", "/guides/treadwear-numbers/", "/guides/no-utqg-rating/", "/ratings/", "/methodology/"]) {
+      if (!html.includes(`href="${href}"`)) errors.push(`${rel}: missing ${href}`);
+    }
+    const tables = html.match(/<table\b/g) || [];
+    const captions = html.match(/<caption\b/g) || [];
+    if (!tables.length || captions.length !== tables.length) errors.push(`${rel}: ${tables.length} tables and ${captions.length} captions`);
   }
   if (path === TREADWEAR_NUMBERS_PATH) {
     const text = visibleText(html);

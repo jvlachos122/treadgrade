@@ -21,6 +21,7 @@ export const STATIC_INDEXABLE_PATHS = [
   "/guides/tire-age/",
   "/guides/tire-date-code/",
   "/guides/tire-pressure-and-roadside-kit/",
+  "/guides/traction-grades/",
   "/guides/treadwear-numbers/",
   "/guides/treadwear-varies-by-size/",
   "/guides/utqg-grades/",

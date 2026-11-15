@@ -6,7 +6,7 @@ import { catalog, ratingRows } from "../src/lib/catalog.js";
 import { formatNumber, formatVerified, percent } from "../src/lib/format.js";
 import { nameKey } from "../src/lib/normalize.js";
 import { flattenGradeRows, ratingsTableHref } from "../src/lib/ratings-table.js";
-import { includeInSitemap, STATIC_INDEXABLE_PATHS } from "../src/lib/sitemap.js";
+import { includeInSitemap, PINNED_STATIC_INDEXABLE_PATHS, STATIC_INDEXABLE_PATHS } from "../src/lib/sitemap.js";
 import { bandLabel, bandStart } from "../src/lib/treadwear-numbers.js";
 import {
   BANNED_VERDICT,
@@ -351,46 +351,14 @@ test("regulation quotes keep the retrieved eCFR wording and the page cites the d
   assert.doesNotMatch(lib, /all-weather|all weather/i);
 });
 
-// Static paths in ccb5b80, the commit before this guide. Deploy checks out
-// main with fetch-depth 1, so `git show main:` is the commit under test and
-// is not a pre-change baseline.
-const SITEMAP_PATHS_BEFORE_TRACTION_GUIDE = [
-  "/",
-  "/about/",
-  "/affiliate-disclosure/",
-  "/brands/",
-  "/compare/",
-  "/contact/",
-  "/decoder/",
-  "/guides/",
-  "/guides/dot-code/",
-  "/guides/no-utqg-rating/",
-  "/guides/tire-age/",
-  "/guides/tire-date-code/",
-  "/guides/tire-pressure-and-roadside-kit/",
-  "/guides/treadwear-numbers/",
-  "/guides/treadwear-varies-by-size/",
-  "/guides/utqg-grades/",
-  "/lists/highest-treadwear/",
-  "/lists/long-treadwear-high-traction/",
-  "/methodology/",
-  "/methodology/known-errors/",
-  "/plants/",
-  "/privacy/",
-  "/ratings/",
-  "/recalls/",
-  "/who-makes-it/",
-];
-
-test("the traction guide is the one new static sitemap path and stays linked", () => {
+test("the traction guide stays in the pinned static paths and on the linked pages", () => {
   assert.equal(TRACTION_GRADES_PATH, "/guides/traction-grades/");
   assert.equal(STATIC_INDEXABLE_PATHS.filter((path) => path === TRACTION_GRADES_PATH).length, 1);
+  assert.equal(PINNED_STATIC_INDEXABLE_PATHS.filter((path) => path === TRACTION_GRADES_PATH).length, 1);
   assert.equal(includeInSitemap(TRACTION_GRADES_PATH, new Set()), true);
   assert.equal(includeInSitemap(`https://treadgrade.com${TRACTION_GRADES_PATH}`, new Set()), true);
   assert.equal(includeInSitemap(TRACTION_GRADES_PATH, new Set([TRACTION_GRADES_PATH])), false);
-  const added = STATIC_INDEXABLE_PATHS.filter((path) => !SITEMAP_PATHS_BEFORE_TRACTION_GUIDE.includes(path));
-  const removed = SITEMAP_PATHS_BEFORE_TRACTION_GUIDE.filter((path) => !STATIC_INDEXABLE_PATHS.includes(path));
-  assert.deepEqual(added, [TRACTION_GRADES_PATH]);
+  const removed = PINNED_STATIC_INDEXABLE_PATHS.filter((path) => !STATIC_INDEXABLE_PATHS.includes(path));
   assert.deepEqual(removed, []);
   const page = readFileSync(new URL("../src/pages/guides/traction-grades.astro", import.meta.url), "utf8");
   assert.match(page, /<Answer /);

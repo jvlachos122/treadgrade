@@ -1,0 +1,113 @@
+---
+import { formatSpread } from "../lib/treadwear-vs-traction.js";
+
+const groups = Astro.props.groups || [];
+const ready =
+  groups.length > 0 &&
+  groups.every((group) => [group.min, group.q1, group.median, group.q3, group.max].every((value) => Number.isFinite(value)));
+
+function round(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function formatTick(value) {
+  return Number.isInteger(value) ? String(value) : formatSpread(value);
+}
+
+function axisTicks(min, max) {
+  if (min === max) return [min];
+  const rough = (max - min) / 4;
+  const pow = 10 ** Math.floor(Math.log10(rough));
+  let step = pow * 10;
+  for (const multiplier of [1, 2, 2.5, 5, 10]) {
+    if (pow * multiplier >= rough) {
+      step = pow * multiplier;
+      break;
+    }
+  }
+  const ticks = [];
+  const start = Math.ceil((min - step * 1e-6) / step) * step;
+  for (let value = start; value <= max + step * 1e-6; value += step) {
+    const rounded = Math.round(value * 1000) / 1000;
+    if (rounded + 1e-6 >= min && rounded - 1e-6 <= max) ticks.push(rounded);
+  }
+  return ticks.length ? ticks : [min, max];
+}
+
+const plotLeft = 56;
+const plotRight = 12;
+const plotTop = 14;
+const plotH = 168;
+const plotBottom = 42;
+const slot = 92;
+let width = 10;
+let height = 10;
+let viewBox = "0 0 10 10";
+let ticks = [];
+let columns = [];
+let axisBottom = plotTop + plotH;
+
+if (ready) {
+  const dataMin = Math.min(...groups.map((group) => group.min));
+  const dataMax = Math.max(...groups.map((group) => group.max));
+  const span = dataMax - dataMin || 1;
+  const pad = span * 0.08;
+  const lo = dataMin - pad;
+  const hi = dataMax + pad;
+  const scale = hi - lo || 1;
+  height = plotTop + plotH + plotBottom;
+  width = plotLeft + plotRight + groups.length * slot;
+  viewBox = `0 0 ${width} ${height}`;
+  axisBottom = plotTop + plotH;
+  const yOf = (value) => plotTop + ((hi - value) / scale) * plotH;
+  ticks = axisTicks(dataMin, dataMax).map((value) => ({
+    y: round(yOf(value)),
+    label: formatTick(value),
+  }));
+  columns = groups.map((group, index) => {
+    const center = plotLeft + index * slot + slot / 2;
+    const boxW = 28;
+    const q1y = yOf(group.q1);
+    const q3y = yOf(group.q3);
+    return {
+      label: group.label,
+      medianText: group.medianText,
+      center: round(center),
+      whiskerTop: round(yOf(group.max)),
+      whiskerBottom: round(yOf(group.min)),
+      boxX: round(center - boxW / 2),
+      boxY: round(Math.min(q1y, q3y)),
+      boxW,
+      boxH: round(Math.max(Math.abs(q1y - q3y), 1.5)),
+      medianY: round(yOf(group.median)),
+      labelY: height - 22,
+      valueY: height - 8,
+    };
+  });
+}
+---
+
+{
+  ready ? (
+    <svg class="spread-plot" viewBox={viewBox} aria-hidden="true" focusable="false">
+      <line class="spread-axis" x1={plotLeft} y1={plotTop} x2={plotLeft} y2={axisBottom}></line>
+      {ticks.map((tick) => (
+        <>
+          <line class="spread-tick" x1={plotLeft - 5} y1={tick.y} x2={plotLeft} y2={tick.y}></line>
+          <text class="spread-tick-label" x={plotLeft - 8} y={tick.y + 3} text-anchor="end">{tick.label}</text>
+        </>
+      ))}
+      {columns.map((column) => (
+        <>
+          <line class="spread-whisker" x1={column.center} y1={column.whiskerTop} x2={column.center} y2={column.whiskerBottom}></line>
+          <line class="spread-cap" x1={column.center - 8} y1={column.whiskerTop} x2={column.center + 8} y2={column.whiskerTop}></line>
+          <line class="spread-cap" x1={column.center - 8} y1={column.whiskerBottom} x2={column.center + 8} y2={column.whiskerBottom}></line>
+          <rect class="spread-box" x={column.boxX} y={column.boxY} width={column.boxW} height={column.boxH}></rect>
+          <line class="spread-median" x1={column.center - 16} y1={column.medianY} x2={column.center + 16} y2={column.medianY}></line>
+          <text class="spread-cat" x={column.center} y={column.labelY} text-anchor="middle">{column.label}</text>
+          <text class="spread-med" x={column.center} y={column.valueY} text-anchor="middle">{column.medianText}</text>
+        </>
+      ))}
+    </svg>
+  ) : null
+}

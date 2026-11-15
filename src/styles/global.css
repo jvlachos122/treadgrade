@@ -585,6 +585,36 @@ td a { font-weight: 600; }
 .grade-c { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line-strong); }
 .grade-other { background: var(--paper-2); color: var(--ink); border: 1px dashed var(--line-strong); }
 
+td.heat {
+  background-color: color-mix(in srgb, var(--pine) calc(var(--heat) * 0.34%), var(--paper-2));
+}
+td.heat a { color: var(--ink); }
+.spread-figure { margin: 0 0 1rem; }
+.spread-plot { width: 100%; height: auto; display: block; }
+.spread-plot .spread-axis,
+.spread-plot .spread-tick,
+.spread-plot .spread-whisker,
+.spread-plot .spread-cap,
+.spread-plot .spread-median { fill: none; }
+.spread-plot .spread-axis,
+.spread-plot .spread-tick { stroke: var(--line-strong); stroke-width: 1; }
+.spread-plot .spread-whisker,
+.spread-plot .spread-cap { stroke: var(--ink); stroke-width: 1.5; }
+.spread-plot .spread-box {
+  fill: color-mix(in srgb, var(--pine) 22%, var(--paper-2));
+  stroke: var(--pine);
+  stroke-width: 1.5;
+}
+.spread-plot .spread-median { stroke: var(--stamp); stroke-width: 2.5; }
+.spread-plot text {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  fill: var(--muted);
+}
+.spread-plot .spread-cat { font-size: 12px; fill: var(--ink); }
+.spread-plot .spread-med { font-size: 11px; fill: var(--ink); }
+.spread-plot .spread-tick-label { font-size: 11px; }
+
 .facts { display: grid; gap: 0.7rem; margin: 1rem 0; }
 .facts div {
   display: grid;

@@ -1,0 +1,53 @@
+---
+import Grade from "./Grade.astro";
+import { formatNumber } from "../lib/format.js";
+import { USUAL_TEMPERATURE, USUAL_TRACTION } from "../lib/grade-quality.js";
+
+const { caption, rows, gradeKind = "temp", countHeader = "Rows in the summary" } = Astro.props;
+const usual = gradeKind === "trac" ? USUAL_TRACTION : USUAL_TEMPERATURE;
+const kind = gradeKind === "trac" ? "trac" : "temp";
+---
+
+<div class="table-wrap">
+  <table>
+    <caption>{caption}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Grade</th>
+        <th scope="col">{countHeader}</th>
+        <th scope="col">Minimum</th>
+        <th scope="col">Lower quartile</th>
+        <th scope="col">Median</th>
+        <th scope="col">Upper quartile</th>
+        <th scope="col">Maximum</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((row) => (
+          <tr>
+            <td>
+              {
+                row.href ? (
+                  <a href={row.href}>
+                    {usual.includes(row.id) ? <Grade value={row.id} kind={kind} /> : row.label}
+                  </a>
+                ) : usual.includes(row.id) ? (
+                  <Grade value={row.id} kind={kind} />
+                ) : (
+                  row.label
+                )
+              }
+            </td>
+            <td class="num">{formatNumber(row.spread.count)}</td>
+            <td class="num">{row.spread.minText}</td>
+            <td class="num">{row.spread.q1Text}</td>
+            <td class="num">{row.spread.medianText}</td>
+            <td class="num">{row.spread.q3Text}</td>
+            <td class="num">{row.spread.maxText}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

@@ -9,6 +9,11 @@ import { BANNED_RECALL_ADVICE, NHTSA_RECALLS_URL, RECALLS_PATH, TIN_LIMIT, USTMA
 import { BANNED_GRADE_WORD, GRADE_VARIES_ID, SIZE_VARIANCE_PATH, lineSizeVariance } from "../src/lib/size-variance.js";
 import { BANNED_VERDICT, MILES_FORMULA, TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
 import {
+  BANNED_VERDICT as BANNED_STUDY,
+  TREADWEAR_VS_TRACTION_PATH,
+  treadwearTractionReport,
+} from "../src/lib/treadwear-vs-traction.js";
+import {
   BANNED_VERDICT as BANNED_TRACTION,
   ECFR_RETRIEVED,
   ECFR_TRACTION_URL,
@@ -228,6 +233,40 @@ for (const file of files) {
     for (const href of ["/guides/utqg-grades/", "/guides/treadwear-numbers/", "/guides/no-utqg-rating/", "/ratings/", "/methodology/"]) {
       if (!html.includes(`href="${href}"`)) errors.push(`${rel}: missing ${href}`);
     }
+    const tables = html.match(/<table\b/g) || [];
+    const captions = html.match(/<caption\b/g) || [];
+    if (!tables.length || captions.length !== tables.length) errors.push(`${rel}: ${tables.length} tables and ${captions.length} captions`);
+  }
+  if (path === TREADWEAR_VS_TRACTION_PATH) {
+    const text = visibleText(html);
+    const banned = text.match(BANNED_STUDY);
+    if (banned) errors.push(`${rel}: banned study verdict ${banned[1]}`);
+    if (!text.includes("assigned by the manufacturer")) errors.push(`${rel}: missing manufacturer-assigned caveat`);
+    if (!text.includes("lab-audited")) errors.push(`${rel}: missing lab-audited caveat`);
+    const retrieved = ecfrRetrievedLabel(ECFR_RETRIEVED);
+    if (!html.includes(ECFR_TRACTION_URL)) errors.push(`${rel}: missing eCFR URL`);
+    if (!text.includes(retrieved)) errors.push(`${rel}: missing eCFR retrieved date`);
+    const plain = html.replaceAll("&amp;", "&");
+    for (const match of plain.matchAll(/href="(https:\/\/www\.ecfr\.gov[^"]*)"/g)) {
+      const at = match.index ?? 0;
+      const window = visibleText(plain.slice(Math.max(0, at - 500), at + 700));
+      if (!window.includes(retrieved)) errors.push(`${rel}: eCFR link missing retrieved date`);
+    }
+    const study = treadwearTractionReport(ratingRows, catalog);
+    for (const row of study.outsideRows) {
+      if (row.url && !html.includes(`href="${row.url}"`)) errors.push(`${rel}: missing tire line ${row.url}`);
+    }
+    for (const href of [
+      "/guides/traction-grades/",
+      "/guides/utqg-grades/",
+      "/guides/treadwear-numbers/",
+      "/lists/long-treadwear-high-traction/",
+      "/ratings/",
+      "/methodology/",
+    ]) {
+      if (!html.includes(`href="${href}"`)) errors.push(`${rel}: missing ${href}`);
+    }
+    if (study.row.heatmap.max > 0 && !html.includes('class="num heat"')) errors.push(`${rel}: heatmap has no shaded cell`);
     const tables = html.match(/<table\b/g) || [];
     const captions = html.match(/<caption\b/g) || [];
     if (!tables.length || captions.length !== tables.length) errors.push(`${rel}: ${tables.length} tables and ${captions.length} captions`);

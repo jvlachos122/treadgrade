@@ -1,0 +1,40 @@
+---
+import CountCell from "./CountCell.astro";
+import Grade from "./Grade.astro";
+import { USUAL_TEMPERATURE, USUAL_TRACTION } from "../lib/grade-quality.js";
+
+const { caption, corner, matrix, shade = false, rowGrade = "" } = Astro.props;
+const usual = rowGrade === "temp" ? USUAL_TEMPERATURE : rowGrade === "trac" ? USUAL_TRACTION : [];
+const kind = rowGrade === "temp" ? "temp" : "trac";
+---
+
+<div class="table-wrap">
+  <table>
+    <caption>{caption}</caption>
+    <thead>
+      <tr>
+        <th scope="col">{corner}</th>
+        {matrix.columns.map((column) => <th scope="col">{column.header}</th>)}
+        <th scope="col">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        matrix.rows.map((row) => (
+          <tr>
+            <td>{usual.includes(row.id) ? <Grade value={row.id} kind={kind} /> : row.label}</td>
+            {row.cells.map((cell) => (
+              <CountCell count={cell.count} href={cell.href} heat={shade ? cell.heat : 0} />
+            ))}
+            <CountCell count={row.total} href={row.totalHref} />
+          </tr>
+        ))
+      }
+      <tr>
+        <td>{matrix.totalLabel}</td>
+        {matrix.columnTotals.map((column) => <CountCell count={column.count} href={column.href} />)}
+        <CountCell count={matrix.total} href={matrix.totalHref} />
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,10 @@
+---
+import { formatNumber } from "../lib/format.js";
+
+const { count = 0, href = "", heat = 0 } = Astro.props;
+const shaded = heat > 0 && count > 0;
+---
+
+<td class:list={["num", shaded && "heat"]} style={shaded ? `--heat:${heat}` : undefined}>
+  {href && count ? <a href={href}>{formatNumber(count)}</a> : formatNumber(count)}
+</td>

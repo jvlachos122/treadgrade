@@ -1,0 +1,261 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import Grade from "../../components/Grade.astro";
+import MatrixTable from "../../components/MatrixTable.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import SpreadPlot from "../../components/SpreadPlot.astro";
+import SpreadTable from "../../components/SpreadTable.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog, ratingRows } from "../../lib/catalog.js";
+import { LONG_TREADWEAR_PATH, LONG_TREADWEAR_TITLE } from "../../lib/long-treadwear.js";
+import { clampText } from "../../lib/text.js";
+import { TRACTION_GRADES_PATH } from "../../lib/traction-grades.js";
+import {
+  ECFR_TRACTION_URL,
+  TREADWEAR_VS_TRACTION_PATH,
+  aaLineCountSentence,
+  aaLineShareSentence,
+  compoundSentence,
+  crossCaption,
+  cutoffDefinition,
+  duplicateNote,
+  ecfrRetrievedLabel,
+  exclusionNote,
+  heatmapCaption,
+  heatmapEmptyNote,
+  heatmapNote,
+  introParagraph,
+  lineCrossCaption,
+  lineExclusionNote,
+  lineHeatmapCaption,
+  lineHeatmapEmptyNote,
+  lineHeatmapNote,
+  linePlotCaption,
+  lineRuleNote,
+  lineTemperatureCaption,
+  lineTemperatureSentence,
+  lineTractionSentence,
+  methodNote,
+  mixedNote,
+  outsideCaption,
+  outsideNote,
+  ownCutoffSentence,
+  plotGroups,
+  longAaSentence,
+  stepSentence,
+  studyAnswer,
+  studyFaqs,
+  studyJsonLd,
+  temperatureCaption,
+  temperaturePlotCaption,
+  tractionTablePointer,
+  treadwearTractionReport,
+} from "../../lib/treadwear-vs-traction.js";
+
+const report = treadwearTractionReport(ratingRows, catalog);
+const answers = studyAnswer(report);
+const faqs = studyFaqs(report);
+const description = clampText(answers.join(" "));
+const jsonLd = studyJsonLd(report);
+const ecfrRetrieved = ecfrRetrievedLabel();
+const tempGroups = plotGroups(report.row.temperature);
+const lineGroups = plotGroups(report.line.temperature);
+const tempStep = stepSentence("temperature", report.row.temperature);
+const tracStep = stepSentence("traction", report.row.traction);
+const lineTempStep = stepSentence("temperature", report.line.temperature);
+const lineTracStep = stepSentence("traction", report.line.traction);
+const lineAa = aaLineCountSentence(report);
+const longAa = longAaSentence(report);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: TREADWEAR_VS_TRACTION_PATH, label: "Treadwear and traction" },
+];
+---
+
+<Base title="Treadwear next to traction and temperature" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>Treadwear next to traction and temperature</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <p>
+      {introParagraph()}
+      {" "}
+      <a href={ECFR_TRACTION_URL}>49 CFR 575.104</a>
+      {" "}
+      (eCFR, retrieved {ecfrRetrieved}).
+      {" "}
+      <a href="/guides/utqg-grades/">What UTQG grades mean</a>.
+      {" "}
+      <a href={`${TRACTION_GRADES_PATH}#treadwear`}>Median treadwear by traction letter</a>.
+      {" "}
+      <a href="/guides/treadwear-numbers/">What treadwear numbers mean</a>.
+      {" "}
+      <a href={LONG_TREADWEAR_PATH}>{LONG_TREADWEAR_TITLE}</a>.
+      {" "}
+      <a href="/methodology/">How the file is read</a>.
+      {" "}
+      <a href="/ratings/">All UTQG grades</a>.
+    </p>
+
+    <h2 id="temperature">Temperature and treadwear</h2>
+    <p>{methodNote()}</p>
+    <p>{exclusionNote(report)}</p>
+    <SpreadTable caption={temperatureCaption(report)} rows={report.row.temperature} gradeKind="temp" />
+    {
+      tempGroups.length ? (
+        <figure class="spread-figure">
+          <SpreadPlot groups={tempGroups} />
+          <figcaption>{temperaturePlotCaption(report)}</figcaption>
+        </figure>
+      ) : null
+    }
+    {tempStep ? <p>{tempStep}</p> : null}
+
+    <h2 id="tradeoff">Where the counts do not line up</h2>
+    <p>{tractionTablePointer()}</p>
+    <p>
+      <a href={`${TRACTION_GRADES_PATH}#treadwear`}>Open the traction median table</a>.
+    </p>
+    {tracStep ? <p>{tracStep}</p> : null}
+    <p>{cutoffDefinition(report)}</p>
+    <p>{aaLineShareSentence(report)}</p>
+    {lineAa ? <p>{lineAa}</p> : null}
+    <p>{ownCutoffSentence(report)}</p>
+    {longAa ? <p>{longAa}</p> : null}
+    <p>{compoundSentence()}</p>
+
+    <h2 id="cross">Traction and temperature together</h2>
+    <p>{duplicateNote(report)}</p>
+    <MatrixTable
+      caption={crossCaption(report)}
+      corner="Traction"
+      matrix={report.row.cross}
+      rowGrade="trac"
+    />
+    <p>
+      {outsideNote(report)}
+      {" "}
+      {
+        report.outsideRows.length ? (
+          <a href="/methodology/known-errors/#invalid-fields">Values outside the usual grades</a>
+        ) : (
+          <a href="/methodology/known-errors/#invalid-fields">Known errors</a>
+        )
+      }.
+    </p>
+    {
+      report.outsideRows.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{outsideCaption(report)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Brand</th>
+                <th scope="col">Tire line</th>
+                <th scope="col">Size series</th>
+                <th scope="col">Treadwear</th>
+                <th scope="col">Traction</th>
+                <th scope="col">Temperature</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                report.outsideRows.map((row) => (
+                  <tr>
+                    <td>{row.brand}</td>
+                    <td>{row.url ? <a href={row.url}>{row.line}</a> : row.line}</td>
+                    <td>{row.size}</td>
+                    <td class="num">{row.wear}</td>
+                    <td>
+                      {row.trac.usual ? <Grade value={row.trac.text} /> : row.trac.blank ? row.trac.text : `“${row.trac.text}”`}
+                    </td>
+                    <td>
+                      {row.temp.usual ? <Grade value={row.temp.text} kind="temp" /> : row.temp.blank ? row.temp.text : `“${row.temp.text}”`}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : null
+    }
+
+    <h2 id="heatmap">Treadwear band and traction</h2>
+    <p>{heatmapNote()}</p>
+    {
+      report.row.heatmap.rows.length ? (
+        <MatrixTable
+          caption={heatmapCaption(report)}
+          corner="Treadwear"
+          matrix={report.row.heatmap}
+          shade
+        />
+      ) : (
+        <p>{heatmapEmptyNote()}</p>
+      )
+    }
+
+    <h2 id="lines">One tire line at a time</h2>
+    <p>{lineRuleNote()}</p>
+    <p>{lineExclusionNote(report)}</p>
+    <p>{mixedNote(report)}</p>
+    <h3 id="line-temperature">Temperature, one line at a time</h3>
+    <p>{lineTemperatureSentence(report)}</p>
+    {lineTempStep ? <p>{lineTempStep}</p> : null}
+    <SpreadTable
+      caption={lineTemperatureCaption(report)}
+      rows={report.line.temperature}
+      gradeKind="temp"
+      countHeader="Tire lines in the summary"
+    />
+    {
+      lineGroups.length ? (
+        <figure class="spread-figure">
+          <SpreadPlot groups={lineGroups} />
+          <figcaption>{linePlotCaption(report)}</figcaption>
+        </figure>
+      ) : null
+    }
+    <h3 id="line-traction">Traction, one line at a time</h3>
+    <p>{lineTractionSentence(report)}</p>
+    {lineTracStep ? <p>{lineTracStep}</p> : null}
+    <p>
+      <a href={`${TRACTION_GRADES_PATH}#treadwear`}>Traction medians on the traction guide</a>
+      use source rows. The sentence above uses one median per tire line.
+    </p>
+    <h3 id="line-cross">Traction and temperature, one line at a time</h3>
+    <MatrixTable
+      caption={lineCrossCaption(report)}
+      corner="Traction"
+      matrix={report.line.cross}
+      rowGrade="trac"
+    />
+    <h3 id="line-heatmap">Treadwear band and traction, one line at a time</h3>
+    <p>{lineHeatmapNote()}</p>
+    {
+      report.line.heatmap.rows.length ? (
+        <MatrixTable
+          caption={lineHeatmapCaption(report)}
+          corner="Treadwear"
+          matrix={report.line.heatmap}
+          shade
+        />
+      ) : (
+        <p>{lineHeatmapEmptyNote()}</p>
+      )
+    }
+
+    <h2 id="questions">Questions</h2>
+    {
+      faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+  </div>
+</Base>

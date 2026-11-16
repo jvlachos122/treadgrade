@@ -6,6 +6,7 @@ import { LONG_TREADWEAR_PATH } from "../src/lib/long-treadwear.js";
 import { TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
 import { TRACTION_GRADES_PATH } from "../src/lib/traction-grades.js";
 import { TREADWEAR_VS_TRACTION_PATH } from "../src/lib/treadwear-vs-traction.js";
+import { REBADGED_TIRES_PATH } from "../src/lib/rebadged-tires.js";
 import { RECALLS_PATH } from "../src/lib/recall-list.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -104,7 +105,8 @@ function requirements(pathname) {
     pathname === RECALLS_PATH ||
     pathname === TREADWEAR_NUMBERS_PATH ||
     pathname === TRACTION_GRADES_PATH ||
-    pathname === TREADWEAR_VS_TRACTION_PATH
+    pathname === TREADWEAR_VS_TRACTION_PATH ||
+    pathname === REBADGED_TIRES_PATH
   ) {
     req.types.push("Dataset", "Article", "FAQPage");
     req.answer = true;

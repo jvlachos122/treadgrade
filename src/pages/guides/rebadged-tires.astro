@@ -1,0 +1,266 @@
+---
+import Base from "../../layouts/Base.astro";
+import Answer from "../../components/Answer.astro";
+import SourceLine from "../../components/SourceLine.astro";
+import { sourceEntries } from "../../lib/answers.js";
+import { catalog, ratingRows } from "../../lib/catalog.js";
+import { formatVerified } from "../../lib/format.js";
+import { recallRows, recallSummary } from "../../lib/recall-catalog.js";
+import {
+  ECFR_PLANT_URL,
+  ECFR_TIN_URL,
+  MANUFACTURER_CODE_QUOTE,
+  PLANT_CODE_QUOTE,
+  REBADGED_TIRES_PATH,
+  REBADGED_TITLE,
+  TIRE_TYPE_QUOTE,
+  applicationSentence,
+  blankNameSentence,
+  checkStepTexts,
+  clueSentence,
+  ecfrRetrievedLabel,
+  fieldSentence,
+  linkCaption,
+  linkRows,
+  makerGroupSentence,
+  manufacturerCodeSentence,
+  nameRuleSentence,
+  plantCaption,
+  plantRows,
+  rebadgedFaqs,
+  rebadgedJsonLd,
+  rebadgedReport,
+  recallCaption,
+  recallRows as recallTableRows,
+  recallRuleSentence,
+  repeatedNameSentence,
+  whoMakesIntro,
+} from "../../lib/rebadged-tires.js";
+import { clampText } from "../../lib/text.js";
+import { whoMakesPages } from "../../lib/who-makes-pages.js";
+import plants from "../../../data/plants.json";
+
+const report = rebadgedReport({
+  ratings: ratingRows,
+  rawPlants: plants,
+  plants: catalog.plants,
+  recalls: recallRows,
+  meta: catalog.meta,
+  recallSummary,
+  whoMakesPages,
+});
+const answers = report.answers;
+const faqs = rebadgedFaqs(report);
+const description = clampText(answers.join(" "));
+const jsonLd = rebadgedJsonLd(report);
+const verified = formatVerified(report.verifiedAt);
+const recallVerified = formatVerified(report.recallsRetrievedAt);
+const ecfrRetrieved = ecfrRetrievedLabel();
+const steps = checkStepTexts();
+const blankNames = blankNameSentence(report);
+const crumbs = [
+  { href: "/", label: "Home" },
+  { href: "/guides/", label: "Guides" },
+  { href: REBADGED_TIRES_PATH, label: "DOT code and who made it" },
+];
+---
+
+<Base title={REBADGED_TITLE} description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+  <div class="wrap prose">
+    <h1>{REBADGED_TITLE}</h1>
+    <Answer sentences={answers} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants", "recalls"])} />
+    <p>
+      <a href={report.ratingsSource}>UTQG ratings</a> (retrieved {verified}).
+      <a href={report.plantsSource}>Equipment plant codes</a> (retrieved {verified}).
+      <a href={report.recallsSource}>FLAT_RCL_POST_2010.zip</a> (retrieved {recallVerified}).
+      <a href={report.recallsLayout}>RCL.txt</a> (retrieved {recallVerified}).
+    </p>
+    <p>
+      The question behind a rebadge is whether a tire sold under one brand is a tire built for another brand.
+      A DOT code and a UTQG grade can narrow that question. They do not settle it.
+      <a href="/guides/dot-code/">How to read a DOT code</a>.
+      <a href="/plants/">Plant codes</a>.
+      <a href="/who-makes-it/">Who makes it?</a>.
+      <a href="/guides/utqg-grades/">What UTQG grades mean</a>.
+    </p>
+
+    <h2 id="plant-code">What the plant code identifies</h2>
+    <p>
+      <a href={ECFR_TIN_URL}>49 CFR 574.5</a> (eCFR, retrieved {ecfrRetrieved}).
+      The plant code is the first group of the tire identification number. NHTSA assigns it.
+    </p>
+    <blockquote class="quote">
+      <p>{PLANT_CODE_QUOTE}</p>
+    </blockquote>
+    <p>
+      That sentence is 49 CFR 574.5(b)(1). The code identifies the manufacturer or retreader, not a tread pattern, a size, or a compound.
+      The letters DOT in front of the number are a certification mark. They are not the plant code.
+    </p>
+    <p>
+      <a href={ECFR_PLANT_URL}>49 CFR 574.6</a> (eCFR, retrieved {ecfrRetrieved}).
+      {applicationSentence(report)}
+    </p>
+    <blockquote class="quote">
+      <p>{TIRE_TYPE_QUOTE}</p>
+    </blockquote>
+    <p>That list is the examples in 49 CFR 574.6(e). The examples are kinds of tires. They are not brand names.</p>
+    <blockquote class="quote">
+      <p>{MANUFACTURER_CODE_QUOTE}</p>
+    </blockquote>
+    <p>
+      {manufacturerCodeSentence(report)}
+      <a href="/guides/dot-code/">How the manufacturer's code sits in the number</a>.
+      <a href="/decoder/">Decode a code</a>.
+    </p>
+
+    <h2 id="counts">What these files can count</h2>
+    <p>{fieldSentence(report)}</p>
+    <p>{clueSentence(report)}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{linkCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">What</th>
+            <th scope="col">Result</th>
+            <th scope="col">Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            linkRows(report).map((row) => (
+              <tr>
+                <td>{row.label}</td>
+                {row.numeric ? <td class="num">{row.result}</td> : <td>{row.result}</td>}
+                <td>{row.unit}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>{nameRuleSentence()}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{plantCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">What</th>
+            <th scope="col">Result</th>
+            <th scope="col">Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            plantRows(report).map((row) => (
+              <tr>
+                <td>{row.label}</td>
+                {row.numeric ? <td class="num">{row.result}</td> : <td>{row.result}</td>}
+                <td>{row.unit}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    {blankNames ? <p>{blankNames}</p> : null}
+    <p>
+      {makerGroupSentence()}
+      <a href="/plants/by-maker/">Registered plant codes by maker and country</a>.
+      <a href="/plants/">All plant codes</a>.
+    </p>
+    <p>
+      {repeatedNameSentence()}
+      <a href="/methodology/known-errors/#repeated-names">Repeated line names</a>.
+      <a href="/methodology/">How the files are read</a>.
+    </p>
+
+    <h2 id="filings">What a recall filing can prove</h2>
+    <p>{recallRuleSentence()}</p>
+    <p>
+      <a href="/who-makes-it/">Who makes it?</a> lists the filing company for each recalled line.
+      <a href="/recalls/">Tire recalls</a> lists the same rows by campaign.
+      <a href="/who-makes-it/#not-answered">Brands these files do not answer</a> are the measured brands with no tire-recall row. No maker is filled in for them.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>{recallCaption(report)}</caption>
+        <thead>
+          <tr>
+            <th scope="col">What</th>
+            <th scope="col">Result</th>
+            <th scope="col">Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            recallTableRows(report).map((row) => (
+              <tr>
+                <td>{row.label}</td>
+                {row.numeric ? <td class="num">{row.result}</td> : <td>{row.result}</td>}
+                <td>{row.unit}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>{whoMakesIntro(report)}</p>
+    {
+      report.whoMakes.length ? (
+        <ul>
+          {
+            report.whoMakes.map((page) => (
+              <li>
+                <a href={page.url}>Who makes {page.name} tires?</a>
+              </li>
+            ))
+          }
+        </ul>
+      ) : null
+    }
+
+    <h2 id="check">How to check a tire you have</h2>
+    <ol>
+      <li>
+        {steps[0]}
+        {" "}
+        <a href="/guides/dot-code/">How to read a DOT code</a>.
+        {" "}
+        <a href="/guides/tire-date-code/">How to read the date code</a>.
+        {" "}
+        <a href="/decoder/">Decode a code</a>.
+      </li>
+      <li>
+        {steps[1]}
+        {" "}
+        <a href="/plants/">Plant codes</a>.
+      </li>
+      <li>
+        {steps[2]}
+        {" "}
+        <a href="/who-makes-it/">Who makes it?</a>.
+      </li>
+      <li>
+        {steps[3]}
+        {" "}
+        <a href="/ratings/">All UTQG grades</a>.
+        {" "}
+        <a href="/brands/">Brands</a>.
+        {" "}
+        <a href="/guides/utqg-grades/">What the grades mean</a>.
+      </li>
+    </ol>
+
+    <h2 id="questions">Questions</h2>
+    {
+      faqs.map((item) => (
+        <>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </>
+      ))
+    }
+  </div>
+</Base>

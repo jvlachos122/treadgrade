@@ -7032,9 +7032,9 @@
     "dotCode": "1FT",
     "oldDotCode": "FT",
     "name": "MICHELIN REIFENWERKE, A.G. & CO. K.G.A.A",
-    "address": "BAD-KREUZNACH",
-    "city": "BAD KREUZNACH",
-    "stateProvince": "",
+    "address": "Michelinstraße 1",
+    "city": "Bad Kreuznach",
+    "stateProvince": "Rhineland-Palatinate",
     "postalCode": "55543",
     "country": "GERMANY",
     "status": "Active"
@@ -13725,6 +13725,17 @@
     "stateProvince": "SHANDONG",
     "postalCode": "266400",
     "country": "CHINA",
+    "status": "Active"
+  },
+  {
+    "dotCode": "0AX",
+    "oldDotCode": "",
+    "name": "CENTRE DE RECHERCHE ET DE TECHNOLOGIES DE LADOUX",
+    "address": "Rue Bleue - ZI Ladoux",
+    "city": "Cebazat",
+    "stateProvince": "AUVERGNE-RHÔNE-ALPES",
+    "postalCode": "63118",
+    "country": "FRANCE",
     "status": "Active"
   }
 ]

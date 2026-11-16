@@ -3114,6 +3114,17 @@
   },
   {
     "brand": "MICHELIN",
+    "line": "Pilot Alpin 5 SUV",
+    "filer": "Michelin North America, Inc.",
+    "manufacturers": [
+      "MICHELIN NORTH AMERICA"
+    ],
+    "campaign": "26T017000",
+    "reportDate": "2026-11-02",
+    "units": 473
+  },
+  {
+    "brand": "MICHELIN",
     "line": "PILOT POWER 3",
     "filer": "Michelin North America, Inc.",
     "manufacturers": [

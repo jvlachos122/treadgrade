@@ -7,10 +7,10 @@ import { whoMakesPages } from "./who-makes-pages.js";
  * Static routes that are not built from the catalog. Retired addresses and
  * the 404 are omitted. Dynamic routes are added in indexablePathSet.
  *
- * PINNED_STATIC_INDEXABLE_PATHS is main after the traction guide (PR #35)
- * and before later static pages. Deploy checks main out with fetch-depth 1,
- * so a test cannot use `git show main:` as the pre-change list. A new static
- * path stays out of the pin until that change is on main.
+ * PINNED_STATIC_INDEXABLE_PATHS is main after the treadwear-and-traction
+ * guide (PR #36) and before later static pages. Deploy checks main out with
+ * fetch-depth 1, so a test cannot use `git show main:` as the pre-change
+ * list. A new static path stays out of the pin until that change is on main.
  */
 export const PINNED_STATIC_INDEXABLE_PATHS = [
   "/",
@@ -29,6 +29,7 @@ export const PINNED_STATIC_INDEXABLE_PATHS = [
   "/guides/traction-grades/",
   "/guides/treadwear-numbers/",
   "/guides/treadwear-varies-by-size/",
+  "/guides/treadwear-vs-traction/",
   "/guides/utqg-grades/",
   "/lists/highest-treadwear/",
   "/lists/long-treadwear-high-traction/",
@@ -52,6 +53,7 @@ export const STATIC_INDEXABLE_PATHS = [
   "/guides/",
   "/guides/dot-code/",
   "/guides/no-utqg-rating/",
+  "/guides/rebadged-tires/",
   "/guides/tire-age/",
   "/guides/tire-date-code/",
   "/guides/tire-pressure-and-roadside-kit/",

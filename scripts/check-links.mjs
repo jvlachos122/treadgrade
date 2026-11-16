@@ -9,6 +9,7 @@ import { LONG_TREADWEAR_PATH } from "../src/lib/long-treadwear.js";
 import { TREADWEAR_NUMBERS_PATH } from "../src/lib/treadwear-numbers.js";
 import { TRACTION_GRADES_PATH } from "../src/lib/traction-grades.js";
 import { TREADWEAR_VS_TRACTION_PATH } from "../src/lib/treadwear-vs-traction.js";
+import { REBADGED_TIRES_PATH } from "../src/lib/rebadged-tires.js";
 import { TIRE_AGE_PATH } from "../src/lib/tire-age.js";
 import { RECALLS_PATH } from "../src/lib/recall-list.js";
 import { SIZE_VARIANCE_PATH } from "../src/lib/size-variance.js";
@@ -175,6 +176,7 @@ if (!pageLocs.has(LONG_TREADWEAR_PATH)) errors.push(`sitemap missing ${LONG_TREA
 if (!pageLocs.has(TREADWEAR_NUMBERS_PATH)) errors.push(`sitemap missing ${TREADWEAR_NUMBERS_PATH}`);
 if (!pageLocs.has(TRACTION_GRADES_PATH)) errors.push(`sitemap missing ${TRACTION_GRADES_PATH}`);
 if (!pageLocs.has(TREADWEAR_VS_TRACTION_PATH)) errors.push(`sitemap missing ${TREADWEAR_VS_TRACTION_PATH}`);
+if (!pageLocs.has(REBADGED_TIRES_PATH)) errors.push(`sitemap missing ${REBADGED_TIRES_PATH}`);
 if (!pageLocs.has(TIRE_AGE_PATH)) errors.push(`sitemap missing ${TIRE_AGE_PATH}`);
 if (!pageLocs.has(RECALLS_PATH)) errors.push(`sitemap missing ${RECALLS_PATH}`);
 for (const path of exampleComparisonPaths) {

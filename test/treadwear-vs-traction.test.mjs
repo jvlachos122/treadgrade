@@ -506,15 +506,13 @@ test("the live counts match a recompute of the committed ratings file", () => {
   );
 });
 
-test("the study page is the one new static path and does not hard-code totals", () => {
+test("the study page stays in the pinned static paths and does not hard-code totals", () => {
   assert.equal(TREADWEAR_VS_TRACTION_PATH, "/guides/treadwear-vs-traction/");
   assert.equal(STATIC_INDEXABLE_PATHS.filter((path) => path === TREADWEAR_VS_TRACTION_PATH).length, 1);
-  assert.equal(PINNED_STATIC_INDEXABLE_PATHS.includes(TREADWEAR_VS_TRACTION_PATH), false);
+  assert.equal(PINNED_STATIC_INDEXABLE_PATHS.filter((path) => path === TREADWEAR_VS_TRACTION_PATH).length, 1);
   assert.equal(includeInSitemap(TREADWEAR_VS_TRACTION_PATH, new Set()), true);
   assert.equal(includeInSitemap(`https://treadgrade.com${TREADWEAR_VS_TRACTION_PATH}`, new Set()), true);
-  const added = STATIC_INDEXABLE_PATHS.filter((path) => !PINNED_STATIC_INDEXABLE_PATHS.includes(path));
   const removed = PINNED_STATIC_INDEXABLE_PATHS.filter((path) => !STATIC_INDEXABLE_PATHS.includes(path));
-  assert.deepEqual(added, [TREADWEAR_VS_TRACTION_PATH]);
   assert.deepEqual(removed, []);
   const page = readFileSync(new URL("../src/pages/guides/treadwear-vs-traction.astro", import.meta.url), "utf8");
   const lib = readFileSync(new URL("../src/lib/treadwear-vs-traction.js", import.meta.url), "utf8");

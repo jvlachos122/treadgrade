@@ -224,23 +224,30 @@ export function catalogFacts(catalog) {
 
 export function ratingsAnswer(catalog) {
   const facts = catalogFacts(catalog);
+  const median = treadwearMedian(facts.wearValid);
+  const medianSentence =
+    median == null
+      ? "Treadwear is not reported as a usable number in that list, and sorting this page orders the published grades without ranking them."
+      : `The median treadwear on rows with a usable number is ${formatTreadwearMedian(median)}, and sorting this page orders those published grades without ranking them.`;
   return [
     `NHTSA's published UTQG list on this site has ${countNoun(catalog.stats.rows, "grade row")} across ${countNoun(catalog.stats.lines, "tire line")} and ${countNoun(catalog.stats.brands, "brand")}.`,
     extremes(facts),
-    "Sorting high to low on this page orders those published grades and is not a ranking.",
+    medianSentence,
   ];
 }
 
 export function brandsIndexAnswer(catalog) {
   const facts = catalogFacts(catalog);
+  const median = treadwearMedian(facts.wearValid);
   const min = facts.wearValid.length ? Math.min(...facts.wearValid) : null;
   const max = facts.wearValid.length ? Math.max(...facts.wearValid) : null;
+  const tail = facts.wearInvalid.length || facts.wearMissing ? ", leaving out rows without a usable treadwear number" : "";
   const wear =
     min == null
       ? "Treadwear is not reported as a usable number in that list."
       : min === max
-        ? `Treadwear in that published list is ${min}.`
-        : `Treadwear in that published list runs from ${min} to ${max}${facts.wearInvalid.length || facts.wearMissing ? ", leaving out rows without a usable treadwear number" : ""}.`;
+        ? `The median treadwear on rows with a usable number is ${formatTreadwearMedian(median)}${tail}.`
+        : `The median treadwear on rows with a usable number is ${formatTreadwearMedian(median)}, and treadwear in that published list runs from ${min} to ${max}${tail}.`;
   return [
     `NHTSA's published UTQG list on this site has ${formatNumber(catalog.stats.brands)} brands and ${formatNumber(catalog.stats.lines)} tire lines.`,
     wear,
@@ -438,8 +445,10 @@ export function countryIndexAnswer({ rawCount, normalizedCount, plantCount }) {
 export function plantsIndexAnswer(catalog) {
   const former = catalog.plants.filter((plant) => plant.oldCode).length;
   const active = catalog.plants.filter((plant) => plant.status === "Active").length;
+  const countries = catalog.countries?.length || 0;
+  const where = countries ? ` in ${formatNumber(countries)} countries` : "";
   return [
-    `NHTSA's equipment plant list on this site has ${formatNumber(catalog.stats.plants)} codes, including ${formatNumber(former)} with a former two-symbol code.`,
+    `NHTSA's equipment plant list on this site has ${formatNumber(catalog.stats.plants)} codes${where}, including ${formatNumber(former)} with a former two-symbol code.`,
     `The status field is Active on ${formatNumber(active)} of those records, and that value is not a finding that the plant is operating.`,
     "Each code names the registrant at the time of registration, and it is not a list of brands.",
   ];
@@ -450,7 +459,7 @@ export function decoderAnswer(catalog) {
   const example = catalog.getPlant?.("1u2");
   const sentences = [
     `This decoder reads a DOT tire identification number against ${formatNumber(catalog.stats.plants)} plant records in NHTSA's list, including ${formatNumber(former)} former two-symbol codes.`,
-    "A match names the registrant on that plant code and does not name a brand, and the manufacture week follows the Sunday–Saturday rule in 49 CFR 574.5.",
+    "The reading names the plant code, the manufacture week and year under the Sunday–Saturday rule in 49 CFR 574.5, and the age of that week today, and a plant match names the registrant on that code rather than a brand.",
   ];
   if (example) {
     const place = placeOf(example);

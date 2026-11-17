@@ -1,24 +1,31 @@
 ---
 import Base from "../../layouts/Base.astro";
 import Answer from "../../components/Answer.astro";
+import InlineList from "../../components/InlineList.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { brandsIndexAnswer, sourceEntries } from "../../lib/answers.js";
+import { BRAND_PLANT_RULE, INDEX_FOLD_NOTE, brandProfiles } from "../../lib/brand-pages.js";
 import { catalog } from "../../lib/catalog.js";
-import { formatNumber, wearRange } from "../../lib/format.js";
+import { formatNumber } from "../../lib/format.js";
+import { brandCaption, brandHubFaqs, brandHubProse, brandHubRows, hubFaqLd } from "../../lib/hub-quality.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
-import InlineList from "../../components/InlineList.astro";
-import { BRAND_PLANT_RULE, INDEX_FOLD_NOTE, brandIndexLetter, brandProfile, foldedIndexText } from "../../lib/brand-pages.js";
 import { whoMakesPages } from "../../lib/who-makes-pages.js";
 
-const groups = new Map();
-for (const brand of catalog.brands) {
-  const key = brandIndexLetter(brand.name);
-  if (!groups.has(key)) groups.set(key, []);
-  groups.get(key).push(brand);
-}
-const letters = [...groups.keys()];
+const model = brandHubRows(brandProfiles);
+let previousLetter = "";
+const rows = model.rows.map((row) => {
+  const letterId = row.letter !== previousLetter ? `letter-${row.letter}` : "";
+  previousLetter = row.letter;
+  return { ...row, letterId };
+});
+const letters = [...new Set(rows.map((row) => row.letter))];
+const aliasText = new Map(
+  catalog.brands.map((brand) => [brand.slug, brand.aliases.map((alias) => alias.name).join(" ")]),
+);
 const answers = brandsIndexAnswer(catalog);
+const prose = brandHubProse(model);
+const faqs = brandHubFaqs(model);
 const description = clampText(answers.join(" "));
 const jsonLd = [
   dataset({
@@ -29,6 +36,7 @@ const jsonLd = [
     isBasedOn: catalog.meta.ratings.source,
     keywords: ["UTQG", "tires", "NHTSA"],
   }),
+  hubFaqLd(faqs),
 ];
 const crumbs = [
   { href: "/", label: "Home" },
@@ -36,13 +44,13 @@ const crumbs = [
 ];
 ---
 
-<Base title="Tire brands" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
-  <div class="wrap">
-    <h1>Tire brands</h1>
+<Base title="Tire brands in the NHTSA UTQG list" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+  <div class="wrap" data-brand-index>
+    <h1>Tire brands in the NHTSA UTQG list</h1>
     <Answer sentences={answers} />
-    <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants", "recalls"])} />
     <p class="lede">
-      {formatNumber(catalog.stats.brands)} brands after merging spellings that differ only by capitalization or punctuation. Each link opens the tire lines stored under that brand string in NHTSA's list.
+      {formatNumber(model.brands)} brands after merging spellings that differ only by capitalization or punctuation. Each row counts the tire lines stored under that brand string.
       A shared line name is not a rebadge. Light-truck, deep-tread winter, and temporary spare tires are outside the UTQG rule and may be missing.
       Recall filings that use one of these brand strings, after the same capitalization-and-spacing normalization, are listed on <a href="/who-makes-it/">Who makes it?</a>
       {
@@ -61,60 +69,109 @@ const crumbs = [
       {BRAND_PLANT_RULE}
       {" "}
       {INDEX_FOLD_NOTE}
+      {" "}
+      {model.plantColumnReason}
     </p>
     <nav class="letter-nav" aria-label="Brand letters">
       {letters.map((letter) => <a href={`#letter-${letter}`}>{letter}</a>)}
     </nav>
     <label>
       Filter brands
-      <input id="brand-filter" type="search" autocomplete="off" />
+      <input id="brand-filter" data-brand-filter type="search" autocomplete="off" />
     </label>
-    <p class="status small" id="brand-filter-status" aria-live="polite"></p>
-    {
-      letters.map((letter) => (
-        <section>
-          <h2 id={`letter-${letter}`}>{letter}</h2>
-          <ul class="brand-list" data-brand-list>
-            {groups.get(letter).map((brand) => {
-              const profile = brandProfile(brand.slug);
-              const folded = foldedIndexText(profile);
-              return (
-                <li data-search={[brand.name, profile.singleLine?.name, ...brand.aliases.map((alias) => alias.name)].filter(Boolean).join(" ").toLowerCase()}>
-                  <a href={brand.url}>
-                    <span>{brand.name}</span>
-                    <span class={folded ? "muted folded" : "muted"}>
-                      {folded || `${formatNumber(brand.lineCount)} lines · treadwear ${wearRange(brand.wearMin, brand.wearMax)}`}
-                    </span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))
-    }
+    <p class="status small" data-brand-status aria-live="polite">{formatNumber(model.brands)} brands.</p>
+    <noscript>
+      <p>Sorting and filtering run in the browser. Without JavaScript the table stays in brand-name order.</p>
+    </noscript>
+    <div class="table-wrap">
+      <table id="brand-table">
+        <caption>{brandCaption(model, catalog.meta.verifiedAt, catalog.meta.recalls.retrievedAt)}</caption>
+        <thead>
+          <tr>
+            <th scope="col" aria-sort="ascending">
+              <button type="button" class="sort-button" data-sort="brand" aria-pressed="true">Brand</button>
+            </th>
+            <th scope="col" aria-sort="none">
+              <button type="button" class="sort-button" data-sort="lines" aria-pressed="false">Tire lines graded</button>
+            </th>
+            <th scope="col" aria-sort="none">
+              <button type="button" class="sort-button" data-sort="median" aria-pressed="false">Median treadwear</button>
+            </th>
+            {
+              model.showPlants ? (
+                <th scope="col" aria-sort="none">
+                  <button type="button" class="sort-button" data-sort="plants" aria-pressed="false">Plant codes</button>
+                </th>
+              ) : null
+            }
+            <th scope="col" aria-sort="none">
+              <button type="button" class="sort-button" data-sort="campaigns" aria-pressed="false">Recall campaigns</button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map((row) => (
+              <tr
+                id={row.letterId || undefined}
+                data-brand={row.name}
+                data-lines={String(row.lineCount)}
+                data-median={row.median == null ? "" : String(row.median)}
+                data-plants={model.showPlants ? String(row.plantCount) : undefined}
+                data-campaigns={String(row.campaignCount)}
+                data-search={`${row.name} ${row.folded} ${row.plants.map((plant) => plant.code).join(" ")} ${aliasText.get(row.slug) || ""}`.toLowerCase()}
+              >
+                <td>
+                  <a href={row.url}>{row.name}</a>
+                  {row.folded ? <span class="muted folded"> {row.folded}</span> : null}
+                </td>
+                <td class="num">{formatNumber(row.lineCount)}</td>
+                <td class="num">{row.medianText}</td>
+                {
+                  model.showPlants ? (
+                    <td>
+                      {
+                        row.plants.length ? (
+                          <ul class="inline-codes">
+                            {row.plants.map((plant) => (
+                              <li>
+                                <a class="code" href={plant.url}>{plant.code}</a>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          "None matched"
+                        )
+                      }
+                    </td>
+                  ) : null
+                }
+                <td class="num">
+                  {row.recallHref ? <a href={row.recallHref}>{formatNumber(row.campaignCount)}</a> : formatNumber(row.campaignCount)}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      {prose.map((paragraph) => <p>{paragraph}</p>)}
+      <h2>Questions</h2>
+      {
+        faqs.map((item) => (
+          <>
+            <h3>{item.name}</h3>
+            <p>{item.text}</p>
+          </>
+        ))
+      }
+    </div>
   </div>
 </Base>
 
 <script>
-  const input = document.querySelector("#brand-filter");
-  const lists = [...document.querySelectorAll("[data-brand-list]")];
-  const status = document.querySelector("#brand-filter-status");
-  if (input && status && lists.length) {
-    const items = lists.flatMap((list) => [...list.children]);
-    input.addEventListener("input", () => {
-      const query = input.value.trim().toLowerCase();
-      let shown = 0;
-      for (const item of items) {
-        const visible = !query || item.dataset.search.includes(query);
-        item.hidden = !visible;
-        if (visible) shown += 1;
-      }
-      for (const list of lists) {
-        const section = list.closest("section");
-        if (section) section.hidden = ![...list.children].some((item) => !item.hidden);
-      }
-      status.textContent = `${shown.toLocaleString("en-US")} of ${items.length.toLocaleString("en-US")} brands shown.`;
-    });
-  }
+  import { initBrandIndex } from "../../scripts/brand-index.js";
+  const root = document.querySelector("[data-brand-index]");
+  if (root) initBrandIndex(root);
 </script>

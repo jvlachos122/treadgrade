@@ -567,6 +567,8 @@ th .sort-button:hover,
 th .sort-button[aria-pressed="true"] { background: transparent; color: var(--ink); }
 th[aria-sort="ascending"] .sort-button::after { content: " \2191"; }
 th[aria-sort="descending"] .sort-button::after { content: " \2193"; }
+.inline-codes { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 0.7rem; }
+.inline-codes li { margin: 0; }
 tr[hidden] { display: none; }
 td a { font-weight: 600; }
 
@@ -686,7 +688,7 @@ td.heat a { color: var(--ink); }
   .filters-ratings { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
   .filters-ratings .checks,
   .filters-ratings .filter-actions { grid-column: 1 / -1; }
-  .filter-row { grid-template-columns: 1.4fr 1fr 0.8fr; align-items: end; }
+  .filter-row { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); align-items: end; }
   .facts { grid-template-columns: 1fr 1fr; }
   .decoder-form { display: grid; grid-template-columns: 1fr auto; gap: 0.7rem; align-items: end; }
   .sidewall-layout { grid-template-columns: 11rem 1fr; }

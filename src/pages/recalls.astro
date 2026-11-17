@@ -26,6 +26,7 @@ import {
   sizesNote,
   tinParagraphs,
 } from "../lib/recall-list.js";
+import { recallsHubProse } from "../lib/hub-quality.js";
 import { clampText } from "../lib/text.js";
 import { whoMakesPages } from "../lib/who-makes-pages.js";
 
@@ -38,6 +39,7 @@ const report = buildRecallList(recallRows, {
   ratingRecallRows: countRatingRecallRows(catalog),
 });
 const answers = recallListAnswer(report);
+const hubProse = recallsHubProse(report);
 const faqs = recallListFaqs(report);
 const title = recallsTitle(report.source);
 const description = clampText(answers.join(" "));
@@ -120,6 +122,11 @@ const sortColumns = [
           }
         </tbody>
       </table>
+    </div>
+
+    <div class="prose">
+      <h2 id="reading">How to read this index</h2>
+      {hubProse.map((paragraph) => <p>{paragraph}</p>)}
     </div>
 
     <h2 id="campaigns">Campaign rows</h2>

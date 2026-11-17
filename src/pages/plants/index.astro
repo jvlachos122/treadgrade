@@ -6,12 +6,17 @@ import SourceLine from "../../components/SourceLine.astro";
 import { plantsIndexAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
 import { formatNumber } from "../../lib/format.js";
-import { countryHubs, manufacturerGroups } from "../../lib/plant-hubs.js";
+import { MAKER_COUNTRY_DEFS, MAKER_COUNTRY_MIN } from "../../lib/plant-groups.js";
+import { plantCaptions, plantHubFaqs, plantHubModel, plantHubProse, hubFaqLd } from "../../lib/hub-quality.js";
 import { dataset } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
 const answers = plantsIndexAnswer(catalog);
 const description = clampText(answers.join(" "));
+const model = plantHubModel(catalog.plants, catalog.countries, MAKER_COUNTRY_DEFS, MAKER_COUNTRY_MIN);
+const captions = plantCaptions(catalog.meta.verifiedAt);
+const prose = plantHubProse(model);
+const faqs = plantHubFaqs(model);
 const jsonLd = [
   dataset({
     name: "NHTSA tire plant codes",
@@ -21,6 +26,7 @@ const jsonLd = [
     isBasedOn: catalog.meta.plants.source,
     keywords: ["DOT", "plant code", "NHTSA"],
   }),
+  hubFaqLd(faqs),
 ];
 const crumbs = [
   { href: "/", label: "Home" },
@@ -35,18 +41,89 @@ const statuses = ["Active", "Closed", "Not stated"];
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <p class="lede">
-      {formatNumber(catalog.stats.plants)} plant records from NHTSA's equipment plant-code list.
-      Search by code, a former two-symbol code, the company name, or the city.
-      The status field can be filtered as stored. Active is not a list of plants operating today.
+      {formatNumber(model.plantCount)} plant records from NHTSA's equipment plant-code list.
+      The maker and country tables count those records. The plant table lists every code, and the menus hide rows in the browser without dropping them from the file.
     </p>
+
+    <h2 id="makers">Counts by maker</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>{captions.makers}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Maker</th>
+            <th scope="col">Registered codes</th>
+            <th scope="col">Countries</th>
+            <th scope="col">Where to open the codes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            model.makers.map((maker) => (
+              <tr>
+                <td><a href={maker.crossUrl}>{maker.label}</a></td>
+                <td class="num">{formatNumber(maker.count)}</td>
+                <td class="num">{formatNumber(maker.countries)}</td>
+                <td>
+                  {maker.hubUrl ? <a href={maker.hubUrl}>Code list</a> : null}
+                  {maker.hubUrl ? " · " : null}
+                  <a href={maker.crossUrl}>By country</a>
+                </td>
+              </tr>
+            ))
+          }
+          <tr>
+            <td>Other registered names</td>
+            <td class="num">{formatNumber(model.otherCount)}</td>
+            <td class="num">—</td>
+            <td>In the plant table below</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="countries">Counts by country</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>{captions.countries}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Country</th>
+            <th scope="col">Registered codes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            model.countries.map((country) => (
+              <tr>
+                <td>{country.url ? <a href={country.url}>{country.label}</a> : country.label}</td>
+                <td class="num">{formatNumber(country.count)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="codes">Plant codes</h2>
     <PlantNote />
     <p>
-      <a href="/plants/by-maker/">Registered plant codes by maker and country</a> counts name groups by country.
+      <a href="/plants/by-maker/">Registered plant codes by maker and country</a> splits the published name groups by country.
+      Search by code, a former two-symbol code, the company name, or the city.
+      The status field can be filtered as stored. Active is not a list of plants operating today.
     </p>
     <div class="filter-row">
       <label>
         Code, name, or city
         <input type="search" data-filter-q autocomplete="off" />
+      </label>
+      <label>
+        Maker
+        <select data-filter-maker>
+          <option value="">Any</option>
+          {model.makers.map((maker) => <option value={maker.id}>{maker.label} ({formatNumber(maker.count)})</option>)}
+          {model.otherCount ? <option value="other">Other registered names ({formatNumber(model.otherCount)})</option> : null}
+        </select>
       </label>
       <label>
         Country
@@ -64,9 +141,12 @@ const statuses = ["Active", "Closed", "Not stated"];
       </label>
     </div>
     <p class="status" data-filter-status-text aria-live="polite">{formatNumber(catalog.stats.plants)} plants.</p>
+    <noscript>
+      <p>Maker, country, and status filters run in the browser. Without JavaScript the plant table lists every record, and the count tables above stay as they are.</p>
+    </noscript>
     <div class="table-wrap">
-      <table>
-        <caption>NHTSA equipment plant codes</caption>
+      <table data-plant-table>
+        <caption>{captions.plants}</caption>
         <thead>
           <tr>
             <th scope="col">Code</th>
@@ -82,6 +162,7 @@ const statuses = ["Active", "Closed", "Not stated"];
               <tr
                 data-search={`${plant.code} ${plant.oldCode} ${plant.name} ${plant.city} ${plant.country} ${plant.countryRaw}`.toLowerCase()}
                 data-country={plant.countryKey}
+                data-maker={model.makerByCode.get(plant.code)}
                 data-status={plant.status || "Not stated"}
               >
                 <td class="num code">
@@ -101,36 +182,22 @@ const statuses = ["Active", "Closed", "Not stated"];
       Former codes are not separate pages. They are listed on the plant record that carries that code, and in this table.
       <a href="/guides/dot-code/">How a plant code fits into a DOT number</a>
       · <a href="/guides/rebadged-tires/">What a plant code can prove about who made a tire</a>
-      · <a href="/guides/tire-date-code/">How to read the date code</a>.
+      · <a href="/guides/tire-date-code/">How to read the date code</a>
+      · <a href="/plants/manufacturer/">Manufacturer name groups</a>
+      · <a href="/plants/country/">Plant codes by country</a>.
     </p>
-    <h2 id="manufacturers">Manufacturer name groups</h2>
-    <p>
-      These groups keep a record when the registrant name contains the manufacturer's name.
-      A group is not that company's own factory list.
-    </p>
-    <ul>
+    <div class="prose">
+      {prose.map((paragraph) => <p>{paragraph}</p>)}
+      <h2>Questions</h2>
       {
-        manufacturerGroups.map((group) => (
-          <li>
-            <a href={group.url}>{group.linkLabel}</a> ({formatNumber(group.count)} records)
-          </li>
+        faqs.map((item) => (
+          <>
+            <h3>{item.name}</h3>
+            <p>{item.text}</p>
+          </>
         ))
       }
-    </ul>
-    <h2 id="countries">Countries</h2>
-    <p>
-      Country strings that differ by letter case, spelling, or an alias such as United States (USA) are one country.
-      <a href="/plants/country/">The country table</a> lists every stored string.
-    </p>
-    <ul>
-      {
-        countryHubs.map((country) => (
-          <li>
-            <a href={country.url}>{country.label}</a> ({formatNumber(country.count)})
-          </li>
-        ))
-      }
-    </ul>
+    </div>
   </div>
 </Base>
 

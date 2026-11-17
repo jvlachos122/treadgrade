@@ -6,6 +6,14 @@ import SourceLine from "../components/SourceLine.astro";
 import { ratingsAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
+import {
+  hubFaqLd,
+  ratingsCaptions,
+  ratingsHubFacts,
+  ratingsHubFaqs,
+  ratingsHubProse,
+} from "../lib/hub-quality.js";
+import { LONG_TREADWEAR_PATH } from "../lib/long-treadwear.js";
 import { flattenGradeRows, gradeTableSummary, ratingsTableHref } from "../lib/ratings-table.js";
 import { dataset } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
@@ -14,6 +22,10 @@ const answers = ratingsAnswer(catalog);
 const description = clampText(answers.join(" "));
 const gradeRows = flattenGradeRows(catalog);
 const summary = gradeTableSummary(gradeRows);
+const facts = ratingsHubFacts(catalog.lines);
+const captions = ratingsCaptions(catalog.meta.verifiedAt);
+const prose = ratingsHubProse(facts);
+const faqs = ratingsHubFaqs(facts);
 const verified = formatVerified(catalog.meta.verifiedAt);
 const jsonLd = [
   dataset({
@@ -24,6 +36,7 @@ const jsonLd = [
     isBasedOn: catalog.meta.ratings.source,
     keywords: ["UTQG", "treadwear", "traction", "temperature", "NHTSA"],
   }),
+  hubFaqLd(faqs),
 ];
 const crumbs = [
   { href: "/", label: "Home" },
@@ -33,11 +46,190 @@ const exampleHref = ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], te
 ---
 
 <Base title="UTQG tire grades" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
-  <div class="wrap" data-ratings data-source={catalog.meta.ratings.source} data-verified={catalog.meta.verifiedAt}>
+  <div class="wrap">
     <h1>UTQG tire grades</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
     <Disclaimer />
+    <div data-ratings-summary>
+      <div class="table-wrap">
+        <table>
+          <caption>{captions.overview}</caption>
+          <tbody>
+            <tr>
+              <th scope="row">Grade rows</th>
+              <td class="num">{formatNumber(facts.rowCount)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Tire lines</th>
+              <td class="num">{formatNumber(facts.lineCount)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Brands</th>
+              <td class="num">{formatNumber(facts.brandCount)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Usable treadwear rows</th>
+              <td class="num">{formatNumber(facts.usableWear)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Median treadwear</th>
+              <td class="num">{facts.medianText}</td>
+            </tr>
+            <tr>
+              <th scope="row">Lowest usable treadwear</th>
+              <td class="num">{facts.min == null ? "Not reported" : formatNumber(facts.min)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Highest usable treadwear</th>
+              <td class="num">{facts.max == null ? "Not reported" : formatNumber(facts.max)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <form hidden data-slice-form class="filter-row">
+        <label>
+          Treadwear band
+          <select name="band">
+            <option value="">Any band</option>
+            {facts.bands.map((band) => <option value={String(band.start)}>{band.label}</option>)}
+          </select>
+        </label>
+        <label>
+          Traction
+          <select name="traction">
+            <option value="">Any letter</option>
+            <option value="AA">AA</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>
+          Temperature
+          <select name="temp">
+            <option value="">Any letter</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <button type="submit">Count this slice</button>
+      </form>
+      <p data-slice-count>The tables below count the full file. A browser that runs the slice control can recount a band and a letter together.</p>
+      <p><a data-slice-link href="/ratings/#ratings-table">Open the matching rows in the table</a></p>
+      <script is:inline type="application/json" data-slice-json set:html={JSON.stringify(facts.slice)}></script>
+      <div class="table-wrap">
+        <table>
+          <caption>{captions.bands}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Treadwear band</th>
+              <th scope="col">Grade rows</th>
+              <th scope="col">Share of usable rows</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              facts.bands.map((band) => (
+                <tr>
+                  <td><a href={band.href}>{band.label}</a></td>
+                  <td class="num">{formatNumber(band.count)}</td>
+                  <td class="num">{band.share}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <caption>{captions.traction}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Traction</th>
+              <th scope="col">Grade rows</th>
+              <th scope="col">Share of grade rows</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              facts.traction.items.map((item) => (
+                <tr>
+                  <td><a href={item.href}>{item.grade}</a></td>
+                  <td class="num">{formatNumber(item.count)}</td>
+                  <td class="num">{item.share}</td>
+                </tr>
+              ))
+            }
+            {
+              facts.traction.other ? (
+                <tr>
+                  <td>Other</td>
+                  <td class="num">{formatNumber(facts.traction.other.count)}</td>
+                  <td class="num">{facts.traction.other.share}</td>
+                </tr>
+              ) : null
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <caption>{captions.temperature}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Temperature</th>
+              <th scope="col">Grade rows</th>
+              <th scope="col">Share of grade rows</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              facts.temperature.items.map((item) => (
+                <tr>
+                  <td><a href={item.href}>{item.grade}</a></td>
+                  <td class="num">{formatNumber(item.count)}</td>
+                  <td class="num">{item.share}</td>
+                </tr>
+              ))
+            }
+            {
+              facts.temperature.other ? (
+                <tr>
+                  <td>Other</td>
+                  <td class="num">{formatNumber(facts.temperature.other.count)}</td>
+                  <td class="num">{facts.temperature.other.share}</td>
+                </tr>
+              ) : null
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <a href="/guides/treadwear-numbers/">How treadwear numbers are counted</a>
+        {" · "}
+        <a href="/guides/traction-grades/">What traction grades mean</a>
+        {" · "}
+        <a href={LONG_TREADWEAR_PATH}>Treadwear of 700 or above with traction A or AA and temperature A</a>
+        {" · "}
+        <a href={exampleHref}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>
+      </p>
+      <div class="prose">
+        {prose.map((paragraph) => <p>{paragraph}</p>)}
+        <h2>Questions</h2>
+        {
+          faqs.map((item) => (
+            <>
+              <h3>{item.name}</h3>
+              <p>{item.text}</p>
+            </>
+          ))
+        }
+      </div>
+    </div>
     <p>
       In the NHTSA UTQG file verified {verified} (UTC), {formatNumber(summary.sizeSpecific)} of {formatNumber(summary.rows)} grade rows are size-specific and {formatNumber(summary.allSizes)} say all sizes.
       A row is all sizes only when the size text, with extra spaces collapsed, is “all”, “all size”, or “all sizes”. Any other text, including “all sizes except” and a named size, is size-specific. The size text is shown as published.
@@ -58,109 +250,116 @@ const exampleHref = ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], te
       The tool keeps the chosen lines in the address so the comparison can be shared.
       A shared address points back at the tool page. Example comparisons are linked from the tool.
     </p>
-    <form class="filters filters-ratings" action="/ratings/" method="get">
-      <label>
-        Brand or tire line
-        <input type="search" name="q" autocomplete="off" />
-      </label>
-      <label>
-        Treadwear at least
-        <input type="number" name="wearMin" min="0" inputmode="numeric" />
-      </label>
-      <label>
-        Treadwear at most
-        <input type="number" name="wearMax" min="0" inputmode="numeric" />
-      </label>
-      <label>
-        Size text
-        <select name="size">
-          <option value="">Any size text</option>
-          <option value="specific">Size-specific grade</option>
-          <option value="all">All sizes</option>
-        </select>
-      </label>
-      <label>
-        Data quality
-        <select name="quality">
-          <option value="">Flag invalid and suspect rows</option>
-          <option value="hide">Hide invalid and suspect rows</option>
-          <option value="flagged">Only flagged rows</option>
-          <option value="invalid">Only invalid rows</option>
-          <option value="suspect">Only suspect rows</option>
-        </select>
-      </label>
-      <label>
-        Sort
-        <select name="sort">
-          <option value="brand">Brand A–Z</option>
-          <option value="wear-desc">Treadwear high–low</option>
-          <option value="wear-asc">Treadwear low–high</option>
-          <option value="traction">Traction high–low</option>
-          <option value="temp">Temperature high–low</option>
-        </select>
-      </label>
-      <fieldset class="checks">
-        <legend>Traction · <a href="/guides/traction-grades/">What AA, A, B, and C mean</a></legend>
-        <label><input type="checkbox" name="traction" value="AA" /> AA</label>
-        <label><input type="checkbox" name="traction" value="A" /> A</label>
-        <label><input type="checkbox" name="traction" value="B" /> B</label>
-        <label><input type="checkbox" name="traction" value="C" /> C</label>
-      </fieldset>
-      <fieldset class="checks">
-        <legend>Temperature</legend>
-        <label><input type="checkbox" name="temp" value="A" /> A</label>
-        <label><input type="checkbox" name="temp" value="B" /> B</label>
-        <label><input type="checkbox" name="temp" value="C" /> C</label>
-      </fieldset>
-      <div class="filter-actions">
-        <button type="submit">Apply</button>
-        <button type="button" class="button-ghost" data-csv disabled>Download these rows as CSV</button>
-        <button type="button" class="button-ghost" data-clear>Clear filters</button>
+    <div data-ratings data-source={catalog.meta.ratings.source} data-verified={catalog.meta.verifiedAt}>
+      <form class="filters filters-ratings" action="/ratings/" method="get">
+        <label>
+          Brand or tire line
+          <input type="search" name="q" autocomplete="off" />
+        </label>
+        <label>
+          Treadwear at least
+          <input type="number" name="wearMin" min="0" inputmode="numeric" />
+        </label>
+        <label>
+          Treadwear at most
+          <input type="number" name="wearMax" min="0" inputmode="numeric" />
+        </label>
+        <label>
+          Size text
+          <select name="size">
+            <option value="">Any size text</option>
+            <option value="specific">Size-specific grade</option>
+            <option value="all">All sizes</option>
+          </select>
+        </label>
+        <label>
+          Data quality
+          <select name="quality">
+            <option value="">Flag invalid and suspect rows</option>
+            <option value="hide">Hide invalid and suspect rows</option>
+            <option value="flagged">Only flagged rows</option>
+            <option value="invalid">Only invalid rows</option>
+            <option value="suspect">Only suspect rows</option>
+          </select>
+        </label>
+        <label>
+          Sort
+          <select name="sort">
+            <option value="brand">Brand A–Z</option>
+            <option value="wear-desc">Treadwear high–low</option>
+            <option value="wear-asc">Treadwear low–high</option>
+            <option value="traction">Traction high–low</option>
+            <option value="temp">Temperature high–low</option>
+          </select>
+        </label>
+        <fieldset class="checks">
+          <legend>Traction · <a href="/guides/traction-grades/">What AA, A, B, and C mean</a></legend>
+          <label><input type="checkbox" name="traction" value="AA" /> AA</label>
+          <label><input type="checkbox" name="traction" value="A" /> A</label>
+          <label><input type="checkbox" name="traction" value="B" /> B</label>
+          <label><input type="checkbox" name="traction" value="C" /> C</label>
+        </fieldset>
+        <fieldset class="checks">
+          <legend>Temperature</legend>
+          <label><input type="checkbox" name="temp" value="A" /> A</label>
+          <label><input type="checkbox" name="temp" value="B" /> B</label>
+          <label><input type="checkbox" name="temp" value="C" /> C</label>
+        </fieldset>
+        <div class="filter-actions">
+          <button type="submit">Apply</button>
+          <button type="button" class="button-ghost" data-csv disabled>Download these rows as CSV</button>
+          <button type="button" class="button-ghost" data-clear>Clear filters</button>
+        </div>
+      </form>
+      <p class="status" data-status aria-live="polite">Loading the ratings table…</p>
+      <noscript>
+        <p>
+          The combined table needs JavaScript. The counts above do not. Every brand is linked from the <a href="/brands/">brand index</a>.
+          If a tire is not in the list, see <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
+        </p>
+      </noscript>
+      <div class="table-wrap">
+        <table id="ratings-table">
+          <caption>NHTSA UTQG ratings verified {verified} (UTC).</caption>
+          <thead>
+            <tr>
+              <th scope="col">Brand</th>
+              <th scope="col">Tire line</th>
+              <th scope="col">Size series</th>
+              <th scope="col">Size flag</th>
+              <th scope="col">Treadwear</th>
+              <th scope="col">Traction</th>
+              <th scope="col">Temperature</th>
+              <th scope="col">Data quality</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-    </form>
-    <p class="status" data-status aria-live="polite">Loading the ratings table…</p>
-    <noscript>
-      <p>
-        The combined table needs JavaScript. Every brand is linked from the <a href="/brands/">brand index</a>.
-        If a tire is not in the list, see <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
+      <div class="pager">
+        <button type="button" class="button-ghost" data-prev>Previous</button>
+        <span data-page>Page 1</span>
+        <button type="button" class="button-ghost" data-next>Next</button>
+      </div>
+      <p class="small muted">
+        Each row links to the tire-line page on this site. A value outside the usual letters is shown as published.
+        <a href="/methodology/known-errors/#invalid-fields">Known errors in this file</a>.
+        <a href="/guides/utqg-grades/">Grade definitions</a>.
+        <a href="/guides/traction-grades/">What traction grades mean</a>.
+        <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+        <a href={exampleHref}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>.
+        <a href="/lists/highest-treadwear/">Highest treadwear grades NHTSA lists</a>.
+        <a href="/lists/long-treadwear-high-traction/">Treadwear of 700 or above with traction A or AA and temperature A</a>.
       </p>
-    </noscript>
-    <div class="table-wrap">
-      <table id="ratings-table">
-        <caption>NHTSA UTQG ratings verified {verified} (UTC).</caption>
-        <thead>
-          <tr>
-            <th scope="col">Brand</th>
-            <th scope="col">Tire line</th>
-            <th scope="col">Size series</th>
-            <th scope="col">Size flag</th>
-            <th scope="col">Treadwear</th>
-            <th scope="col">Traction</th>
-            <th scope="col">Temperature</th>
-            <th scope="col">Data quality</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
     </div>
-    <div class="pager">
-      <button type="button" class="button-ghost" data-prev>Previous</button>
-      <span data-page>Page 1</span>
-      <button type="button" class="button-ghost" data-next>Next</button>
-    </div>
-    <p class="small muted">
-      Each row links to the tire-line page on this site. A value outside the usual letters is shown as published.
-      <a href="/methodology/known-errors/#invalid-fields">Known errors in this file</a>.
-      <a href="/guides/utqg-grades/">Grade definitions</a>.
-      <a href="/guides/traction-grades/">What traction grades mean</a>.
-      <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
-      <a href={exampleHref}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>.
-      <a href="/lists/highest-treadwear/">Highest treadwear grades NHTSA lists</a>.
-      <a href="/lists/long-treadwear-high-traction/">Treadwear of 700 or above with traction A or AA and temperature A</a>.
-    </p>
   </div>
 </Base>
 
+<script>
+  import { initRatingsSlice } from "../scripts/ratings-slice.js";
+  const summaryRoot = document.querySelector("[data-ratings-summary]");
+  if (summaryRoot) initRatingsSlice(summaryRoot);
+</script>
 <script>
   import { initRatings } from "../scripts/ratings.js";
   const root = document.querySelector("[data-ratings]");

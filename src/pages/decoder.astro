@@ -6,18 +6,20 @@ import { decoderAnswer, sourceEntries } from "../lib/answers.js";
 import { catalog } from "../lib/catalog.js";
 import { countryByKey } from "../lib/plant-hubs.js";
 import { formatNumber, formatVerified } from "../lib/format.js";
+import { buildDecoderExamples, decoderHubFaqs, decoderHubProse, hubFaqLd } from "../lib/hub-quality.js";
 import { pageUrl, publisherOrg } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
 import { plantRecordCaveat } from "../lib/tin.js";
 
-const description = clampText(
-  "The last four digits of a DOT tire code are the week and the year. 0109 is January 4–10, 2009. A pre-2000 date is three digits, with no decade.",
-);
+const answers = decoderAnswer(catalog);
+const decoded = buildDecoderExamples(catalog.plants, new Date());
+const prose = decoderHubProse(decoded);
+const faqs = decoderHubFaqs(decoded);
+const description = clampText(answers.join(" "));
 const crumbs = [
   { href: "/", label: "Home" },
   { href: "/decoder/", label: "DOT decoder" },
 ];
-const answers = decoderAnswer(catalog);
 const jsonLd = [
   {
     "@type": "WebApplication",
@@ -30,6 +32,7 @@ const jsonLd = [
     publisher: publisherOrg,
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   },
+  hubFaqLd(faqs),
 ];
 const shirakawa = catalog.getPlant("1u2");
 const formerCount = catalog.plants.filter((plant) => plant.oldCode).length;
@@ -40,11 +43,131 @@ const shirakawaPlace = shirakawa
 const shirakawaCountry = shirakawa?.countryKey ? countryByKey.get(shirakawa.countryKey) : null;
 ---
 
-<Base title="How to read a tire date code" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+<Base title="DOT tire code decoder" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap" data-decoder>
-    <h1>How to read a tire date code</h1>
+    <h1>DOT tire code decoder</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
+    <form class="decoder-form" action="/decoder/" method="get">
+      <label>
+        DOT code or TIN
+        <input name="tin" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" inputmode="text" />
+      </label>
+      <button type="submit">Decode</button>
+      <label class="decoder-check">
+        <input name="triangle" type="checkbox" />
+        <span>A triangle is molded after a three-digit date</span>
+      </label>
+    </form>
+    <noscript>
+      <p>
+        Decoding a code you type runs in this browser. The worked examples below do not. Each row already names the plant, the week and year, and the age of that week on {decoded.asOfLabel} (UTC).
+      </p>
+    </noscript>
+    <div data-output aria-live="polite"></div>
+
+    <h2 id="examples">Worked examples</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>
+          Worked DOT readings from plant codes in NHTSA's list, verified {verified} (UTC). Six middle symbols, when shown, are a stand-in. Age is counted on {decoded.asOfLabel} (UTC). The box above uses the date in your browser.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Code typed</th>
+            <th scope="col">Plant</th>
+            <th scope="col">Week and year</th>
+            <th scope="col">Age on {decoded.asOfLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            decoded.examples.map((example) => (
+              <tr>
+                <td>
+                  <span class="code">{example.tin}</span>
+                  <button type="button" class="button-ghost" data-example={example.tin}>Read in the tool</button>
+                </td>
+                <td>
+                  <a href={example.plantUrl}><span class="code">{example.currentCode}</span></a>
+                  {example.plantCode === example.currentCode ? null : (
+                    <>
+                      {" "}
+                      from former code <span class="code">{example.plantCode}</span>
+                    </>
+                  )}
+                  <br />
+                  {example.plantName}
+                  {example.place ? `, ${example.place}` : ""}. {example.layoutLabel}. {example.note}
+                </td>
+                <td>
+                  Week {example.week} of {example.year}: {example.startLabel} through {example.endLabel}.
+                </td>
+                <td>{example.ageText}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="limits">What the code can't tell you</h2>
+    <p>
+      A plant match names the registrant stored on that code. It does not name the brand on the sidewall, and it does not say whether the tire is in a recall.
+      <a href="/guides/rebadged-tires/">What a DOT code can prove about who made a tire</a> explains that limit.
+      <a href="/recalls/">Tire recalls</a> lists campaigns from NHTSA's flat file. That page is not a TIN check.
+    </p>
+    <div class="prose">
+      {prose.map((paragraph) => <p>{paragraph}</p>)}
+      <h2>Questions</h2>
+      {
+        faqs.map((item) => (
+          <>
+            <h3>{item.name}</h3>
+            <p>{item.text}</p>
+          </>
+        ))
+      }
+    </div>
+
+    <h2>Optional dates and a calendar file</h2>
+    <div class="decoder-form">
+    <label class="decoder-span">
+      Purchase or install date, optional
+      <input id="purchased" type="date" />
+    </label>
+    <p class="small decoder-span">
+      Manufacturers stamp a production week, not a single day, so an age is a range.
+      A DOT date is not an ISO week: ISO weeks start on Monday, and this site uses the Sunday–Saturday week in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>.
+      The optional date is a UTC calendar day, the same clock as the production week.
+      <a href="/guides/tire-age/">How old is too old</a> quotes published positions. This page calculates dates. It does not decide whether a tire should stay in service.
+    </p>
+    <fieldset class="decoder-span decoder-remind">
+      <legend>Calendar file from the manufacture week</legend>
+      <p class="small">The file is built in this browser. Nothing is saved or sent. 5, 6, and 10 years are separate choices, counted from the production week.</p>
+      <div class="button-row">
+        <button type="button" class="button-ghost" data-remind="5">5 years</button>
+        <button type="button" class="button-ghost" data-remind="6">6 years</button>
+        <button type="button" class="button-ghost" data-remind="10">10 years</button>
+      </div>
+      <p class="small" data-remind-status>Decode a date code, then choose 5, 6, or 10 years if you want a calendar file.</p>
+    </fieldset>
+    </div>
+    <div class="button-row">
+      <button type="button" class="button-ghost" data-example="1U2">Example: plant code 1U2</button>
+      <button type="button" class="button-ghost" data-example="U2">Example: former code U2</button>
+      <button type="button" class="button-ghost" data-example="1U2HD">Example: partial code 1U2HD</button>
+      <button type="button" class="button-ghost" data-example="0109">Example: date code 0109</button>
+      <button type="button" class="button-ghost" data-example="329">Example: three-digit date 329</button>
+      <button type="button" class="button-ghost" data-example="329" data-triangle="1">Example: 329 with a triangle</button>
+    </div>
+    <p class="small muted">
+      0109 is the week in the regulation's example (the first full week of 2009), not a claim about a specific tire.
+      329 shows a three-digit date. The triangle box uses the 1990s mark described below.
+      <a href="/guides/tire-date-code/">Read the date code</a> · <a href="/guides/dot-code/">Read the full layout</a> · <a href="/guides/tire-age/">How old is too old</a>.
+    </p>
+
+    <h2>How the number is laid out</h2>
     <p class="lede">
       The last four digits are the date code: two digits for the week, then two digits for the year.
       In the example in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>, 0109 is the week of Sunday, January 4, 2009 through Saturday, January 10, 2009.
@@ -60,60 +183,6 @@ const shirakawaCountry = shirakawa?.countryKey ? countryByKey.get(shirakawa.coun
       Week, then year. The chips use plant code 1U2 from this list and a stand-in manufacturer code. They are not one tire's number.
       <a href="/guides/tire-date-code/">The date-code guide</a> diagrams the split.
     </p>
-    <form class="decoder-form" action="/decoder/" method="get">
-      <label>
-        DOT code or TIN
-        <input name="tin" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" inputmode="text" />
-      </label>
-      <button type="submit">Decode</button>
-      <label class="decoder-check">
-        <input name="triangle" type="checkbox" />
-        <span>A triangle is molded after a three-digit date</span>
-      </label>
-      <label class="decoder-span">
-        Purchase or install date, optional
-        <input id="purchased" type="date" />
-      </label>
-      <p class="small decoder-span">
-        Manufacturers stamp a production week, not a single day, so an age is a range.
-        A DOT date is not an ISO week: ISO weeks start on Monday, and this site uses the Sunday–Saturday week in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>.
-        The optional date is a UTC calendar day, the same clock as the production week.
-        <a href="/guides/tire-age/">How old is too old</a> quotes published positions. This page calculates dates. It does not decide whether a tire should stay in service.
-      </p>
-      <fieldset class="decoder-span decoder-remind">
-        <legend>Calendar file from the manufacture week</legend>
-        <p class="small">The file is built in this browser. Nothing is saved or sent. 5, 6, and 10 years are separate choices, counted from the production week.</p>
-        <div class="button-row">
-          <button type="button" class="button-ghost" data-remind="5">5 years</button>
-          <button type="button" class="button-ghost" data-remind="6">6 years</button>
-          <button type="button" class="button-ghost" data-remind="10">10 years</button>
-        </div>
-        <p class="small" data-remind-status>Decode a date code, then choose 5, 6, or 10 years if you want a calendar file.</p>
-      </fieldset>
-    </form>
-    <div class="button-row">
-      <button type="button" class="button-ghost" data-example="1U2">Example: plant code 1U2</button>
-      <button type="button" class="button-ghost" data-example="U2">Example: former code U2</button>
-      <button type="button" class="button-ghost" data-example="1U2HD">Example: partial code 1U2HD</button>
-      <button type="button" class="button-ghost" data-example="0109">Example: date code 0109</button>
-      <button type="button" class="button-ghost" data-example="329">Example: three-digit date 329</button>
-      <button type="button" class="button-ghost" data-example="329" data-triangle="1">Example: 329 with a triangle</button>
-    </div>
-    <p class="small muted">
-      0109 is the week in the regulation's example (the first full week of 2009), not a claim about a specific tire.
-      329 shows a three-digit date. The triangle box uses the 1990s mark described below.
-      <a href="/guides/tire-date-code/">Read the date code</a> · <a href="/guides/dot-code/">Read the full layout</a> · <a href="/guides/tire-age/">How old is too old</a>.
-    </p>
-    <noscript>
-      <p>
-        Looking up the code you type runs in your browser and needs JavaScript. The format on this page, the plant record below, the
-        <a href="/guides/tire-date-code/">date-code guide</a>, and the
-        <a href="/guides/dot-code/">DOT guide</a> do not.
-      </p>
-    </noscript>
-    <div data-output aria-live="polite"></div>
-
-    <h2>How the number is laid out</h2>
     <p>
       The letters DOT in front of the number are a certification mark. They are not the plant code.
       The symbol rules are in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>.

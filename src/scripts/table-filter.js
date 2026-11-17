@@ -1,8 +1,9 @@
 export function initTableFilter(root) {
   const input = root.querySelector("[data-filter-q]");
   const country = root.querySelector("[data-filter-country]");
+  const maker = root.querySelector("[data-filter-maker]");
   const status = root.querySelector("[data-filter-status]");
-  const table = root.querySelector("table");
+  const table = root.querySelector("[data-plant-table]") || root.querySelector("table");
   const output = root.querySelector("[data-filter-status-text]");
   if (!input || !table || !output) return;
   const rows = [...table.tBodies[0].rows];
@@ -10,12 +11,14 @@ export function initTableFilter(root) {
   function apply() {
     const query = input.value.trim().toLowerCase();
     const countryValue = country?.value || "";
+    const makerValue = maker?.value || "";
     const statusValue = status?.value || "";
     let shown = 0;
     for (const row of rows) {
       const visible =
         (!query || row.dataset.search.includes(query)) &&
         (!countryValue || row.dataset.country === countryValue) &&
+        (!makerValue || row.dataset.maker === makerValue) &&
         (!statusValue || row.dataset.status === statusValue);
       row.hidden = !visible;
       if (visible) shown += 1;
@@ -25,6 +28,7 @@ export function initTableFilter(root) {
 
   input.addEventListener("input", apply);
   country?.addEventListener("change", apply);
+  maker?.addEventListener("change", apply);
   status?.addEventListener("change", apply);
 }
 

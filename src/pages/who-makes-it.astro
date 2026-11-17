@@ -9,6 +9,7 @@ import { nameKey } from "../lib/normalize.js";
 import { recallMeta, recallRows, recallSummary } from "../lib/recall-catalog.js";
 import { formatNameList, nhtsaCampaignUrl, recallStatement } from "../lib/recalls.js";
 import { dataset } from "../lib/structured.js";
+import { whoMakesHubProse } from "../lib/hub-quality.js";
 import { clampText } from "../lib/text.js";
 import { whoMakesPages, whoMakesUnanswered } from "../lib/who-makes-pages.js";
 
@@ -34,6 +35,7 @@ const linkedBrands = tableRows.filter((row) => row.isFirst && row.catalogBrand).
 const sameExample = recallSummary.sameExample;
 const differExample = recallSummary.differExample;
 const answers = whoMakesAnswer(recallSummary);
+const hubProse = whoMakesHubProse(recallSummary);
 const description = clampText(answers.join(" "));
 const crumbs = [
   { href: "/", label: "Home" },
@@ -88,6 +90,8 @@ const jsonLd = [
     </div>
 
     <div class="prose">
+      <h2 id="reading">How to read this index</h2>
+      {hubProse.map((paragraph) => <p>{paragraph}</p>)}
       <h2>How a row is worded</h2>
       <p>
         Each row names the filing company and then says either “made by” that company or “recall filed by” that company, for that recalled line only.

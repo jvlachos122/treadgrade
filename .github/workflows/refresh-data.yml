@@ -32,6 +32,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run fetch
+      - run: node scripts/update-lastmod.mjs
       - run: npm run validate:data
       - run: npm test
       - run: npm run build
@@ -43,7 +44,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/ratings.json data/plants.json data/recalls.json data/meta.json
+          git add data/ratings.json data/plants.json data/recalls.json data/meta.json data/lastmod.json
           if git diff --staged --quiet; then
             echo "No data changes to commit."
           else

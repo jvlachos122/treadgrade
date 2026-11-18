@@ -14,6 +14,7 @@ import { TIRE_AGE_PATH } from "../src/lib/tire-age.js";
 import { RECALLS_PATH } from "../src/lib/recall-list.js";
 import { SIZE_VARIANCE_PATH } from "../src/lib/size-variance.js";
 import { indexablePathSet } from "../src/lib/sitemap.js";
+import { isDay, newestDay, readLedger, sitemapBlocks, utcDay } from "../src/lib/sitemap-lastmod.js";
 import { NO_UTQG_PATH } from "../src/lib/utqg-exempt.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -194,6 +195,33 @@ for (const path of expectedPaths) {
 }
 for (const path of pageLocs) {
   if (!expectedPaths.has(path)) errors.push(`sitemap extra ${path}`);
+}
+
+const ledger = readLedger();
+const today = utcDay();
+const childMax = new Map();
+for (const name of sitemapFiles) {
+  const blocks = sitemapBlocks(readFileSync(join(dist, name), "utf8"));
+  if (name.includes("index")) continue;
+  const days = [];
+  for (const block of blocks) {
+    if (block.kind !== "url") continue;
+    const expected = ledger.urls[block.pathname]?.date || "";
+    if ((block.lastmod || "") !== expected) errors.push(`lastmod ${block.pathname} is ${block.lastmod || "omitted"} expected ${expected || "omitted"}`);
+    if (!block.lastmod) continue;
+    if (!isDay(block.lastmod)) errors.push(`lastmod ${block.pathname} is not a day`);
+    if (block.lastmod > today) errors.push(`lastmod ${block.pathname} is in the future`);
+    days.push(block.lastmod);
+  }
+  childMax.set(name, days.length ? newestDay(days) : "");
+}
+for (const name of sitemapFiles) {
+  if (!name.includes("index")) continue;
+  for (const block of sitemapBlocks(readFileSync(join(dist, name), "utf8"))) {
+    const child = block.pathname.split("/").pop();
+    const expected = childMax.get(child) || "";
+    if ((block.lastmod || "") !== expected) errors.push(`sitemap index lastmod for ${child} is ${block.lastmod || "omitted"} expected ${expected || "omitted"}`);
+  }
 }
 for (const brand of catalog.brands) {
   if (!pageLocs.has(brand.url)) errors.push(`sitemap missing brand ${brand.url}`);

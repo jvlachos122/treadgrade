@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node scripts/prepare-public-data.mjs && astro dev",
-    "prebuild": "node scripts/prepare-public-data.mjs",
+    "prebuild": "node scripts/update-lastmod.mjs && node scripts/prepare-public-data.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "fetch": "node scripts/fetch-data.mjs",

@@ -10,6 +10,7 @@ import { catalog } from "../../lib/catalog.js";
 import { formatNumber, formatUtcDate } from "../../lib/format.js";
 import { plantByCode, plantJsonLd } from "../../lib/plant-hubs.js";
 import { formatNameList, nhtsaCampaignUrl } from "../../lib/recalls.js";
+import { relatedPlants } from "../../lib/related-plants.js";
 import { clampText } from "../../lib/text.js";
 
 export function getStaticPaths() {
@@ -33,6 +34,7 @@ const shared = plant.oldCodeSharedWith
   .map((code) => catalog.getPlant(code.toLowerCase()))
   .filter(Boolean);
 const recallCaptionFilers = extra.filerNames.length ? formatNameList(extra.filerNames) : "";
+const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
 ---
 
 <Base
@@ -186,11 +188,43 @@ const recallCaptionFilers = extra.filerNames.length ? formatNameList(extra.filer
         </>
       ) : null
     }
+    {
+      related.country.length || related.registrant.length ? (
+        <>
+          <h2>Neighbouring codes</h2>
+          <ul>
+            {[...related.country, ...related.registrant].map((item) => (
+              <li>
+                <a href={item.url}>{item.code}</a>
+                {item.city || item.country ? ` — ${[item.city, item.country].filter(Boolean).join(", ")}` : ""}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null
+    }
+    {
+      related.filer.length ? (
+        <>
+          <h2>Other plants for this filer</h2>
+          <ul>
+            {related.filer.map((item) => (
+              <li>
+                <a href={item.url}>{item.code}</a>
+                {item.city || item.country ? ` — ${[item.city, item.country].filter(Boolean).join(", ")}` : ""}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null
+    }
     <HowToFindCode code={plant.code} oldCode={plant.oldCode} />
     <p>
       <a href={`/decoder/?tin=${plant.code}`}>Decode a code that starts with {plant.code}</a>
       · <a href="/guides/tire-date-code/">How to read a tire date code</a>
       · <a href="/guides/dot-code/">How to read a DOT code</a>
+      · <a href="/guides/tire-age/">Tire age</a>
+      · <a href="/guides/rebadged-tires/">What a plant code can prove about who made a tire</a>
       {extra.countryUrl ? <> · <a href={extra.countryUrl}>{plant.country} plant codes</a></> : null}
       {extra.group ? <> · <a href={extra.group.url}>{extra.group.linkLabel} plant codes</a></> : null}
       · <a href="/plants/">All plant codes</a>

@@ -13,6 +13,7 @@ import { REBADGED_TIRES_PATH } from "../src/lib/rebadged-tires.js";
 import { TIRE_AGE_PATH } from "../src/lib/tire-age.js";
 import { RECALLS_PATH } from "../src/lib/recall-list.js";
 import { SIZE_VARIANCE_PATH } from "../src/lib/size-variance.js";
+import { countryHubs } from "../src/lib/plant-hubs.js";
 import { indexablePathSet } from "../src/lib/sitemap.js";
 import { isDay, newestDay, readLedger, sitemapBlocks, utcDay } from "../src/lib/sitemap-lastmod.js";
 import { NO_UTQG_PATH } from "../src/lib/utqg-exempt.js";
@@ -118,6 +119,17 @@ for (const [file, html] of htmlByFile) {
     if (!existsSync(target)) {
       errors.push(`${file}: missing ${url.pathname}`);
       continue;
+    }
+    const targetHtml = htmlByFile.get(resolve(target));
+    const sourcePath = pageUrl(file);
+    if (
+      targetHtml &&
+      /name="robots" content="noindex"/.test(targetHtml) &&
+      !redirectPages.has(url.pathname) &&
+      !redirectPages.has(sourcePath) &&
+      sourcePath !== url.pathname
+    ) {
+      errors.push(`${file}: links to noindex ${url.pathname}`);
     }
     if (url.hash) {
       const id = decodeURIComponent(url.hash.slice(1));
@@ -242,6 +254,90 @@ else {
 
 const robots = readFileSync(join(dist, "robots.txt"), "utf8");
 if (!robots.includes("https://treadgrade.com/sitemap-index.xml")) errors.push("robots.txt sitemap URL");
+
+const htmlByPath = new Map();
+for (const [file, html] of htmlByFile) htmlByPath.set(pageUrl(file), html);
+const noindexPaths = new Set();
+for (const [path, html] of htmlByPath) {
+  if (/name="robots" content="noindex"/.test(html)) noindexPaths.add(path);
+}
+const inbound = new Map();
+for (const [path, html] of htmlByPath) {
+  if (noindexPaths.has(path)) continue;
+  const tags = html.match(/<a\b[^>]*>/gi) || [];
+  for (const tag of tags) {
+    const href = tag.match(/\bhref\s*=\s*"([^"]*)"/i);
+    if (!href) continue;
+    const raw = decodeHtml(href[1]);
+    let target = "";
+    if (raw.startsWith(site)) {
+      try {
+        target = new URL(raw).pathname;
+      } catch {
+        target = "";
+      }
+    } else if (raw.startsWith("/")) {
+      target = raw.split("#")[0].split("?")[0];
+    }
+    if (!target || target === path || noindexPaths.has(target)) continue;
+    if (target !== "/" && !target.endsWith("/")) continue;
+    if (!inbound.has(target)) inbound.set(target, new Set());
+    inbound.get(target).add(path);
+  }
+}
+
+function linkDistribution(urls) {
+  const counts = urls.map((url) => inbound.get(url)?.size || 0).sort((a, b) => a - b);
+  const mid = Math.floor(counts.length / 2);
+  const median = counts.length % 2 === 1 ? counts[mid] : (counts[mid - 1] + counts[mid]) / 2;
+  return { min: counts[0] ?? 0, median, pages: counts.length };
+}
+
+const lineStats = linkDistribution(catalog.lines.map((line) => line.url));
+const plantStats = linkDistribution(catalog.plants.map((plant) => plant.url));
+const shortLines = catalog.lines.filter((line) => (inbound.get(line.url)?.size || 0) < 3);
+const shortPlants = catalog.plants.filter((plant) => (inbound.get(plant.url)?.size || 0) < 3);
+if (shortLines.length) {
+  errors.push(
+    `${shortLines.length} tire lines have fewer than 3 inlinks, e.g. ${shortLines
+      .slice(0, 8)
+      .map((line) => `${line.url} (${inbound.get(line.url)?.size || 0})`)
+      .join(", ")}`,
+  );
+}
+if (shortPlants.length) {
+  errors.push(
+    `${shortPlants.length} plant codes have fewer than 3 inlinks, e.g. ${shortPlants
+      .slice(0, 8)
+      .map((plant) => `${plant.url} (${inbound.get(plant.url)?.size || 0})`)
+      .join(", ")}`,
+  );
+}
+
+const lineGuides = ["/guides/treadwear-numbers/", "/guides/traction-grades/", "/guides/treadwear-vs-traction/"];
+for (const line of catalog.lines) {
+  const html = htmlByPath.get(line.url) || "";
+  for (const href of lineGuides) {
+    if (!html.includes(`href="${href}"`)) errors.push(`${line.url}: missing ${href}`);
+  }
+}
+const plantGuides = ["/guides/tire-age/", "/guides/rebadged-tires/"];
+for (const plant of catalog.plants) {
+  const html = htmlByPath.get(plant.url) || "";
+  for (const href of plantGuides) {
+    if (!html.includes(`href="${href}"`)) errors.push(`${plant.url}: missing ${href}`);
+  }
+}
+const countryIndexHtml = htmlByPath.get("/plants/country/") || "";
+for (const country of countryHubs) {
+  if (country.plants.length !== 1) continue;
+  const only = country.plants[0];
+  if (!countryIndexHtml.includes(`href="${only.url}"`)) errors.push(`/plants/country/: missing sole plant ${only.url}`);
+}
+
+console.log(
+  `Inlinks: tire lines min ${lineStats.min} median ${lineStats.median} (${lineStats.pages} pages); plant codes min ${plantStats.min} median ${plantStats.median} (${plantStats.pages} pages).`,
+);
 
 if (errors.length) {
   console.error(errors.slice(0, 40).join("\n"));

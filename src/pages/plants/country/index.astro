@@ -56,7 +56,17 @@ const crumbs = [
           {
             countryHubs.map((country) => (
               <tr>
-                <td><a href={country.url}>{country.label}</a></td>
+                <td>
+                  <a href={country.url}>{country.label}</a>
+                  {
+                    country.plants.length === 1 ? (
+                      <>
+                        {" "}
+                        (<a href={country.plants[0].url}>{country.plants[0].code}</a>)
+                      </>
+                    ) : null
+                  }
+                </td>
                 <td class="num">{formatNumber(country.count)}</td>
                 <td>{country.rawLabels.join("; ")}</td>
               </tr>

@@ -12,6 +12,7 @@ import { ratingsTableHref } from "../../../lib/ratings-table.js";
 import { recallSummary } from "../../../lib/recall-catalog.js";
 import { lineSizeVariance } from "../../../lib/size-variance.js";
 import { dataset, laterIso } from "../../../lib/structured.js";
+import { relatedLines } from "../../../lib/related-lines.js";
 import { clampText } from "../../../lib/text.js";
 import { buildThinIndex, describeThinLine, isThinLine } from "../../../lib/thin-line.js";
 import RedirectNotice from "../../../components/RedirectNotice.astro";
@@ -61,6 +62,7 @@ const activeMixed = line ? line.rows.some((row) => row.active) && line.rows.some
 const sameName = line ? line.sameName.slice(0, 12) : [];
 const variance = line ? lineSizeVariance(line) : null;
 const answers = line ? lineAnswer(line, report ? { comparison: report.comparisonSentence } : {}) : [];
+const related = line ? relatedLines(line, catalog.lines) : null;
 const description = line ? clampText(answers.join(" ")) : "";
 const sourceKinds = report ? report.sources : ["ratings"];
 const basedOn = sourceKinds.map((kind) => catalog.meta[kind].source);
@@ -199,6 +201,54 @@ const crumbs = line
         </>
       ) : null
     }
+    {
+      related && (related.brand.length || related.exact.length || related.letters.length) ? (
+        <>
+          {
+            related.brand.length ? (
+              <>
+                <h2>Other lines of this brand</h2>
+                <ul>
+                  {related.brand.map((item) => (
+                    <li>
+                      <a href={item.href}>{item.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null
+          }
+          {
+            related.exact.length ? (
+              <>
+                <h2>Same treadwear, traction, and temperature</h2>
+                <ul>
+                  {related.exact.map((item) => (
+                    <li>
+                      <a href={item.href}>{item.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null
+          }
+          {
+            related.letters.length ? (
+              <>
+                <h2>Same traction and temperature</h2>
+                <ul>
+                  {related.letters.map((item) => (
+                    <li>
+                      <a href={item.href}>{item.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null
+          }
+        </>
+      ) : null
+    }
     <CheckPrice query={`${line.brand} ${line.line}`} />
     {
       report ? null : (
@@ -213,6 +263,17 @@ const crumbs = line
         </>
       )
     }
+    <p>
+      {report ? null : (
+        <>
+          <a href="/guides/treadwear-numbers/">Treadwear numbers</a>
+          {" · "}
+        </>
+      )}
+      <a href="/guides/traction-grades/">Traction grades</a>
+      {" · "}
+      <a href="/guides/treadwear-vs-traction/">Treadwear and traction</a>
+    </p>
     <p>
       <a href={compareToolHref([`${line.brandSlug}/${line.lineSlug}`])}>Compare with other tires</a>
       · <a href={`/brands/${line.brandSlug}/`}>All {line.brand} lines</a>

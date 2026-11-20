@@ -1,9 +1,10 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
-import meta from "./data/meta.json";
 import { catalog } from "./src/lib/catalog.js";
 import { packPlantCodes } from "./src/lib/decoder-plants.js";
-import { includeInSitemap } from "./src/lib/sitemap.js";
+import { includeInSitemap, sitemapPathname } from "./src/lib/sitemap.js";
+import { lastmodForPath, rewriteBuiltSitemaps } from "./src/lib/sitemap-lastmod.js";
 
 function decoderPlantCodesPlugin() {
   const virtual = "virtual:decoder-plant-codes";
@@ -20,8 +21,18 @@ function decoderPlantCodesPlugin() {
   };
 }
 
-const verifiedDay = String(meta.verifiedAt || "").slice(0, 10);
 const retired = new Set(catalog.redirects.map((item) => item.from));
+
+function sitemapLastmod() {
+  return {
+    name: "sitemap-lastmod",
+    hooks: {
+      "astro:build:done": ({ dir }) => {
+        rewriteBuiltSitemaps(fileURLToPath(dir));
+      },
+    },
+  };
+}
 
 export default defineConfig({
   site: "https://treadgrade.com",
@@ -36,9 +47,12 @@ export default defineConfig({
     sitemap({
       filter: (page) => includeInSitemap(page, retired),
       serialize(item) {
-        if (verifiedDay) item.lastmod = verifiedDay;
+        const day = lastmodForPath(sitemapPathname(item.url));
+        if (day) item.lastmod = day;
+        else delete item.lastmod;
         return item;
       },
     }),
+    sitemapLastmod(),
   ],
 });

@@ -6,6 +6,7 @@ import Grade from "../../components/Grade.astro";
 import RedirectNotice from "../../components/RedirectNotice.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { brandAnswer, sourceEntries } from "../../lib/answers.js";
+import { PLANT_COUNTRY_READ, plantCountryTable } from "../../lib/brand-countries.js";
 import {
   BRAND_PLANT_RULE,
   BRAND_RECALL_RULE,
@@ -42,6 +43,16 @@ const { redirect = null } = Astro.props;
 const brand = redirect ? null : catalog.getBrand(Astro.params.brand);
 const lines = brand ? catalog.getBrandLines(brand.slug) : [];
 const profile = brand ? brandProfile(brand.slug) : null;
+const plantCountries = profile
+  ? plantCountryTable(
+      brand.name,
+      profile.plants.map((brief) => {
+        const plant = catalog.getPlant(brief.code);
+        if (!plant) throw new Error(`Missing plant ${brief.code} for ${brand.name}`);
+        return plant;
+      }),
+    )
+  : null;
 const filings = brand ? recallSummary.byBrand.get(nameKey(brand.name)) || null : null;
 const whoPage = brand ? whoMakesByKey.get(nameKey(brand.name)) || null : null;
 const plantGroup = brand ? manufacturerGroupForBrand(brand.slug) : null;
@@ -331,6 +342,55 @@ const crumbs = brand
           <a href={plantGroup.url}>{plantGroup.linkLabel} plant codes</a> lists NHTSA plant records whose registrant name matches that group.
           A plant record does not say it makes {brand.name} tires.
         </p>
+      ) : null
+    }
+
+    {
+      plantCountries ? (
+        <>
+          <h2 id="plant-countries">Plant countries</h2>
+          <p>{plantCountries.answer}</p>
+          <p>
+            {PLANT_COUNTRY_READ.before}
+            <a href={PLANT_COUNTRY_READ.href}>{PLANT_COUNTRY_READ.linkLabel}</a>
+            {PLANT_COUNTRY_READ.after}
+            <a href={PLANT_COUNTRY_READ.caveatHref}>{PLANT_COUNTRY_READ.caveatLabel}</a>.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>{plantCountries.caption}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Country</th>
+                  <th scope="col">Plant codes</th>
+                  <th scope="col">Example codes</th>
+                  <th scope="col">Data basis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  plantCountries.countries.map((row) => (
+                    <tr>
+                      <th scope="row"><a href={row.url}>{row.label}</a></th>
+                      <td class="num">{formatNumber(row.count)}</td>
+                      <td>
+                        {
+                          row.examples.map((example, index) => (
+                            <>
+                              {index ? ", " : null}
+                              <a href={example.url}>{example.code}</a>
+                            </>
+                          ))
+                        }
+                      </td>
+                      <td>{row.basis}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : null
     }
 

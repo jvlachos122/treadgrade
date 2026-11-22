@@ -9,6 +9,21 @@ import { formatNumber, formatVerified, percent } from "../../lib/format.js";
 import { filterGradeRows, flattenGradeRows, ratingsTableHref, tireLineCount } from "../../lib/ratings-table.js";
 import { article } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
+import {
+  ACROSS_BRANDS_ID,
+  CROSS_CHECK,
+  ECFR_UTQG_URL,
+  METHODOLOGY_PATH,
+  RATINGS_PATH,
+  SIZE_VARIANCE_PATH,
+  TIRE_REVIEW_URL,
+  acrossBrandsAnswer,
+  acrossBrandsCaption,
+  acrossBrandsIntro,
+  acrossBrandsReport,
+  ecfrRetrievedLabel,
+  tireReviewPublishedLabel,
+} from "../../lib/utqg-across-brands.js";
 
 const { traction, temperature, wearBuckets, rows } = catalog.stats;
 const answers = utqgGuideAnswer(catalog);
@@ -27,6 +42,12 @@ const crumbs = [
   { href: "/guides/utqg-grades/", label: "UTQG grades" },
 ];
 const verified = formatVerified(catalog.meta.verifiedAt);
+const across = acrossBrandsReport(catalog);
+const acrossAnswers = acrossBrandsAnswer();
+const acrossIntro = acrossBrandsIntro(across);
+const acrossCaption = acrossBrandsCaption(catalog.meta.verifiedAt);
+const acrossRetrieved = ecfrRetrievedLabel();
+const tireReviewDate = tireReviewPublishedLabel();
 const highWear = filterGradeRows(flattenGradeRows(catalog), {
   wearMin: "700",
   traction: ["AA", "A"],
@@ -198,6 +219,66 @@ const wearRows = [
     <p>
       The same line can list more than one treadwear or traction grade across the size rows NHTSA published.
       <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
+    </p>
+    <h2 id={ACROSS_BRANDS_ID}>Can you compare UTQG grades across brands?</h2>
+    {acrossAnswers.map((sentence) => <p>{sentence}</p>)}
+    <p>
+      Sources:
+      <a href={ECFR_UTQG_URL}>49 CFR 575.104</a> (eCFR, retrieved {acrossRetrieved}),
+      and <a href={TIRE_REVIEW_URL}>Tire Review, {tireReviewDate}</a>.
+    </p>
+    <p>{acrossIntro}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{acrossCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Brand</th>
+            <th scope="col">Graded lines</th>
+            <th scope="col">Grade rows</th>
+            <th scope="col">Median treadwear</th>
+            <th scope="col">10th–90th treadwear</th>
+            <th scope="col">Traction AA or A</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            across.brands.map((brand) => (
+              <tr>
+                <td>
+                  <a href={brand.url}>{brand.name}</a>
+                </td>
+                <td class="num">{formatNumber(brand.lineCount)}</td>
+                <td class="num">{formatNumber(brand.rowCount)}</td>
+                <td class="num">{brand.medianText}</td>
+                <td class="num">{brand.spanText}</td>
+                <td class="num">{brand.shareText}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <h3>What to cross-check</h3>
+    <ul>
+      {
+        CROSS_CHECK.map((item) => (
+          <li>
+            {item.text}
+            {item.id === "size" ? (
+              <>
+                {" "}
+                <a href={SIZE_VARIANCE_PATH}>Why treadwear can differ by size</a>
+                {" · "}
+                <a href={RATINGS_PATH}>Ratings table</a>.
+              </>
+            ) : null}
+          </li>
+        ))
+      }
+    </ul>
+    <p>
+      <a href={METHODOLOGY_PATH}>How the file is read</a>.
     </p>
     <h2>What a grade page on this site is not</h2>
     <p>

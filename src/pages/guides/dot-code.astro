@@ -4,10 +4,26 @@ import Answer from "../../components/Answer.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { dotGuideAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
+import {
+  ECFR_TIN_URL,
+  FR_PREFIX_NOTE,
+  FR_PREFIX_QUOTE,
+  FR_TIN_URL,
+  METHODOLOGY_CAVEAT_HREF,
+  OLD_TO_NEW_ID,
+  OLD_TO_NEW_LEAD,
+  OLD_TO_NEW_NOSCRIPT,
+  oldToNewCaption,
+  oldToNewFileSentence,
+  oldToNewReport,
+  oldToNewStatus,
+  oldToNewSummary,
+} from "../../lib/dot-old-to-new.js";
 import { article } from "../../lib/structured.js";
 import { clampText } from "../../lib/text.js";
 
 const answers = dotGuideAnswer(catalog);
+const oldToNew = oldToNewReport(catalog.plants);
 const description = clampText(answers.join(" "));
 const jsonLd = [
   article({
@@ -84,10 +100,66 @@ const crumbs = [
       (80 FR 19553).
       Tires made before that date can still show the older code. The plant list includes a former code when NHTSA published one, and the <a href="/decoder/">decoder</a> maps it to the current three-symbol code. The <a href="/plants/">plant directory</a> searches both.
     </p>
+    <p>The preamble of that rule also notes the TIN was adopted in 1971.</p>
+    <h3 id={OLD_TO_NEW_ID}>How a two-symbol code maps to three</h3>
     <p>
-      The same final rule is what lengthened the plant code to three symbols and set the new-tire TIN at 13 symbols.
-      Its preamble also notes the TIN was adopted in 1971.
+      {OLD_TO_NEW_LEAD}
+      Those lengths are <a href={ECFR_TIN_URL}>49 CFR 574.5(a)(1), (a)(2), and (b)(1)</a>, adopted in the
+      <a href={FR_TIN_URL}>April 13, 2015 final rule</a>
+      (80 FR 19553).
     </p>
+    <p>The preamble of that rule says:</p>
+    <blockquote class="quote">
+      <p>{FR_PREFIX_QUOTE}</p>
+    </blockquote>
+    <p>Footnote 2 of the same preamble says:</p>
+    <blockquote class="quote">
+      <p>{FR_PREFIX_NOTE}</p>
+    </blockquote>
+    <p>
+      {oldToNewFileSentence(oldToNew)}
+      <a href={METHODOLOGY_CAVEAT_HREF}>Data-quality limits</a>.
+    </p>
+    <div data-old-to-new>
+      <div class="filter-row">
+        <label>
+          Former or current code
+          <input type="search" data-old-query autocomplete="off" spellcheck="false" />
+        </label>
+      </div>
+      <p class="status" data-old-status data-idle={oldToNewStatus(oldToNew.count)} aria-live="polite">
+        {oldToNewStatus(oldToNew.count)}
+      </p>
+      <noscript>
+        <p>{OLD_TO_NEW_NOSCRIPT}</p>
+      </noscript>
+      <details class="disclosure">
+        <summary>{oldToNewSummary(oldToNew.count)}</summary>
+        <div class="table-wrap">
+          <table>
+            <caption>{oldToNewCaption(catalog.meta.verifiedAt, oldToNew.count)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Former code</th>
+                <th scope="col">Current code</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                oldToNew.rows.map((row) => (
+                  <tr data-search={`${row.oldCode} ${row.code}`.toLowerCase()}>
+                    <td class="num code">{row.oldCode}</td>
+                    <td class="num code">
+                      <a href={row.url}>{row.code}</a>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
     <h2>Symbols that are allowed</h2>
     <p>
       49 CFR 574.5 allows A, B, C, D, E, F, H, J, K, L, M, N, P, R, T, U, V, W, X, Y, and the digits 0–9. G, I, O, Q, S, and Z are not in that set. The decoder drops anything outside the set and says so, because a photo or a worn sidewall is easy to misread.
@@ -107,3 +179,9 @@ const crumbs = [
     <p><a href="/guides/tire-date-code/">How to read a tire date code</a></p>
   </div>
 </Base>
+
+<script>
+  import { initOldToNew } from "../../scripts/old-to-new.js";
+  const root = document.querySelector("[data-old-to-new]");
+  if (root) initOldToNew(root);
+</script>

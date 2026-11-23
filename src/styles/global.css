@@ -515,6 +515,13 @@ button:disabled {
   margin-bottom: 1rem;
 }
 .table-wrap + .table-wrap { margin-top: 0; }
+.disclosure { margin: 0 0 1rem; }
+.disclosure summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding-block: 0.55rem;
+}
+.disclosure .table-wrap { margin-top: 0.4rem; }
 .compare-picks {
   display: grid;
   gap: 0.8rem;

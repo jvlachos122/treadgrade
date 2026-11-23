@@ -23,6 +23,7 @@ import { STATIC_INDEXABLE_PATHS } from "./sitemap.js";
 import { pageHash, sourceHash, templateForPath } from "./sitemap-lastmod.js";
 import { treadwearMedian } from "./answers.js";
 import { tractionGradesReport } from "./traction-grades.js";
+import { acrossBrandsData } from "./utqg-across-brands.js";
 import { treadwearNumbersReport } from "./treadwear-numbers.js";
 import { treadwearTractionReport } from "./treadwear-vs-traction.js";
 import { utqgExemptReport } from "./utqg-exempt.js";
@@ -209,6 +210,7 @@ function guideRecord(path, ctx) {
         traction: catalog.stats.traction,
         temperature: catalog.stats.temperature,
         wearBuckets: catalog.stats.wearBuckets,
+        acrossBrands: acrossBrandsData(catalog),
       };
     case "/guides/dot-code/":
     case "/guides/tire-date-code/":

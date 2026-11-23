@@ -25,6 +25,20 @@ import {
   tractionGradesReport,
 } from "../src/lib/traction-grades.js";
 import { BANNED_AGE_VERDICT, TIRE_AGE_PATH, TIRE_AGE_SOURCES, tireAgeRetrievedLabel } from "../src/lib/tire-age.js";
+import { formatNumber } from "../src/lib/format.js";
+import {
+  ACROSS_BRANDS_HREF,
+  ACROSS_BRANDS_ID,
+  BANNED_ACROSS_WORD,
+  ECFR_UTQG_URL,
+  METHODOLOGY_PATH,
+  RATINGS_PATH,
+  TIRE_REVIEW_URL,
+  UTQG_GRADES_PATH,
+  acrossBrandsReport,
+  ecfrRetrievedLabel as acrossEcfrRetrievedLabel,
+  tireReviewPublishedLabel,
+} from "../src/lib/utqg-across-brands.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -230,7 +244,7 @@ for (const file of files) {
     for (const row of tractionReport.outsideRows) {
       if (row.url && !html.includes(`href="${row.url}"`)) errors.push(`${rel}: missing outside line ${row.url}`);
     }
-    for (const href of ["/guides/utqg-grades/", "/guides/treadwear-numbers/", "/guides/no-utqg-rating/", "/ratings/", "/methodology/"]) {
+    for (const href of ["/guides/utqg-grades/", ACROSS_BRANDS_HREF, "/guides/treadwear-numbers/", "/guides/no-utqg-rating/", "/ratings/", "/methodology/"]) {
       if (!html.includes(`href="${href}"`)) errors.push(`${rel}: missing ${href}`);
     }
     const tables = html.match(/<table\b/g) || [];
@@ -283,6 +297,7 @@ for (const file of files) {
     if (!html.includes('href="/compare/"')) errors.push(`${rel}: missing compare link`);
     if (!html.includes('href="/methodology/"')) errors.push(`${rel}: missing methodology link`);
     if (!html.includes('href="/guides/utqg-grades/"')) errors.push(`${rel}: missing UTQG guide link`);
+    if (!html.includes(`href="${ACROSS_BRANDS_HREF}"`)) errors.push(`${rel}: missing across-brands link`);
     if (!html.includes(`href="${SIZE_VARIANCE_PATH}"`)) errors.push(`${rel}: missing size-variance link`);
   }
   if (path === TIRE_AGE_PATH) {
@@ -338,6 +353,48 @@ for (const file of files) {
     }
     for (const entry of longTreadwear.lines) {
       if (!html.includes(`href="${entry.line.url}"`)) errors.push(`${rel}: missing tire line ${entry.line.url}`);
+    }
+  }
+  if (path === UTQG_GRADES_PATH) {
+    const start = html.indexOf(`id="${ACROSS_BRANDS_ID}"`);
+    if (start < 0) errors.push(`${rel}: missing #${ACROSS_BRANDS_ID}`);
+    else {
+      const next = html.indexOf("<h2", start + 1);
+      const section = html.slice(start, next === -1 ? html.length : next);
+      const text = visibleText(section);
+      const banned = text.match(BANNED_ACROSS_WORD);
+      if (banned) errors.push(`${rel}: banned word ${banned[1]}`);
+      if (!text.includes("not a quality ranking")) errors.push(`${rel}: caption missing the ranking limit`);
+      if (!text.includes("no routine audits")) errors.push(`${rel}: missing the Tire Review audit clause`);
+      if (!text.includes(acrossEcfrRetrievedLabel())) errors.push(`${rel}: missing eCFR retrieved date`);
+      if (!text.includes(tireReviewPublishedLabel())) errors.push(`${rel}: missing Tire Review date`);
+      if (!section.includes(ECFR_UTQG_URL)) errors.push(`${rel}: missing eCFR URL`);
+      if (!section.includes(TIRE_REVIEW_URL)) errors.push(`${rel}: missing Tire Review URL`);
+      for (const href of [SIZE_VARIANCE_PATH, RATINGS_PATH, METHODOLOGY_PATH]) {
+        if (!section.includes(`href="${href}"`)) errors.push(`${rel}: across-brands missing ${href}`);
+      }
+      const body = section.match(/<tbody>([\s\S]*?)<\/tbody>/);
+      const bodyRows = body ? [...body[1].matchAll(/<tr\b[\s\S]*?<\/tr>/g)] : [];
+      const report = acrossBrandsReport(catalog);
+      if (bodyRows.length !== report.brands.length) {
+        errors.push(`${rel}: ${bodyRows.length} across-brand rows`);
+      }
+      report.brands.forEach((brand, index) => {
+        const rowHtml = bodyRows[index]?.[0] || "";
+        if (!rowHtml.includes(`href="${brand.url}"`)) errors.push(`${rel}: missing brand ${brand.url}`);
+        const cells = [...rowHtml.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((cell) => visibleText(cell[1]).trim());
+        const expected = [
+          brand.name,
+          formatNumber(brand.lineCount),
+          formatNumber(brand.rowCount),
+          brand.medianText,
+          brand.spanText,
+          brand.shareText,
+        ];
+        expected.forEach((value, cell) => {
+          if (cells[cell] !== value) errors.push(`${rel}: ${brand.slug} cell ${cell} ${cells[cell]} != ${value}`);
+        });
+      });
     }
   }
   if (path === RECALLS_PATH) {

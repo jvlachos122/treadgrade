@@ -23,6 +23,7 @@ import { STATIC_INDEXABLE_PATHS } from "./sitemap.js";
 import { pageHash, sourceHash, templateForPath } from "./sitemap-lastmod.js";
 import { treadwearMedian } from "./answers.js";
 import { tractionGradesReport } from "./traction-grades.js";
+import { oldToNewData } from "./dot-old-to-new.js";
 import { acrossBrandsData } from "./utqg-across-brands.js";
 import { treadwearNumbersReport } from "./treadwear-numbers.js";
 import { treadwearTractionReport } from "./treadwear-vs-traction.js";
@@ -213,6 +214,10 @@ function guideRecord(path, ctx) {
         acrossBrands: acrossBrandsData(catalog),
       };
     case "/guides/dot-code/":
+      return {
+        plants: catalog.stats.plants,
+        mappings: oldToNewData(catalog.plants),
+      };
     case "/guides/tire-date-code/":
       return { plants: catalog.stats.plants, former: catalog.plants.filter((plant) => plant.oldCode).length };
     case "/guides/traction-grades/":

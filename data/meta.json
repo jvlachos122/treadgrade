@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-11-16T23:27:21.826Z",
+  "verifiedAt": "2026-11-24T01:45:09.592Z",
   "ratings": {
     "source": "https://api.nhtsa.gov/tires?dataSet=ratings",
     "rows": 7628,
@@ -42,11 +42,11 @@
   "recalls": {
     "source": "https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip",
     "layout": "https://static.nhtsa.gov/odi/ffdd/rcl/RCL.txt",
-    "retrievedAt": "2026-11-16T23:27:21.826Z",
-    "tireRows": 20284,
-    "campaigns": 202,
+    "retrievedAt": "2026-11-24T01:45:09.592Z",
+    "tireRows": 20288,
+    "campaigns": 203,
     "brands": 112,
-    "lines": 438,
+    "lines": 439,
     "brandsWithDifferentFiler": 90,
     "fields": [
       "brand",

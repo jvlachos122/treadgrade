@@ -13,8 +13,8 @@
       "date": "2026-11-09"
     },
     "/brands/": {
-      "hash": "3ca2f7d0b737932150590ef23f458ce1b977d166bf7dfe65e62876b106d50a7c",
-      "date": "2026-11-17"
+      "hash": "d13ecc4867a97f1ab1b9990f3cb1053795c6fab9493d241a83f035a011b02f42",
+      "date": "2026-11-24"
     },
     "/brands/achilles/": {
       "hash": "e9e116c97660aaf058a5a6a11f62c4f8895e6984caeb1f2d53860bfcfead1a7b",
@@ -869,8 +869,8 @@
       "date": "2026-11-21"
     },
     "/brands/yokohama/": {
-      "hash": "27247e98d3e269f3bdaacd72d06edbd26c6d6872ad1f49ca67387921aa83c715",
-      "date": "2026-11-21"
+      "hash": "2d2d0f2b4cc4886a6220502f00d12e1aa0e31a0cd1b4c6415d2e19b538cdfe5a",
+      "date": "2026-11-24"
     },
     "/compare/": {
       "hash": "1af9a1c90d458e06dfee176d88fbcd65a32ee211d7ba5256de2154c6a21d6edc",
@@ -965,8 +965,8 @@
       "date": "2026-11-17"
     },
     "/guides/": {
-      "hash": "6e1a4460bae0e111a51e2f956efa404226cfdc3ddaa988cb49cdb8c795f75941",
-      "date": "2026-11-16"
+      "hash": "c00ca86f0cccc97ef93201b210d97509326b5d76f1e86dfbd86827d084ed7ba4",
+      "date": "2026-11-24"
     },
     "/guides/dot-code/": {
       "hash": "d7184d592e024f6a6219f6ec53b619780389e0527a62cb8568e43ae4898313b1",
@@ -977,8 +977,8 @@
       "date": "2026-11-09"
     },
     "/guides/rebadged-tires/": {
-      "hash": "6d1c8153462e7ffefa0f7afc1cfbbc83a40a75d7c6622d2d9ecdb6cdabe3d552",
-      "date": "2026-11-16"
+      "hash": "d3cf4353afcf4e492b0c29121b64f051c57ccbbbcc984e8a6108598fd73c2584",
+      "date": "2026-11-24"
     },
     "/guides/tire-age/": {
       "hash": "200231b4c1d14266d380a03b9d832b131245f831f099868dc70ca2cef1ed4ba1",
@@ -1021,12 +1021,12 @@
       "date": "2026-11-15"
     },
     "/methodology/": {
-      "hash": "9a5d1053c88ea234326cf1f644c1716e1e7aa95c1c37f81f66f8738a34736ec4",
-      "date": "2026-11-16"
+      "hash": "86c0eaf62060513def06315c966f29a7d3b12f171a7941b39b2e03b7570587f9",
+      "date": "2026-11-24"
     },
     "/methodology/known-errors/": {
-      "hash": "050bf1ec1721a5014b8d19db9ec9e516c264b92d5ad7b018d9aad869e13af15c",
-      "date": "2026-11-16"
+      "hash": "15ef3c6f42b1dab683b104e4ed641cb224249cf1e516d330881b52aa5dad05c8",
+      "date": "2026-11-24"
     },
     "/plants/": {
       "hash": "221401f7d1bc6f36ee008f2606d077fff0bc25ef2ad3684e2b5ca6f3f2e6af11",
@@ -3753,8 +3753,8 @@
       "date": "2026-11-20"
     },
     "/plants/1cc/": {
-      "hash": "fbbde8bee801b6b5de3dc19a8e18bb2412f9808e61640325904f0621529d253c",
-      "date": "2026-11-20"
+      "hash": "030abff75ccc899ef149d2eb5002519a391a34ecb5eebf56e6f3c6953927fbf5",
+      "date": "2026-11-24"
     },
     "/plants/1cd/": {
       "hash": "8aa85cc7347dd8a93df1693e3803ab758dcf11d1560dea0c382f1c07f33a6d07",
@@ -6361,8 +6361,8 @@
       "date": "2026-11-17"
     },
     "/recalls/": {
-      "hash": "a7a247f5bbbff86af83fdc5efecd880f99cc4bda12ae4b5050dd80fd6e97dcd6",
-      "date": "2026-11-17"
+      "hash": "f2782a7a151c32f5bb75f18f30c6eed030eaab7acd563cb9b7010aadec9f5704",
+      "date": "2026-11-24"
     },
     "/tires/achilles/122/": {
       "hash": "743b41553ed4ec8861069b3dcbffe26dd10a38ca990c93cf63462b9d794eef92",
@@ -18593,8 +18593,8 @@
       "date": "2026-11-20"
     },
     "/who-makes-it/": {
-      "hash": "bfe0c66290fd87d72778c79392e8a2ea21667d571c7857dc5ad2a7065c3c4ce5",
-      "date": "2026-11-17"
+      "hash": "355d0ad8d85849a3c5133df4232207e564428d327f44be5206556466108cb13f",
+      "date": "2026-11-24"
     },
     "/who-makes/kelly/": {
       "hash": "da155e19a15c799199138085dc7a74a332c8496069f699193f7c6ca613dc19be",

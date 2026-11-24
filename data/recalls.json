@@ -4698,6 +4698,17 @@
   },
   {
     "brand": "YOKOHAMA",
+    "line": "GEOLANDAR M/T G003",
+    "filer": "Yokohama Tire Corporation",
+    "manufacturers": [
+      "Yokohama Tire Corporation"
+    ],
+    "campaign": "26T018000",
+    "reportDate": "2026-11-05",
+    "units": 610
+  },
+  {
+    "brand": "YOKOHAMA",
     "line": "LY053",
     "filer": "Yokohama Tire Corporation",
     "manufacturers": [

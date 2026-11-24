@@ -64,6 +64,10 @@ export function initPlantDecoder(root) {
     code.textContent = result.normalized;
     symbols.append(code);
     output.append(symbols);
+    if (result.alternativeReadings) {
+      const note = result.notes.find((item) => item.alternativeReadings);
+      if (note) output.append(paragraph(note.text));
+    }
     for (const part of plantMatchParts(result, pageCode)) output.append(renderMatch(part));
     if (!result.date) output.append(paragraph("No manufacture week was read."));
     else {

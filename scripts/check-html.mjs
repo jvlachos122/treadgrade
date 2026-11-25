@@ -39,6 +39,17 @@ import {
   ecfrRetrievedLabel as acrossEcfrRetrievedLabel,
   tireReviewPublishedLabel,
 } from "../src/lib/utqg-across-brands.js";
+import {
+  BANNED_DOT_WORD,
+  DOT_GUIDE_PATH,
+  ECFR_TIN_URL,
+  FR_PREFIX_NOTE,
+  FR_PREFIX_QUOTE,
+  FR_TIN_URL,
+  METHODOLOGY_CAVEAT_HREF,
+  OLD_TO_NEW_ID,
+  oldToNewReport,
+} from "../src/lib/dot-old-to-new.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -395,6 +406,29 @@ for (const file of files) {
           if (cells[cell] !== value) errors.push(`${rel}: ${brand.slug} cell ${cell} ${cells[cell]} != ${value}`);
         });
       });
+    }
+  }
+  if (path === DOT_GUIDE_PATH) {
+    const report = oldToNewReport(catalog.plants);
+    const start = html.indexOf(`id="${OLD_TO_NEW_ID}"`);
+    if (start < 0) errors.push(`${rel}: missing #${OLD_TO_NEW_ID}`);
+    else {
+      const section = html.slice(start, html.indexOf("<h2", start));
+      const text = visibleText(section);
+      const banned = text.match(BANNED_DOT_WORD);
+      if (banned) errors.push(`${rel}: banned word ${banned[0]}`);
+      if (!text.includes(FR_PREFIX_QUOTE)) errors.push(`${rel}: missing plant-code prefix quote`);
+      if (!text.includes(FR_PREFIX_NOTE)) errors.push(`${rel}: missing footnote 2`);
+      if (!section.includes(FR_TIN_URL)) errors.push(`${rel}: missing Federal Register link`);
+      if (!section.includes(ECFR_TIN_URL)) errors.push(`${rel}: missing eCFR link`);
+      if (!section.includes(`href="${METHODOLOGY_CAVEAT_HREF}"`)) errors.push(`${rel}: missing methodology link`);
+      const body = section.match(/<tbody>([\s\S]*?)<\/tbody>/);
+      const bodyRows = body ? [...body[1].matchAll(/<tr\b/g)] : [];
+      if (bodyRows.length !== report.count) errors.push(`${rel}: ${bodyRows.length} mapping rows`);
+      for (const row of report.rows) {
+        if (!section.includes(`href="${row.url}"`)) errors.push(`${rel}: missing ${row.url}`);
+        if (!section.includes(`>${row.oldCode}<`)) errors.push(`${rel}: missing former code ${row.oldCode}`);
+      }
     }
   }
   if (path === RECALLS_PATH) {

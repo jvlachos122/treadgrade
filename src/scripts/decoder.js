@@ -1,7 +1,12 @@
 import { candidateAgeCopy, purchaseNote } from "../lib/dot-age.js";
 import { buildAgeReminderIcs, reminderWeeks } from "../lib/dot-ics.js";
 import { formatUtcDate, formatUtcDay } from "../lib/format.js";
+import { plantQueryResult, unpackBrandLinks } from "../lib/plant-query.js";
 import { decodeTin, indexPlants, plantRecordCaveat } from "../lib/tin.js";
+import { packedBrandLinks } from "virtual:brand-plant-links";
+import { renderPlantLookup } from "./plant-lookup-view.js";
+
+const brandLinks = unpackBrandLinks(packedBrandLinks);
 
 function section(title) {
   const wrap = document.createElement("section");
@@ -218,7 +223,9 @@ export function initDecoder(root) {
     else url.searchParams.delete("triangle");
     history.replaceState(null, "", url);
     const now = new Date();
-    render(decodeTin(value, plants, now, { triangle: triangleInput.checked }), now);
+    const read = plantQueryResult(value, plants, brandLinks, root.dataset.verified || "");
+    if (read.mode === "tin") render(decodeTin(read.text, plants, now, { triangle: triangleInput.checked }), now);
+    else renderPlantLookup(output, read);
   }
 
   function remind(years) {
@@ -226,7 +233,8 @@ export function initDecoder(root) {
       if (remindStatus) remindStatus.textContent = "Decode a date code first. The file is built from that production week.";
       return;
     }
-    const result = decodeTin(input.value, plants, new Date(), { triangle: triangleInput.checked });
+    const read = plantQueryResult(input.value, plants, brandLinks, root.dataset.verified || "");
+    const result = decodeTin(read.mode === "tin" ? read.text : "", plants, new Date(), { triangle: triangleInput.checked });
     const weeks = reminderWeeks(result);
     if (!weeks.length) {
       if (remindStatus) remindStatus.textContent = "No production week was read, so there is no calendar file.";

@@ -14,8 +14,10 @@ import {
   NOT_IN_SHARE,
   NOT_STORED,
   TREADWEAR_BAND_NOTE,
+  BRAND_PLANT_JUMP,
   WIDER_GROUP_NOTE,
   brandFaqLd,
+  brandPlantJump,
   brandProfile,
 } from "../../lib/brand-pages.js";
 import { catalog } from "../../lib/catalog.js";
@@ -43,6 +45,7 @@ const { redirect = null } = Astro.props;
 const brand = redirect ? null : catalog.getBrand(Astro.params.brand);
 const lines = brand ? catalog.getBrandLines(brand.slug) : [];
 const profile = brand ? brandProfile(brand.slug) : null;
+const plantJump = profile ? brandPlantJump(profile) : null;
 const plantCountries = profile
   ? plantCountryTable(
       brand.name,
@@ -113,6 +116,13 @@ const crumbs = brand
           {profile.uplink.before}
           <a href={profile.indexHref}>A–Z index</a>
           {profile.uplink.after}
+        </p>
+      ) : null
+    }
+    {
+      plantJump ? (
+        <p>
+          <a href={plantJump.href}>{plantJump.label}</a>
         </p>
       ) : null
     }
@@ -298,7 +308,7 @@ const crumbs = brand
     {
       profile.plants.length ? (
         <>
-          <h2 id="plants">Registered plants</h2>
+          <h2 id="plant-codes">{BRAND_PLANT_JUMP}</h2>
           <p>{BRAND_PLANT_RULE}</p>
           <div class="table-wrap">
             <table>

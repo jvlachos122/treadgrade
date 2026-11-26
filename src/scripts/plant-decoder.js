@@ -1,9 +1,14 @@
+import { packedBrandLinks } from "virtual:brand-plant-links";
 import { packedPlantCodes } from "virtual:decoder-plant-codes";
 import { plantsIndexFromPacked } from "../lib/decoder-plants.js";
 import { candidateAgeCopy } from "../lib/dot-age.js";
 import { decoderPath, plantMatchParts, samePlantHref } from "../lib/dot-reading.js";
 import { formatUtcDate, formatUtcDay } from "../lib/format.js";
+import { plantQueryResult, unpackBrandLinks } from "../lib/plant-query.js";
 import { decodeTin } from "../lib/tin.js";
+import { renderPlantLookup } from "./plant-lookup-view.js";
+
+const brandLinks = unpackBrandLinks(packedBrandLinks);
 
 const plants = plantsIndexFromPacked(packedPlantCodes);
 
@@ -48,7 +53,14 @@ export function initPlantDecoder(root) {
   function render(value) {
     const now = new Date();
     const triangle = Boolean(triangleInput?.checked);
-    const result = decodeTin(value, plants, now, { triangle });
+    const read = plantQueryResult(value, plants, brandLinks, root.dataset.verified || "");
+    if (read.mode !== "tin") {
+      output.replaceChildren();
+      if (full) full.href = String(value || "").trim() ? decoderPath(value, { triangle }) : baseHref;
+      renderPlantLookup(output, read);
+      return;
+    }
+    const result = decodeTin(read.text, plants, now, { triangle });
     output.replaceChildren();
     if (full) full.href = String(value || "").trim() ? decoderPath(value, { triangle }) : baseHref;
     if (!result.normalized) {

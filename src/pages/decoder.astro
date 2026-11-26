@@ -9,6 +9,7 @@ import { formatNumber, formatVerified } from "../lib/format.js";
 import { buildDecoderExamples, decoderHubFaqs, decoderHubProse, hubFaqLd } from "../lib/hub-quality.js";
 import { pageUrl, publisherOrg } from "../lib/structured.js";
 import { clampText } from "../lib/text.js";
+import { DECODER_QUERY_HINT } from "../lib/plant-query.js";
 import { plantRecordCaveat } from "../lib/tin.js";
 
 const answers = decoderAnswer(catalog);
@@ -44,7 +45,7 @@ const shirakawaCountry = shirakawa?.countryKey ? countryByKey.get(shirakawa.coun
 ---
 
 <Base title="DOT tire code decoder" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
-  <div class="wrap" data-decoder>
+  <div class="wrap" data-decoder data-verified={catalog.meta.verifiedAt}>
     <h1>DOT tire code decoder</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
@@ -59,6 +60,7 @@ const shirakawaCountry = shirakawa?.countryKey ? countryByKey.get(shirakawa.coun
         <span>A triangle is molded after a three-digit date</span>
       </label>
     </form>
+    <p class="small muted">{DECODER_QUERY_HINT}</p>
     <noscript>
       <p>
         Decoding a code you type runs in this browser. The worked examples below do not. Each row already names the plant, the week and year, and the age of that week on {decoded.asOfLabel} (UTC).

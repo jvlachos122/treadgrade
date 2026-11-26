@@ -1,13 +1,12 @@
 ---
 import Base from "../../layouts/Base.astro";
 import Answer from "../../components/Answer.astro";
-import HowToFindCode from "../../components/HowToFindCode.astro";
 import PlantMiniDecoder from "../../components/PlantMiniDecoder.astro";
-import PlantNote from "../../components/PlantNote.astro";
+import SourcedLine from "../../components/SourcedLine.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { plantAnswer, sourceEntries } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
-import { formatNumber, formatUtcDate } from "../../lib/format.js";
+import { formatNumber, formatUtcDate, formatVerified } from "../../lib/format.js";
 import { plantByCode, plantJsonLd } from "../../lib/plant-hubs.js";
 import { formatNameList, nhtsaCampaignUrl } from "../../lib/recalls.js";
 import { relatedPlants } from "../../lib/related-plants.js";
@@ -35,6 +34,7 @@ const shared = plant.oldCodeSharedWith
   .filter(Boolean);
 const recallCaptionFilers = extra.filerNames.length ? formatNameList(extra.filerNames) : "";
 const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
+const verified = formatVerified(catalog.meta.verifiedAt);
 ---
 
 <Base
@@ -48,7 +48,9 @@ const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
     <PlantMiniDecoder code={plant.code} />
-    <PlantNote />
+    <SourcedLine>
+      The name, address, and status below are the NHTSA plant record for {plant.code}, verified {verified} (UTC).
+    </SourcedLine>
     <dl class="facts">
       <div>
         <dt>Current plant code</dt>
@@ -90,7 +92,7 @@ const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
       <div>
         <dt>Status field</dt>
         <dd>
-          {plant.status || "Not included in the NHTSA record"}. NHTSA status field; may be out of date. This is the value stored in vPIC, not a finding that the company or plant is operating today.
+          {plant.status || "Not included in the NHTSA record"}
         </dd>
       </div>
     </dl>
@@ -119,7 +121,6 @@ const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
           <h2>Other plants with this registrant</h2>
           <p>
             {formatNumber(extra.siblings.length)} other {extra.siblings.length === 1 ? "record uses" : "records use"} this registrant name.
-            Letter case, punctuation, and legal suffixes such as Inc. and LLC are ignored. A shared first word is not enough, and the records do not list brands.
           </p>
           <ul>
             {extra.siblings.map((other) => (
@@ -138,7 +139,6 @@ const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
       extra.group ? (
         <p>
           The registrant name matches the <a href={extra.group.url}>{extra.group.linkLabel}</a> group ({formatNumber(extra.group.count)} records).
-          That group is a name match in the plant list, not a list of brands made at this plant.
         </p>
       ) : null
     }
@@ -148,7 +148,6 @@ const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
           <h2>Recall campaigns filed by this registrant</h2>
           <p>
             The tire-recall file names {recallCaptionFilers} as the filing company on {formatNumber(extra.recalls.length)} {extra.recalls.length === 1 ? "row" : "rows"}.
-            The company name matches this registrant. A shared first word would not. The plant record does not say this plant built the recalled tires.
           </p>
           <div class="table-wrap">
             <table>
@@ -218,7 +217,10 @@ const related = relatedPlants(plant, catalog.plants, extra.recalls.length > 0);
         </>
       ) : null
     }
-    <HowToFindCode code={plant.code} oldCode={plant.oldCode} />
+    <p>
+      The plant code is the first group of the tire identification number.
+      <a href="/guides/dot-code/">The full number</a> is the identification-number guide.
+    </p>
     <p>
       <a href={`/decoder/?tin=${plant.code}`}>Decode a code that starts with {plant.code}</a>
       · <a href="/guides/tire-date-code/">How to read a tire date code</a>

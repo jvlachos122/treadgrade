@@ -239,7 +239,7 @@ test("hub copy is unique against the child templates", () => {
   const brands = brandHubRows(brandProfiles);
   const decoded = buildDecoderExamples(catalog.plants, new Date(Date.UTC(2026, 10, 17)));
   const cases = [
-    ["decoder", joinHubCopy(decoderHubProse(decoded), decoderHubFaqs(decoded)), ["src/pages/guides/dot-code.astro", "src/pages/guides/tire-date-code.astro", "src/pages/plants/[code].astro", "src/components/PlantMiniDecoder.astro"], "src/pages/decoder.astro", /decoderHubProse\(/],
+    ["decoder", joinHubCopy(decoderHubProse(decoded), decoderHubFaqs(decoded)), ["src/pages/guides/dot-code.astro", "src/pages/guides/tire-date-code.astro", "src/pages/plants/[code].astro", "src/components/PlantMiniDecoder.astro"], "src/pages/decoder.astro", /Tire DOT code decoder: plant, week and age/],
     ["plants", joinHubCopy(plantHubProse(plants), plantHubFaqs(plants)), ["src/pages/plants/[code].astro", "src/pages/plants/country/[country].astro", "src/pages/plants/manufacturer/[group].astro"], "src/pages/plants/index.astro", /plantHubProse\(/],
     ["ratings", joinHubCopy(ratingsHubProse(facts), ratingsHubFaqs(facts)), ["src/pages/tires/[brand]/[line].astro"], "src/pages/ratings.astro", /ratingsHubProse\(/],
     ["brands", joinHubCopy(brandHubProse(brands), brandHubFaqs(brands)), ["src/pages/brands/[brand].astro"], "src/pages/brands/index.astro", /brandHubProse\(/],

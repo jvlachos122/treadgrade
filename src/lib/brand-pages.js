@@ -215,7 +215,7 @@ function buildFaqs(profile) {
   if (profile.plants.length) {
     faqs.push({
       name: `Which plant codes are registered to a name that begins with ${profile.name}?`,
-      text: `This page lists ${formatNumber(profile.plants.length)} ${noun(profile.plants.length, "plant code")} whose registrant name begins with ${profile.name}. ${BRAND_PLANT_RULE}`,
+      text: `This page lists ${formatNumber(profile.plants.length)} ${noun(profile.plants.length, "plant code")} whose registrant name begins with ${profile.name}. The name rule, including closed and historic codes, is on the data-sources page.`,
     });
   }
   if (profile.recalls.length) {

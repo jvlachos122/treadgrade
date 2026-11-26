@@ -8,7 +8,9 @@ import { catalog } from "../../../lib/catalog.js";
 import { formatNumber } from "../../../lib/format.js";
 import { countryInPhrase } from "../../../lib/plant-countries.js";
 import { countryHubs, groupByCode, hubDataset } from "../../../lib/plant-hubs.js";
+import { liveGroupDetail } from "../../../lib/plant-group-page.js";
 import { clampText } from "../../../lib/text.js";
+import PlantGroupDetail from "../../../components/PlantGroupDetail.astro";
 
 export function getStaticPaths() {
   return countryHubs.map((country) => ({ params: { country: country.key } }));
@@ -19,6 +21,7 @@ if (!country) throw new Error(`Missing country hub ${Astro.params.country}`);
 const answers = countryHubAnswer(country);
 const description = clampText(answers.join(" "));
 const place = countryInPhrase(country.label);
+const detail = liveGroupDetail(country.plants);
 const jsonLd = [
   hubDataset({
     name: `NHTSA plant records in ${place}`,
@@ -42,6 +45,7 @@ const crumbs = [
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <PlantNote />
     {country.note ? <p>{country.note}</p> : null}
+    <PlantGroupDetail detail={detail} />
     <div class="table-wrap">
       <table>
         <caption>

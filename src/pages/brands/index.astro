@@ -42,6 +42,9 @@ const crumbs = [
   { href: "/", label: "Home" },
   { href: "/brands/", label: "Brands" },
 ];
+const prominent = [...catalog.brands]
+  .sort((a, b) => b.rowCount - a.rowCount || a.name.localeCompare(b.name, "en"))
+  .slice(0, 8);
 ---
 
 <Base title="Tire brands in the NHTSA UTQG list" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
@@ -49,6 +52,33 @@ const crumbs = [
     <h1>Tire brands in the NHTSA UTQG list</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["ratings", "plants", "recalls"])} />
+    <label>
+      Filter brands
+      <input id="brand-filter" data-brand-filter type="search" autocomplete="off" />
+    </label>
+    <p class="status small" data-brand-status aria-live="polite">{formatNumber(model.brands)} brands.</p>
+    <noscript>
+      <p>Sorting and filtering run in the browser. Without JavaScript the table stays in brand-name order, grouped by letter.</p>
+    </noscript>
+    <h2>Brands with the most grade rows</h2>
+    <p>
+      {formatNumber(prominent.length)} brands have the most grade rows in this file. The count is rows stored under the brand string. It is not a ranking.
+    </p>
+    <ul class="brand-list">
+      {
+        prominent.map((brand) => (
+          <li>
+            <a href={brand.url}>
+              <span>{brand.name}</span>
+              <span class="muted">{formatNumber(brand.rowCount)} rows</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <nav class="letter-nav" aria-label="Brand letters">
+      {letters.map((letter) => <a href={`#letter-${letter}`}>{letter}</a>)}
+    </nav>
     <p class="lede">
       {formatNumber(model.brands)} brands after merging spellings that differ only by capitalization or punctuation. Each row counts the tire lines stored under that brand string.
       A shared line name is not a rebadge. Light-truck, deep-tread winter, and temporary spare tires are outside the UTQG rule and may be missing.
@@ -72,17 +102,6 @@ const crumbs = [
       {" "}
       {model.plantColumnReason}
     </p>
-    <nav class="letter-nav" aria-label="Brand letters">
-      {letters.map((letter) => <a href={`#letter-${letter}`}>{letter}</a>)}
-    </nav>
-    <label>
-      Filter brands
-      <input id="brand-filter" data-brand-filter type="search" autocomplete="off" />
-    </label>
-    <p class="status small" data-brand-status aria-live="polite">{formatNumber(model.brands)} brands.</p>
-    <noscript>
-      <p>Sorting and filtering run in the browser. Without JavaScript the table stays in brand-name order.</p>
-    </noscript>
     <div class="table-wrap">
       <table id="brand-table">
         <caption>{brandCaption(model, catalog.meta.verifiedAt, catalog.meta.recalls.retrievedAt)}</caption>

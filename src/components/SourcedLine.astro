@@ -1,0 +1,8 @@
+---
+const { href = "/methodology/#data-quality" } = Astro.props;
+---
+
+<p>
+  <slot />{" "}
+  <a href={href}>How this site reads the files</a>.
+</p>

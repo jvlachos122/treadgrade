@@ -1,25 +1,20 @@
 ---
 import Base from "../../layouts/Base.astro";
 import Answer from "../../components/Answer.astro";
-import Disclaimer from "../../components/Disclaimer.astro";
 import Grade from "../../components/Grade.astro";
 import RedirectNotice from "../../components/RedirectNotice.astro";
+import SourcedLine from "../../components/SourcedLine.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { brandAnswer, sourceEntries } from "../../lib/answers.js";
 import { PLANT_COUNTRY_READ, plantCountryTable } from "../../lib/brand-countries.js";
 import {
-  BRAND_PLANT_RULE,
-  BRAND_RECALL_RULE,
-  GRADE_SHARE_NOTE,
   NOT_IN_SHARE,
   NOT_STORED,
-  TREADWEAR_BAND_NOTE,
-  WIDER_GROUP_NOTE,
   brandFaqLd,
   brandProfile,
 } from "../../lib/brand-pages.js";
 import { catalog } from "../../lib/catalog.js";
-import { formatNumber, formatUtcDate, wearRange } from "../../lib/format.js";
+import { formatNumber, formatUtcDate, formatVerified, wearRange } from "../../lib/format.js";
 import { nameKey } from "../../lib/normalize.js";
 import { makerCountryBrandLine } from "../../lib/plant-makers.js";
 import { manufacturerGroupForBrand } from "../../lib/plant-hubs.js";
@@ -58,6 +53,7 @@ const whoPage = brand ? whoMakesByKey.get(nameKey(brand.name)) || null : null;
 const plantGroup = brand ? manufacturerGroupForBrand(brand.slug) : null;
 const makerLine = brand ? makerCountryBrandLine(brand.slug) : null;
 const aliasRows = brand ? brand.aliases.reduce((sum, alias) => sum + alias.count, 0) : 0;
+const verified = formatVerified(catalog.meta.verifiedAt);
 const aliasNames = brand && brand.aliases.length ? formatNameList(brand.aliases.map((alias) => alias.name)) : "";
 const answers = brand ? brandAnswer(brand, lines, filings, catalog.meta.verifiedAt) : [];
 const description = brand ? clampText(answers.join(" ")) : "";
@@ -96,7 +92,9 @@ const crumbs = brand
     <h1>{brand.name}</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
-    <Disclaimer />
+    <SourcedLine>
+      {brand.name}'s figures are the rows NHTSA published under that brand string, verified {verified} (UTC).
+    </SourcedLine>
     {
       brand.aliases.length ? (
         <div class="notice">
@@ -146,8 +144,6 @@ const crumbs = brand
 
     <h2 id="treadwear">Treadwear distribution</h2>
     <p>
-      {TREADWEAR_BAND_NOTE}
-      {" "}
       <a href="/guides/treadwear-numbers/#histogram">Open the treadwear bands</a>.
     </p>
     <div class="table-wrap">
@@ -187,7 +183,6 @@ const crumbs = brand
     </div>
 
     <h2 id="grades">Traction and temperature</h2>
-    <p>{GRADE_SHARE_NOTE}</p>
     <div class="table-wrap">
       <table>
         <caption>{profile.gradesCaption}</caption>
@@ -299,7 +294,6 @@ const crumbs = brand
       profile.plants.length ? (
         <>
           <h2 id="plants">Registered plants</h2>
-          <p>{BRAND_PLANT_RULE}</p>
           <div class="table-wrap">
             <table>
               <caption>{profile.plantsCaption}</caption>
@@ -330,8 +324,6 @@ const crumbs = brand
           {
             plantGroup ? (
               <p>
-                {WIDER_GROUP_NOTE}
-                {" "}
                 <a href={plantGroup.url}>{plantGroup.linkLabel} plant codes</a>.
               </p>
             ) : null
@@ -407,11 +399,9 @@ const crumbs = brand
         <>
           <h2 id="recalls">Recall history</h2>
           <p>
-            {BRAND_RECALL_RULE}
             {
               filings ? (
                 <>
-                  {" "}
                   <a href={`/who-makes-it/#${recallHash}`}>Those filings are on Who makes it?</a>
                 </>
               ) : null

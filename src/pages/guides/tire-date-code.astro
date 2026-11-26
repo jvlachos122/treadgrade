@@ -11,7 +11,7 @@ const answers = dateGuideAnswer();
 const description = clampText(answers.join(" "));
 const jsonLd = [
   article({
-    headline: "How to read a tire date code",
+    headline: "Tire date code: week and year digits",
     description: answers.join(" "),
     path: "/guides/tire-date-code/",
     dateModified: catalog.meta.verifiedAt,
@@ -24,14 +24,14 @@ const crumbs = [
 ];
 ---
 
-<Base title="Tire date code" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+<Base title="Tire date code: week and year digits" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
   <div class="wrap prose">
-    <h1>How to read a tire date code</h1>
+    <h1>Tire date code: week and year digits</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <p class="lede">
-      The date is the final group of the tire identification number. The plant code and the manufacturer's symbols are the rest of that number, and they are covered in
-      <a href="/guides/dot-code/">how to read a DOT tire code</a>.
+      This page is only the date digits, the final group of the tire identification number. It does not decode the plant code or the manufacturer's symbols. Those groups are the rest of the number, on
+      <a href="/guides/dot-code/">the DOT tire identification number</a>.
     </p>
     <p><a class="button" href="/decoder/">Decode a tire date code</a></p>
 

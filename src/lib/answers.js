@@ -538,7 +538,7 @@ export function utqgGuideAnswer(catalog) {
 export function dotGuideAnswer(catalog) {
   const former = catalog.plants.filter((plant) => plant.oldCode).length;
   return [
-    "A current new-tire DOT identification number has 13 symbols: a 3-symbol plant code, a 6-symbol manufacturer code, and a 4-digit manufacture week and year.",
+    "This page is the full DOT tire identification number: a 3-symbol plant code, a 6-symbol manufacturer code, and a 4-digit date. The week and year digits alone are on the date-code page.",
     `The plant list on this site holds ${formatNumber(catalog.stats.plants)} NHTSA records, including ${formatNumber(former)} with a former two-symbol code.`,
     "A plant record names the registrant at the time of registration, not the brands made there.",
   ];
@@ -546,7 +546,7 @@ export function dotGuideAnswer(catalog) {
 
 export function dateGuideAnswer() {
   return [
-    "The last four digits of a DOT tire identification number are the date code: the first two are the week, and the last two are the year.",
+    "This page is only the last four digits of a DOT tire identification number, the date code: the first two are the week and the last two are the year. It does not decode the plant code or the manufacturer symbols.",
     "In 49 CFR 574.5, 0109 means the week of Sunday, January 4, 2009 through Saturday, January 10, 2009.",
     "A date code from before the four-digit form is three digits, and those digits do not name the decade.",
   ];

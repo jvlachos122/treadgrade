@@ -14,6 +14,9 @@
  * run from 1971, when the TIN was adopted, through 1999. The decade is not in
  * the digits. A triangle after the code is the 1990–1999 mark NHTSA told
  * Goodyear was not prohibited (interpretation nht90-2.39, May 2, 1990).
+ * A three-digit string that is itself a plant code is two alternative
+ * readings, not one tire's plant and date. If those digits are not a week
+ * from 01 to 53, only the plant is reported.
  *
  * 49 CFR 574.5(a)(5) and (g), adopted in the April 13, 2015 final rule
  * (80 FR 19553), let a manufacturer keep a previously assigned two-symbol
@@ -212,6 +215,16 @@ function selectPlant(head, style, index) {
   };
 }
 
+// A bare three-digit group can be a plant code and a date. The first two
+// digits are not a separate former code in that case: the whole group is
+// the code, or the whole group is the date.
+function plantForWholeCode(compact, index) {
+  if (!/^\d{3}$/.test(compact)) return null;
+  const found = selectPlant(compact, null, index);
+  if (!found.matches.length || found.middle) return null;
+  return { ...found, oldPrefix: [], alsoCurrent: null };
+}
+
 function classify(style, assumed, middle, matches, plantCode) {
   if (!style && matches.length && !middle) return "plant-only";
   if (style === "three") return "pre-2000";
@@ -279,6 +292,7 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
       normalized: "",
       hadDot: parsed.hadDot,
       triangle: false,
+      alternativeReadings: false,
       format: "unknown",
       plantCode: null,
       matches: [],
@@ -313,6 +327,7 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
   }
 
   const split = splitDate(parsed.compact);
+  const wholePlant = split.style === "three" && !split.head ? plantForWholeCode(parsed.compact, plantsIndex) : null;
   if (split.invalidTrailing) {
     notes.push({
       level: "warn",
@@ -321,7 +336,7 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
   }
 
   let date = null;
-  if (split.style && !split.weekOk) {
+  if (split.style && !split.weekOk && !wholePlant) {
     notes.push({
       level: "error",
       text: `${split.date} is not a manufacture week from 01 to 53.`,
@@ -373,7 +388,7 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
     });
   }
 
-  const plant = selectPlant(split.head, split.style, plantsIndex);
+  const plant = wholePlant || selectPlant(split.head, split.style, plantsIndex);
   if (plant.matches.length === 0 && plant.plantCode) {
     notes.push({
       level: "warn",
@@ -414,14 +429,35 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
       text: `The first three symbols also match current plant code ${plant.alsoCurrent.code}. A three-digit date belongs to the older two-symbol layout, so the two-symbol code is used.`,
     });
   }
-  if (split.style === "three" && plant.assumed === "three" && plant.matches.length) {
+  if (wholePlant && split.weekOk) {
+    const digit = parsed.compact.slice(2);
+    let text = `These three symbols match plant code ${wholePlant.plantCode} in NHTSA's list, and the same three symbols are a three-digit date (week ${split.week}, year digit ${digit}). The two readings are alternatives. They are not a plant and a date from one tire.`;
+    if (parsed.triangle) {
+      text += " A triangle was entered with these symbols. That mark applies to the date reading, not to the plant code.";
+    }
+    notes.push({
+      level: "info",
+      caveat: true,
+      place: "reading",
+      label: "About this data",
+      alternativeReadings: true,
+      text,
+    });
+  } else if (wholePlant) {
+    notes.push({
+      level: "info",
+      text: `These three symbols match plant code ${wholePlant.plantCode} in NHTSA's list. They are not a manufacture week from 01 to 53, so they are not read as a date.`,
+    });
+  }
+  if (split.style === "three" && plant.assumed === "three" && plant.matches.length && !wholePlant) {
     notes.push({
       level: "warn",
       text: `A three-digit date usually goes with a two-symbol plant code. The first two symbols do not match a former code, and the first three match current plant ${plant.plantCode}, so that plant is shown.`,
     });
   }
 
-  const format = classify(split.style, plant.plantCode ? plant.assumed : null, plant.middle, plant.matches, plant.plantCode);
+  const classStyle = wholePlant && !split.weekOk ? null : split.style;
+  const format = classify(classStyle, plant.plantCode ? plant.assumed : null, plant.middle, plant.matches, plant.plantCode);
   if (format === "new-13") {
     notes.push({
       level: "info",
@@ -467,9 +503,10 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
     });
   }
 
+  const alternativeReadings = Boolean(wholePlant && split.weekOk);
   const ages = (date?.candidates || []).map((item) => item.age).filter((age) => age && !age.future);
   const oldestRecent = ages.length ? Math.min(...ages.map((age) => age.years)) : null;
-  if (oldestRecent != null && oldestRecent >= 6) {
+  if (oldestRecent != null && oldestRecent >= 6 && !alternativeReadings) {
     notes.push({
       level: "info",
       text: "NHTSA says some vehicle and tire manufacturers recommend replacing tires that are six to 10 years old, regardless of treadwear. This page calculates a date. It does not decide whether a tire is safe to use.",
@@ -483,6 +520,7 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
     normalized: parsed.compact,
     hadDot: parsed.hadDot,
     triangle: Boolean(date?.triangle),
+    alternativeReadings,
     format,
     plantCode: plant.plantCode,
     matches: plant.matches,

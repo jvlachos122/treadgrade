@@ -108,6 +108,9 @@ export function initDecoder(root) {
     output.append(summary);
 
     const plantSection = section("Plant");
+    if (result.alternativeReadings) {
+      plantSection.append(paragraph("Plant-code reading. This is not also the date of the same tire."));
+    }
     if (!result.matches.length) {
       if (!result.plantCode) plantSection.append(paragraph("No plant code in this entry."));
     } else {
@@ -132,6 +135,9 @@ export function initDecoder(root) {
     output.append(plantSection);
 
     const dateSection = section("Date and age");
+    if (result.alternativeReadings) {
+      dateSection.append(paragraph("Date-code reading of the same three symbols."));
+    }
     if (!result.date) {
       dateSection.append(paragraph("No manufacture week was read."));
     } else if (result.date.style === "four") {

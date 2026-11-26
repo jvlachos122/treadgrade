@@ -91,6 +91,64 @@ const crumbs = [
       <a href="/guides/tire-date-code/">How to read a tire date code</a> diagrams that split, the Sunday–Saturday week, the April 13, 2015 length rule, where the date sits on the sidewall, and the three-digit form, including the 1990s triangle.
       This page is the rest of the number: the plant code, the manufacturer's symbols, and which characters are allowed.
       The <a href="/decoder/">decoder</a> applies the week rule to the digits you enter.
+      <a href="#three-digit-dates">Three-digit dates</a> below compares one code with and without the triangle.
+    </p>
+    <h2 id="three-digit-dates">Three-digit dates</h2>
+    <p>
+      Before July 2, 2000, the date group was three symbols: the first two were the week and the third was the year, so the decade was not in the code
+      (<a href="https://www.govinfo.gov/content/pkg/FR-1999-07-08/html/99-17402.htm">64 FR 36807</a>).
+      An isosceles right triangle molded after the number was a mark Goodyear asked to use for 1990 through 1999, and NHTSA's May 2, 1990 letter said that symbol was not prohibited
+      (<a href="https://www.nhtsa.gov/interpretations/nht90-239">interpretation nht90-2.39</a>).
+      <span class="code">403</span> is week 40 of a year ending in 3: with no triangle the year can be 1973, 1983, or 1993, and with the triangle the 1990s reading is 1993 while the other two years still match the digits.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>
+          Worked readings of the three-symbol date 403, alone and with an isosceles right triangle after the number.
+          Week dates use the Sunday-through-Saturday week in 49 CFR 574.5. The July 8, 1999 rule's examples, 3197 and 0198, fall on that same week shape.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Symbols</th>
+            <th scope="col">What this shows</th>
+            <th scope="col">What this does not show</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row"><span class="code">403</span></th>
+            <td>
+              Week 40, year digit 3. The years this site lists for that digit are 1973, 1983, and 1993.
+              On the Sunday-through-Saturday week in <a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">49 CFR 574.5</a>, those weeks are October 7–13, 1973, October 2–8, 1983, and October 3–9, 1993.
+            </td>
+            <td>
+              Which of those years was molded. The third symbol is the year and does not name the decade (64 FR 36807).
+              <span class="code">403</span> is not a four-digit code for 2003. Four numerical symbols are required for tires produced or retreaded on and after July 2, 2000.
+            </td>
+          </tr>
+          <tr>
+            <th scope="row"><span class="code">403</span> with an isosceles right triangle after the number</th>
+            <td>
+              The same week and year digit, plus the symbol in the May 2, 1990 letter.
+              NHTSA told Goodyear that an isosceles right triangle after the tire identification number, meant for tires produced in 1990 through 1999, was not prohibited (interpretation nht90-2.39).
+              The 1990s year ending in 3 is 1993, the week of October 3–9, 1993.
+            </td>
+            <td>
+              That the symbol was required, or that 1973 and 1983 no longer match the digits.
+              A number with no triangle is not placed before 1990 by that letter.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Some three-digit groups are also plant codes in NHTSA's list. The <a href="/decoder/">decoder</a> then reports two readings of the same symbols, a plant code and a three-digit date, and it does not combine them into one tire.
+      <a href="/decoder/?tin=403">Open 403</a>
+      and <a href="/decoder/?tin=403&amp;triangle=1">open 403 with the triangle</a>.
+      The <a href="/guides/tire-date-code/#three-digit">date-code guide</a> diagrams the three-digit group and states why the year list runs from 1971 through 1999.
+      <a href="/guides/tire-age/">How old is too old</a> quotes published positions on tire age.
+      <a href="/methodology/#data-quality">Data-quality limits</a> cover what a plant record does not show.
+      This table does not say whether a tire should stay in service.
     </p>
     <h2>Older two-symbol plant codes</h2>
     <p>

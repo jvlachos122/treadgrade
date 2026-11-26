@@ -13,6 +13,8 @@ import { ratingsTableHref } from "../lib/ratings-table.js";
 import { dataset, laterIso } from "../lib/structured.js";
 import InlineList from "../components/InlineList.astro";
 import { whoMakesPages, whoMakesSkipped } from "../lib/who-makes-pages.js";
+import { BRAND_PLANT_RULE, BRAND_RECALL_RULE, GRADE_SHARE_NOTE, TREADWEAR_BAND_NOTE } from "../lib/brand-pages.js";
+import { plantRecordCaveat } from "../lib/tin.js";
 
 const verified = formatVerified(catalog.meta.verifiedAt);
 const punctuationBrands = catalog.brands.filter((brand) => brand.aliases.length);
@@ -120,6 +122,40 @@ const jsonLd = [
     <p>
       Counted examples from this pull — repeated line names, values outside the usual grades, lines the file does not contain, and the plant-code limits — are on the <a href="/methodology/known-errors/">known errors</a> page.
       That page is the canonical list. The notes below say how the files are read.
+    </p>
+    <h3 id="leaf-pages">What a plant, brand, or tire-line page does not repeat</h3>
+    <p>
+      A plant page, a brand page, and a tire-line page state the rows for that one record, then point here. The sentences below are the limits those pages used to repeat.
+    </p>
+    <p>{plantRecordCaveat}</p>
+    <p>
+      The letters DOT in front of a tire identification number are a certification mark, not the plant code.
+      49 CFR 574.5 requires the full number on one sidewall. On many radial tires the other sidewall leaves the date off, so the plant code can sit on either side.
+      A current new tire's number has 13 symbols: the plant code, six symbols the manufacturer assigns, and four digits for the week and the year.
+      A retreaded tire's number in 49 CFR 574.5(a)(2) is 7 symbols: the plant code and the four-digit date.
+      A former two-symbol code, when the record lists one, can still be molded on an older tire.
+      <a href="/guides/dot-code/">The identification number</a> is the full layout. <a href="/guides/tire-date-code/">The date digits</a> are only the week and the year.
+    </p>
+    <p>
+      Other plant records with the same registrant match after letter case, punctuation, and legal suffixes such as Inc. and LLC are ignored. A shared first word is not a match, and the records do not list brands.
+      A recall list on a plant page includes rows whose filing company matches that registrant. The plant record does not say that plant built the recalled tires.
+      The status value on the page is the value vPIC stored. It may be out of date, and Active is not a finding that the company or the plant is operating.
+    </p>
+    <p>{BRAND_PLANT_RULE}</p>
+    <p>{BRAND_RECALL_RULE}</p>
+    <p>{TREADWEAR_BAND_NOTE} {GRADE_SHARE_NOTE}</p>
+    <p>
+      The numbers compare tires on a government test. They are not a mileage warranty.
+      Sorting these rows is an ordering of NHTSA's list, not a ranking.
+      The ratings file does not say whether a tire is still sold, and it has no category field.
+      Light-truck tires, deep-tread winter-type snow tires, and temporary spare tires are outside the UTQG rule, so a missing line is not a grade.
+      A value outside the usual letters (traction AA, A, B, C and temperature A, B, C) is shown as NHTSA published it.
+      The same line name under another brand string is a match of the name. It is not evidence of rebadging, and it is not evidence the tires are the same product.
+      The ratings API active flag is not proof a tire is, or is not, still sold.
+    </p>
+    <p>
+      A country or manufacturer page can list UTQG brands whose registrant name begins with the brand on a code in that group, and tire lines stored under those brands. That is the name rule. It does not say the plant built the line.
+      Recall rows on that page are filing-company matches to the registrant. Nearby codes are the previous and next codes in NHTSA code order.
     </p>
     <h3>Brand strings and repeated line names</h3>
     <p>

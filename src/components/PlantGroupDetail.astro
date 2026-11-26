@@ -1,0 +1,163 @@
+---
+import { formatNumber, formatUtcDate } from "../lib/format.js";
+import { GROUP_LINE_CAP, GROUP_RECALL_CAP, GROUP_SIBLING_CAP } from "../lib/plant-group-detail.js";
+import { nhtsaCampaignUrl } from "../lib/recalls.js";
+
+const { detail } = Astro.props;
+const brandNoun = detail.brandCount === 1 ? "brand has" : "brands have";
+const recallNoun = detail.recallRows === 1 ? "row" : "rows";
+const shownLines = detail.lines.slice(0, GROUP_LINE_CAP);
+---
+
+<section id="group-detail">
+  <h2>Linked brands, filings, and nearby codes</h2>
+  <p>
+    {
+      detail.brandCount
+        ? `${formatNumber(detail.brandCount)} UTQG ${brandNoun} a registrant name that begins with the brand on at least one of these codes.`
+        : "No UTQG brand on this site has a registrant name that begins with the brand on these codes."
+    }
+    {" "}
+    {
+      detail.recallRows
+        ? `The tire-recall file has ${formatNumber(detail.recallRows)} ${recallNoun} whose filing company matches one of these registrants.`
+        : "The tire-recall file has no row whose filing company matches these registrants."
+    }
+    {" "}
+    A brand link is that name rule. It does not say the plant builds the brand. A recall row is the filing company, not a finding that this plant built the recalled tire.
+  </p>
+  {
+    detail.thin && shownLines.length ? (
+      <>
+        <h3>Tire lines under the linked brands</h3>
+        <p>
+          {shownLines.length === detail.lineCount
+            ? `${formatNumber(detail.lineCount)} tire ${detail.lineCount === 1 ? "line is" : "lines are"} stored under those brands.`
+            : `Showing ${formatNumber(shownLines.length)} of ${formatNumber(detail.lineCount)} tire lines stored under those brands, in brand and line name order.`}
+          {" "}
+          A line here is the brand's UTQG rows. It is not a list of tires built at these plants.
+        </p>
+        <ul>
+          {shownLines.map((line) => (
+            <li>
+              <a href={line.url}>{line.brand} {line.line}</a>
+              {" "}
+              <span class="muted">{formatNumber(line.rows)} size {line.rows === 1 ? "row" : "rows"}</span>
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : null
+  }
+  {
+    detail.thin
+      ? detail.members.map((member) => {
+          const place = [member.address, member.city, member.state, member.postal, member.country].filter(Boolean).join(", ");
+          const siblings = member.siblings.slice(0, GROUP_SIBLING_CAP);
+          const recalls = member.recalls.slice(0, GROUP_RECALL_CAP);
+          return (
+            <section>
+              <h3>
+                <a href={member.url}>{member.code}</a>
+                {member.name ? ` — ${member.name}` : ""}
+              </h3>
+              {place ? <p>{place}.</p> : null}
+              {
+                member.linkedBrands.length ? (
+                  <p>
+                    Registrant name begins with{" "}
+                    {member.linkedBrands.map((brand, index) => (
+                      <>
+                        {index ? ", " : null}
+                        <a href={brand.url}>{brand.name}</a>
+                      </>
+                    ))}
+                    .
+                  </p>
+                ) : (
+                  <p>No UTQG brand on this site has a registrant name that begins with the brand on {member.code}.</p>
+                )
+              }
+              {
+                member.nearby.length ? (
+                  <p>
+                    Plant codes next to {member.code} in NHTSA code order:{" "}
+                    {member.nearby.map((item, index) => (
+                      <>
+                        {index ? ", " : null}
+                        <a href={item.url}>{item.code}</a>
+                        {item.country ? ` (${item.country})` : ""}
+                      </>
+                    ))}
+                    .
+                  </p>
+                ) : null
+              }
+              {
+                member.siblings.length ? (
+                  <>
+                    <p>
+                      {siblings.length === member.siblings.length
+                        ? `${formatNumber(member.siblings.length)} other ${member.siblings.length === 1 ? "record uses" : "records use"} this registrant name.`
+                        : `Showing ${formatNumber(siblings.length)} of ${formatNumber(member.siblings.length)} other records with this registrant name.`}
+                    </p>
+                    <ul>
+                      {siblings.map((item) => (
+                        <li>
+                          <a href={item.url}>{item.code}</a>
+                          {item.city || item.country ? ` — ${[item.city, item.country].filter(Boolean).join(", ")}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p>No other record in this list uses this registrant name.</p>
+                )
+              }
+              {
+                recalls.length ? (
+                  <>
+                    <p>
+                      {recalls.length === member.recalls.length
+                        ? `${formatNumber(member.recalls.length)} tire-recall ${member.recalls.length === 1 ? "row names" : "rows name"} this registrant as the filing company.`
+                        : `Showing ${formatNumber(recalls.length)} of ${formatNumber(member.recalls.length)} tire-recall rows that name this registrant as the filing company.`}
+                    </p>
+                    <div class="table-wrap">
+                      <table>
+                        <caption>Tire-recall rows whose filing company matches {member.name || member.code}.</caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">Brand</th>
+                            <th scope="col">Recalled line</th>
+                            <th scope="col">Campaign</th>
+                            <th scope="col">Report date</th>
+                            <th scope="col">Units</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recalls.map((row) => (
+                            <tr>
+                              <td>{row.brand}</td>
+                              <td>{row.line}</td>
+                              <td>
+                                <a class="num" href={nhtsaCampaignUrl(row.campaign)}>
+                                  {row.campaign}
+                                  <span class="visually-hidden"> on NHTSA</span>
+                                </a>
+                              </td>
+                              <td>{row.reportDate ? formatUtcDate(row.reportDate) : "Not stored"}</td>
+                              <td class="num">{row.units == null ? "Not stored" : formatNumber(row.units)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : null
+              }
+            </section>
+          );
+        })
+      : null
+  }
+</section>

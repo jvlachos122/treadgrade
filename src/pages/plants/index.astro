@@ -33,19 +33,68 @@ const crumbs = [
   { href: "/plants/", label: "Plant codes" },
 ];
 const statuses = ["Active", "Closed", "Not stated"];
+const countryLabel = new Map(model.countries.map((country) => [country.key, country.label]));
+let previousCountry = "";
+const groupedPlants = [...catalog.plants]
+  .sort((a, b) => {
+    const left = countryLabel.get(a.countryKey) || a.country || "";
+    const right = countryLabel.get(b.countryKey) || b.country || "";
+    return left.localeCompare(right, "en") || a.code.localeCompare(b.code);
+  })
+  .map((plant) => {
+    const label = countryLabel.get(plant.countryKey) || plant.country || "Not stored";
+    const anchor = label !== previousCountry ? `country-${plant.countryKey}` : "";
+    previousCountry = label;
+    return { plant, label, anchor };
+  });
+const countryAnchors = groupedPlants.filter((row) => row.anchor);
 ---
 
 <Base title="DOT tire plant codes" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
-  <div class="wrap" data-plants>
+  <div class="wrap" data-plants data-verified={catalog.meta.verifiedAt}>
     <h1>DOT tire plant codes</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
-    <p class="lede">
-      {formatNumber(model.plantCount)} plant records from NHTSA's equipment plant-code list.
-      The maker and country tables count those records. The plant table lists every code, and the menus hide rows in the browser without dropping them from the file.
-    </p>
+    <div class="filter-row">
+      <label>
+        Code, name, or city
+        <input type="search" data-filter-q autocomplete="off" />
+      </label>
+      <label>
+        Maker
+        <select data-filter-maker>
+          <option value="">Any</option>
+          {model.makers.map((maker) => <option value={maker.id}>{maker.label} ({formatNumber(maker.count)})</option>)}
+          {model.otherCount ? <option value="other">Other registered names ({formatNumber(model.otherCount)})</option> : null}
+        </select>
+      </label>
+      <label>
+        Country
+        <select data-filter-country>
+          <option value="">Any</option>
+          {catalog.countries.map((country) => <option value={country.key}>{country.label} ({formatNumber(country.count)})</option>)}
+        </select>
+      </label>
+      <label>
+        Status field
+        <select data-filter-status>
+          <option value="">Any</option>
+          {statuses.map((status) => <option value={status}>{status}</option>)}
+        </select>
+      </label>
+    </div>
+    <p class="status" data-filter-status-text aria-live="polite">{formatNumber(catalog.stats.plants)} plants.</p>
+    <div data-lookup></div>
+    <noscript>
+      <p>Maker, country, and status filters run in the browser. Without JavaScript every plant row stays visible, grouped by country below.</p>
+    </noscript>
 
-    <h2 id="makers">Counts by maker</h2>
+    <h2 id="makers">Largest name groups</h2>
+    <p>
+      {formatNumber(model.makers.length)} registrant-name groups meet the published minimum.
+      {model.makers[0] ? `${model.makers[0].label} is the largest, with ${formatNumber(model.makers[0].count)} registered codes.` : ""}
+      The other {formatNumber(model.otherCount)} records stay in the plant table.
+    </p>
     <div class="table-wrap">
       <table>
         <caption>{captions.makers}</caption>
@@ -82,6 +131,54 @@ const statuses = ["Active", "Closed", "Not stated"];
       </table>
     </div>
 
+    <h2 id="codes">Plant codes by country</h2>
+    <PlantNote />
+    <nav class="letter-nav" aria-label="Countries">
+      {countryAnchors.map((row) => <a href={`#${row.anchor}`}>{row.label}</a>)}
+    </nav>
+    <div class="table-wrap">
+      <table data-plant-table>
+        <caption>{captions.plants}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Code</th>
+            <th scope="col">Former code</th>
+            <th scope="col">Plant</th>
+            <th scope="col">Location</th>
+            <th scope="col">Status field</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            groupedPlants.map(({ plant, anchor }) => (
+              <tr
+                id={anchor || undefined}
+                data-search={`${plant.code} ${plant.oldCode} ${plant.name} ${plant.city} ${plant.country} ${plant.countryRaw}`.toLowerCase()}
+                data-code={plant.code}
+                data-old={plant.oldCode}
+                data-name={plant.name}
+                data-city={plant.city}
+                data-country-name={plant.country}
+                data-url={plant.url}
+                data-plant-status={plant.status || ""}
+                data-country={plant.countryKey}
+                data-maker={model.makerByCode.get(plant.code)}
+                data-status={plant.status || "Not stated"}
+              >
+                <td class="num code">
+                  <a href={plant.url}>{plant.code}</a>
+                </td>
+                <td class="num code">{plant.oldCode || "—"}</td>
+                <td>{plant.name}</td>
+                <td>{[plant.city, plant.state, plant.country].filter(Boolean).join(", ")}</td>
+                <td>{plant.status || "Not stated"}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
     <h2 id="countries">Counts by country</h2>
     <div class="table-wrap">
       <table>
@@ -104,85 +201,12 @@ const statuses = ["Active", "Closed", "Not stated"];
         </tbody>
       </table>
     </div>
-
-    <h2 id="codes">Plant codes</h2>
-    <PlantNote />
-    <p>
-      <a href="/plants/by-maker/">Registered plant codes by maker and country</a> splits the published name groups by country.
-      Search by code, a former two-symbol code, the company name, or the city.
-      The status field can be filtered as stored. Active is not a list of plants operating today.
-    </p>
-    <div class="filter-row">
-      <label>
-        Code, name, or city
-        <input type="search" data-filter-q autocomplete="off" />
-      </label>
-      <label>
-        Maker
-        <select data-filter-maker>
-          <option value="">Any</option>
-          {model.makers.map((maker) => <option value={maker.id}>{maker.label} ({formatNumber(maker.count)})</option>)}
-          {model.otherCount ? <option value="other">Other registered names ({formatNumber(model.otherCount)})</option> : null}
-        </select>
-      </label>
-      <label>
-        Country
-        <select data-filter-country>
-          <option value="">Any</option>
-          {catalog.countries.map((country) => <option value={country.key}>{country.label} ({formatNumber(country.count)})</option>)}
-        </select>
-      </label>
-      <label>
-        Status field
-        <select data-filter-status>
-          <option value="">Any</option>
-          {statuses.map((status) => <option value={status}>{status}</option>)}
-        </select>
-      </label>
-    </div>
-    <p class="status" data-filter-status-text aria-live="polite">{formatNumber(catalog.stats.plants)} plants.</p>
-    <noscript>
-      <p>Maker, country, and status filters run in the browser. Without JavaScript the plant table lists every record, and the count tables above stay as they are.</p>
-    </noscript>
-    <div class="table-wrap">
-      <table data-plant-table>
-        <caption>{captions.plants}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Code</th>
-            <th scope="col">Former code</th>
-            <th scope="col">Plant</th>
-            <th scope="col">Location</th>
-            <th scope="col">Status field</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            catalog.plants.map((plant) => (
-              <tr
-                data-search={`${plant.code} ${plant.oldCode} ${plant.name} ${plant.city} ${plant.country} ${plant.countryRaw}`.toLowerCase()}
-                data-country={plant.countryKey}
-                data-maker={model.makerByCode.get(plant.code)}
-                data-status={plant.status || "Not stated"}
-              >
-                <td class="num code">
-                  <a href={plant.url}>{plant.code}</a>
-                </td>
-                <td class="num code">{plant.oldCode || "—"}</td>
-                <td>{plant.name}</td>
-                <td>{[plant.city, plant.state, plant.country].filter(Boolean).join(", ")}</td>
-                <td>{plant.status || "Not stated"}</td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
     <p class="small">
       Former codes are not separate pages. They are listed on the plant record that carries that code, and in this table.
       <a href="/guides/dot-code/">How a plant code fits into a DOT number</a>
       · <a href="/guides/rebadged-tires/">What a plant code can prove about who made a tire</a>
       · <a href="/guides/tire-date-code/">How to read the date code</a>
+      <a href="/plants/by-maker/">Registered plant codes by maker and country</a>
       · <a href="/plants/manufacturer/">Manufacturer name groups</a>
       · <a href="/plants/country/">Plant codes by country</a>.
     </p>

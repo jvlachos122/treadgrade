@@ -43,13 +43,140 @@ const crumbs = [
   { href: "/ratings/", label: "UTQG grades" },
 ];
 const exampleHref = ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], temp: ["A"] });
+const ratingsTitle = `UTQG ratings lookup: ${formatNumber(facts.rowCount)} NHTSA rows, sortable`;
 ---
 
-<Base title="UTQG tire grades" description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
+<Base title={ratingsTitle} description={description} breadcrumbs={crumbs} jsonLd={jsonLd}>
   <div class="wrap">
-    <h1>UTQG tire grades</h1>
+    <h1>{ratingsTitle}</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["ratings"])} />
+    <p class="lede">
+      {formatNumber(facts.rowCount)} grade rows from NHTSA's published UTQG list, verified {verified} (UTC). Filter and sort the rows below. The count tables under the lookup use the same file.
+    </p>
+    <div data-ratings data-source={catalog.meta.ratings.source} data-verified={catalog.meta.verifiedAt}>
+      <form class="filters filters-ratings" action="/ratings/" method="get">
+        <label>
+          Brand or tire line
+          <input type="search" name="q" autocomplete="off" />
+        </label>
+        <label>
+          Treadwear at least
+          <input type="number" name="wearMin" min="0" inputmode="numeric" />
+        </label>
+        <label>
+          Treadwear at most
+          <input type="number" name="wearMax" min="0" inputmode="numeric" />
+        </label>
+        <label>
+          Size text
+          <select name="size">
+            <option value="">Any size text</option>
+            <option value="specific">Size-specific grade</option>
+            <option value="all">All sizes</option>
+          </select>
+        </label>
+        <label>
+          Data quality
+          <select name="quality">
+            <option value="">Flag invalid and suspect rows</option>
+            <option value="hide">Hide invalid and suspect rows</option>
+            <option value="flagged">Only flagged rows</option>
+            <option value="invalid">Only invalid rows</option>
+            <option value="suspect">Only suspect rows</option>
+          </select>
+        </label>
+        <label>
+          Sort
+          <select name="sort">
+            <option value="brand">Brand A–Z</option>
+            <option value="wear-desc">Treadwear high–low</option>
+            <option value="wear-asc">Treadwear low–high</option>
+            <option value="traction">Traction high–low</option>
+            <option value="temp">Temperature high–low</option>
+          </select>
+        </label>
+        <fieldset class="checks">
+          <legend>Traction · <a href="/guides/traction-grades/">What AA, A, B, and C mean</a></legend>
+          <label><input type="checkbox" name="traction" value="AA" /> AA</label>
+          <label><input type="checkbox" name="traction" value="A" /> A</label>
+          <label><input type="checkbox" name="traction" value="B" /> B</label>
+          <label><input type="checkbox" name="traction" value="C" /> C</label>
+        </fieldset>
+        <fieldset class="checks">
+          <legend>Temperature</legend>
+          <label><input type="checkbox" name="temp" value="A" /> A</label>
+          <label><input type="checkbox" name="temp" value="B" /> B</label>
+          <label><input type="checkbox" name="temp" value="C" /> C</label>
+        </fieldset>
+        <div class="filter-actions">
+          <button type="submit">Apply</button>
+          <button type="button" class="button-ghost" data-csv disabled>Download these rows as CSV</button>
+          <button type="button" class="button-ghost" data-clear>Clear filters</button>
+        </div>
+      </form>
+      <p class="status" data-status aria-live="polite">Loading the ratings table…</p>
+      <noscript>
+        <p>
+          The combined table needs JavaScript. The counts above do not. Every brand is linked from the <a href="/brands/">brand index</a>.
+          If a tire is not in the list, see <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
+        </p>
+      </noscript>
+      <div class="table-wrap">
+        <table id="ratings-table">
+          <caption>NHTSA UTQG ratings verified {verified} (UTC).</caption>
+          <thead>
+            <tr>
+              <th scope="col">Brand</th>
+              <th scope="col">Tire line</th>
+              <th scope="col">Size series</th>
+              <th scope="col">Size flag</th>
+              <th scope="col">Treadwear</th>
+              <th scope="col">Traction</th>
+              <th scope="col">Temperature</th>
+              <th scope="col">Data quality</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <button type="button" class="button-ghost" data-prev>Previous</button>
+        <span data-page>Page 1</span>
+        <button type="button" class="button-ghost" data-next>Next</button>
+      </div>
+      <p class="small muted">
+        Each row links to the tire-line page on this site. A value outside the usual letters is shown as published.
+        <a href="/methodology/known-errors/#invalid-fields">Known errors in this file</a>.
+        <a href="/guides/utqg-grades/">Grade definitions</a>.
+        <a href="/guides/traction-grades/">What traction grades mean</a>.
+        <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+        <a href={exampleHref}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>.
+        <a href="/lists/highest-treadwear/">Highest treadwear grades NHTSA lists</a>.
+        <a href="/lists/long-treadwear-high-traction/">Treadwear of 700 or above with traction A or AA and temperature A</a>.
+      </p>
+    </div>
+
+    <p>
+      In the NHTSA UTQG file verified {verified} (UTC), {formatNumber(summary.sizeSpecific)} of {formatNumber(summary.rows)} grade rows are size-specific and {formatNumber(summary.allSizes)} say all sizes.
+      A row is all sizes only when the size text, with extra spaces collapsed, is “all”, “all size”, or “all sizes”. Any other text, including “all sizes except” and a named size, is size-specific. The size text is shown as published.
+    </p>
+    <p>
+      The same file has {formatNumber(summary.invalid)} invalid grade rows and {formatNumber(summary.suspect)} suspect grade rows.
+      Invalid means traction is outside AA, A, B, and C, temperature is outside A, B, and C, or treadwear is not a whole number.
+      Suspect means treadwear is 0 or not reported, and the row is not already invalid.
+      These are the same checks as the <a href="/methodology/known-errors/#invalid-fields">known-errors page</a>.
+      The table flags the rows. The data-quality control can hide them or show only those rows. Hiding a row does not remove it from the file.
+    </p>
+    <p>
+      The address keeps the filters, so a link can be shared. Filtered addresses use the canonical URL of this page.
+      The CSV is built in the browser from the filtered rows. It names the NHTSA UTQG file and the verified date. It is not a ranking, and a row does not mean a tire is on sale.
+    </p>
+    <p>
+      <a href="/compare/">Compare two to four tire lines</a> from this list.
+      The tool keeps the chosen lines in the address so the comparison can be shared.
+      A shared address points back at the tool page. Example comparisons are linked from the tool.
+    </p>
     <Disclaimer />
     <div data-ratings-summary>
       <div class="table-wrap">
@@ -230,131 +357,8 @@ const exampleHref = ratingsTableHref({ wearMin: "700", traction: ["AA", "A"], te
         }
       </div>
     </div>
-    <p>
-      In the NHTSA UTQG file verified {verified} (UTC), {formatNumber(summary.sizeSpecific)} of {formatNumber(summary.rows)} grade rows are size-specific and {formatNumber(summary.allSizes)} say all sizes.
-      A row is all sizes only when the size text, with extra spaces collapsed, is “all”, “all size”, or “all sizes”. Any other text, including “all sizes except” and a named size, is size-specific. The size text is shown as published.
-    </p>
-    <p>
-      The same file has {formatNumber(summary.invalid)} invalid grade rows and {formatNumber(summary.suspect)} suspect grade rows.
-      Invalid means traction is outside AA, A, B, and C, temperature is outside A, B, and C, or treadwear is not a whole number.
-      Suspect means treadwear is 0 or not reported, and the row is not already invalid.
-      These are the same checks as the <a href="/methodology/known-errors/#invalid-fields">known-errors page</a>.
-      The table flags the rows. The data-quality control can hide them or show only those rows. Hiding a row does not remove it from the file.
-    </p>
-    <p>
-      The address keeps the filters, so a link can be shared. Filtered addresses use the canonical URL of this page.
-      The CSV is built in the browser from the filtered rows. It names the NHTSA UTQG file and the verified date. It is not a ranking, and a row does not mean a tire is on sale.
-    </p>
-    <p>
-      <a href="/compare/">Compare two to four tire lines</a> from this list.
-      The tool keeps the chosen lines in the address so the comparison can be shared.
-      A shared address points back at the tool page. Example comparisons are linked from the tool.
-    </p>
-    <div data-ratings data-source={catalog.meta.ratings.source} data-verified={catalog.meta.verifiedAt}>
-      <form class="filters filters-ratings" action="/ratings/" method="get">
-        <label>
-          Brand or tire line
-          <input type="search" name="q" autocomplete="off" />
-        </label>
-        <label>
-          Treadwear at least
-          <input type="number" name="wearMin" min="0" inputmode="numeric" />
-        </label>
-        <label>
-          Treadwear at most
-          <input type="number" name="wearMax" min="0" inputmode="numeric" />
-        </label>
-        <label>
-          Size text
-          <select name="size">
-            <option value="">Any size text</option>
-            <option value="specific">Size-specific grade</option>
-            <option value="all">All sizes</option>
-          </select>
-        </label>
-        <label>
-          Data quality
-          <select name="quality">
-            <option value="">Flag invalid and suspect rows</option>
-            <option value="hide">Hide invalid and suspect rows</option>
-            <option value="flagged">Only flagged rows</option>
-            <option value="invalid">Only invalid rows</option>
-            <option value="suspect">Only suspect rows</option>
-          </select>
-        </label>
-        <label>
-          Sort
-          <select name="sort">
-            <option value="brand">Brand A–Z</option>
-            <option value="wear-desc">Treadwear high–low</option>
-            <option value="wear-asc">Treadwear low–high</option>
-            <option value="traction">Traction high–low</option>
-            <option value="temp">Temperature high–low</option>
-          </select>
-        </label>
-        <fieldset class="checks">
-          <legend>Traction · <a href="/guides/traction-grades/">What AA, A, B, and C mean</a></legend>
-          <label><input type="checkbox" name="traction" value="AA" /> AA</label>
-          <label><input type="checkbox" name="traction" value="A" /> A</label>
-          <label><input type="checkbox" name="traction" value="B" /> B</label>
-          <label><input type="checkbox" name="traction" value="C" /> C</label>
-        </fieldset>
-        <fieldset class="checks">
-          <legend>Temperature</legend>
-          <label><input type="checkbox" name="temp" value="A" /> A</label>
-          <label><input type="checkbox" name="temp" value="B" /> B</label>
-          <label><input type="checkbox" name="temp" value="C" /> C</label>
-        </fieldset>
-        <div class="filter-actions">
-          <button type="submit">Apply</button>
-          <button type="button" class="button-ghost" data-csv disabled>Download these rows as CSV</button>
-          <button type="button" class="button-ghost" data-clear>Clear filters</button>
-        </div>
-      </form>
-      <p class="status" data-status aria-live="polite">Loading the ratings table…</p>
-      <noscript>
-        <p>
-          The combined table needs JavaScript. The counts above do not. Every brand is linked from the <a href="/brands/">brand index</a>.
-          If a tire is not in the list, see <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
-        </p>
-      </noscript>
-      <div class="table-wrap">
-        <table id="ratings-table">
-          <caption>NHTSA UTQG ratings verified {verified} (UTC).</caption>
-          <thead>
-            <tr>
-              <th scope="col">Brand</th>
-              <th scope="col">Tire line</th>
-              <th scope="col">Size series</th>
-              <th scope="col">Size flag</th>
-              <th scope="col">Treadwear</th>
-              <th scope="col">Traction</th>
-              <th scope="col">Temperature</th>
-              <th scope="col">Data quality</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="pager">
-        <button type="button" class="button-ghost" data-prev>Previous</button>
-        <span data-page>Page 1</span>
-        <button type="button" class="button-ghost" data-next>Next</button>
-      </div>
-      <p class="small muted">
-        Each row links to the tire-line page on this site. A value outside the usual letters is shown as published.
-        <a href="/methodology/known-errors/#invalid-fields">Known errors in this file</a>.
-        <a href="/guides/utqg-grades/">Grade definitions</a>.
-        <a href="/guides/traction-grades/">What traction grades mean</a>.
-        <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
-        <a href={exampleHref}>Open this list in the table: treadwear of at least 700, traction AA or A, temperature A</a>.
-        <a href="/lists/highest-treadwear/">Highest treadwear grades NHTSA lists</a>.
-        <a href="/lists/long-treadwear-high-traction/">Treadwear of 700 or above with traction A or AA and temperature A</a>.
-      </p>
-    </div>
   </div>
 </Base>
-
 <script>
   import { initRatingsSlice } from "../scripts/ratings-slice.js";
   const summaryRoot = document.querySelector("[data-ratings-summary]");

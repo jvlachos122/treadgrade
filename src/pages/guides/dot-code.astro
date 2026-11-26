@@ -27,7 +27,7 @@ const oldToNew = oldToNewReport(catalog.plants);
 const description = clampText(answers.join(" "));
 const jsonLd = [
   article({
-    headline: "How to read a DOT tire code",
+    headline: "DOT tire identification number: plant, manufacturer code, and date",
     description: answers.join(" "),
     path: "/guides/dot-code/",
     dateModified: catalog.meta.verifiedAt,
@@ -40,12 +40,13 @@ const crumbs = [
 ];
 ---
 
-<Base title="How to read a DOT tire code" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
+<Base title="DOT tire identification number: plant, manufacturer code, and date" description={description} breadcrumbs={crumbs} narrow jsonLd={jsonLd}>
   <div class="wrap prose">
-    <h1>How to read a DOT tire code</h1>
+    <h1>DOT tire identification number</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <p>
+      This page is the whole tire identification number: the plant code, the manufacturer's symbols, and the date group. The week and year digits have their own page, <a href="/guides/tire-date-code/">tire date code: week and year digits</a>. The decoder applies a number you already have. It is not this layout.
       The tire identification number, or TIN, is molded into the sidewall. The letters DOT in front of it are a certification mark: the tire conforms to an applicable Federal Motor Vehicle Safety Standard. DOT is not the plant code.
       The rules are in <a href="https://www.law.cornell.edu/cfr/text/49/574.5">49 CFR 574.5</a>
       (<a href="https://www.ecfr.gov/current/title-49/subtitle-B/chapter-V/part-574/section-574.5">eCFR</a>).

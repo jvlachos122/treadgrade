@@ -1,13 +1,14 @@
 ---
 import Base from "../../../layouts/Base.astro";
 import Answer from "../../../components/Answer.astro";
-import Disclaimer from "../../../components/Disclaimer.astro";
 import CheckPrice from "../../../components/CheckPrice.astro";
 import Grade from "../../../components/Grade.astro";
+import SourcedLine from "../../../components/SourcedLine.astro";
 import SourceLine from "../../../components/SourceLine.astro";
 import { lineAnswer, sourceEntries } from "../../../lib/answers.js";
 import { catalog } from "../../../lib/catalog.js";
 import { compareToolHref } from "../../../lib/compare.js";
+import { formatVerified } from "../../../lib/format.js";
 import { ratingsTableHref } from "../../../lib/ratings-table.js";
 import { recallSummary } from "../../../lib/recall-catalog.js";
 import { lineSizeVariance } from "../../../lib/size-variance.js";
@@ -64,6 +65,7 @@ const variance = line ? lineSizeVariance(line) : null;
 const answers = line ? lineAnswer(line, report ? { comparison: report.comparisonSentence } : {}) : [];
 const related = line ? relatedLines(line, catalog.lines) : null;
 const description = line ? clampText(answers.join(" ")) : "";
+const verified = formatVerified(catalog.meta.verifiedAt);
 const sourceKinds = report ? report.sources : ["ratings"];
 const basedOn = sourceKinds.map((kind) => catalog.meta[kind].source);
 const jsonLd = line
@@ -109,7 +111,9 @@ const crumbs = line
     <h1>{line.brand} {line.line}</h1>
     <Answer sentences={answers} />
     <SourceLine sources={sourceEntries(catalog.meta, sourceKinds)} />
-    <Disclaimer />
+    <SourcedLine>
+      {line.brand} {line.line}'s grades are the size rows NHTSA published, verified {verified} (UTC).
+    </SourcedLine>
     {
       report ? (
         <p>{report.intro}</p>
@@ -184,8 +188,6 @@ const crumbs = line
           <h2>Same line name under other brands</h2>
           <p>
             NHTSA stored this same line name under {line.sameName.length === 1 ? "another brand string" : `${line.sameName.length} other brand strings`}.
-            A matching name is not evidence of rebadging, and it is not evidence the tires are the same product.
-            The brand at the top of this page is the brand string in the file. The ratings list mispairs some line names with brands.
             <a href="/methodology/known-errors/#repeated-names">Known errors in this file</a>.
           </p>
           <ul>
@@ -252,15 +254,11 @@ const crumbs = line
     <CheckPrice query={`${line.brand} ${line.line}`} />
     {
       report ? null : (
-        <>
-          <h2>Read the grades</h2>
-          <p>
-            <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
-            <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
-            The numbers compare tires on a government test. They are not a mileage warranty.
-            A tire that is not in the list is covered in <a href="/guides/no-utqg-rating/">why a tire may have no UTQG rating</a>.
-          </p>
-        </>
+        <p>
+          <a href="/guides/utqg-grades/">What UTQG treadwear, traction, and temperature mean</a>.
+          <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
+          <a href="/guides/no-utqg-rating/">Why a tire may have no UTQG rating</a>.
+        </p>
       )
     }
     <p>

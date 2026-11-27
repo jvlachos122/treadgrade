@@ -13,6 +13,7 @@ import { buildKnownErrors } from "./known-errors.js";
 import { buildCatalog, brandKey } from "./normalize.js";
 import { MAKER_COUNTRY_PATH, buildMakerCountry } from "./plant-makers.js";
 import { MANUFACTURER_GROUP_DEFS } from "./plant-groups.js";
+import { buildGroupIndex, describeGroup, groupDetailRecord } from "./plant-group-detail.js";
 import { buildRecallList } from "./recall-list.js";
 import { companyCore, summarizeRecallRows } from "./recalls.js";
 import { highestTreadwearReport } from "./highest-treadwear.js";
@@ -293,11 +294,18 @@ function entityRecord(path, ctx) {
   }
   if (path.startsWith("/plants/country/") && path !== "/plants/country/") {
     const plants = ctx.plantsByCountry.get(path) || [];
-    return countryData(plants);
+    return { rows: countryData(plants), detail: groupDetailRecord(describeGroup(plants, ctx.groupIndex)) };
   }
   if (path.startsWith("/plants/manufacturer/") && path !== "/plants/manufacturer/") {
     const group = ctx.groupByUrl.get(path);
-    return group ? { id: group.id, plants: countryData(group.plants), omitted: countryData(group.omitted) } : null;
+    return group
+      ? {
+          id: group.id,
+          plants: countryData(group.plants),
+          omitted: countryData(group.omitted),
+          detail: groupDetailRecord(describeGroup(group.plants, ctx.groupIndex)),
+        }
+      : null;
   }
   if (ctx.plantByUrl.has(path)) {
     const plant = ctx.plantByUrl.get(path);
@@ -396,8 +404,36 @@ export function buildContentModel(dataset) {
         lines.length === 1 ? lines[0].line : "",
       ];
     });
+  const plantsByRegistrant = new Map();
+  for (const plant of catalog.plants) {
+    const key = companyCore(plant.name);
+    if (!key) continue;
+    if (!plantsByRegistrant.has(key)) plantsByRegistrant.set(key, []);
+    plantsByRegistrant.get(key).push(plant);
+  }
+  const extrasByCode = new Map();
+  for (const plant of catalog.plants) {
+    const key = companyCore(plant.name);
+    const siblings = (plantsByRegistrant.get(key) || [])
+      .filter((other) => other.code !== plant.code)
+      .map((other) => ({
+        code: other.code,
+        url: other.url,
+        name: other.name,
+        city: other.city || "",
+        country: other.country || "",
+      }));
+    extrasByCode.set(plant.code, { siblings, recalls: plantRecalls.get(plant.code) || [] });
+  }
+  const groupIndex = buildGroupIndex({
+    brands: catalog.brands,
+    plants: catalog.plants,
+    lines: catalog.lines,
+    extrasByCode,
+  });
   const ctx = {
     catalog,
+    groupIndex,
     ratings,
     rawPlants,
     recalls,

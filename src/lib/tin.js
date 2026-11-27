@@ -49,6 +49,34 @@ export function indexPlants(plants) {
   return { byCode, byOld };
 }
 
+/**
+ * Every record whose current code or former code is this exact string.
+ * A code that is both is returned as both. Nothing is dropped to leave one.
+ */
+export function exactPlantMatches(code, index) {
+  const key = String(code || "")
+    .trim()
+    .toUpperCase();
+  if (!key || !index) return [];
+  const matches = [];
+  const current = index.byCode.get(key) || null;
+  if (current) matches.push({ ...current, matchedOn: "current" });
+  for (const plant of index.byOld.get(key) || []) {
+    if (current && plant.code === current.code) continue;
+    matches.push({ ...plant, matchedOn: "old" });
+  }
+  return matches;
+}
+
+function mergeExactCodeMatches(found, head, index) {
+  if (!found?.plantCode || found.plantCode !== head) return found;
+  const exact = exactPlantMatches(head, index);
+  const both =
+    exact.some((item) => item.matchedOn === "current") && exact.some((item) => item.matchedOn === "old");
+  if (!both) return found;
+  return { ...found, matches: exact, middle: "", assumed: "both", oldPrefix: [], alsoCurrent: null };
+}
+
 function isoDate(date) {
   return date.toISOString().slice(0, 10);
 }
@@ -156,7 +184,7 @@ function splitDate(compact) {
   return { head: compact, date: null, style: null, week: null, weekOk: false, invalidTrailing: null };
 }
 
-function selectPlant(head, style, index) {
+function selectPlantLayout(head, style, index) {
   if (!head) return { plantCode: null, matches: [], middle: "", assumed: null, oldPrefix: [] };
   const three = head.length >= 3 ? head.slice(0, 3) : "";
   const two = head.length >= 2 ? head.slice(0, 2) : "";
@@ -213,6 +241,10 @@ function selectPlant(head, style, index) {
     oldPrefix: [],
     alsoCurrent: null,
   };
+}
+
+function selectPlant(head, style, index) {
+  return mergeExactCodeMatches(selectPlantLayout(head, style, index), head, index);
 }
 
 // A bare three-digit group can be a plant code and a date. The first two
@@ -405,10 +437,15 @@ export function decodeTin(raw, plantsIndex, now = new Date(), options = {}) {
         text: `${plant.plantCode} matches a former two-symbol plant code. The current code for that plant is ${match.code}.`,
       });
     }
+  } else if (plant.assumed === "both") {
+    notes.push({
+      level: "warn",
+      text: `Plant code ${plant.plantCode} is a current code and a former code. Each match is listed. The source is NHTSA's equipment plant list.`,
+    });
   } else if (plant.matches.length > 1) {
     notes.push({
       level: "warn",
-      text: `Former plant code ${plant.plantCode} is on more than one plant record. Each match is listed.`,
+      text: `Former plant code ${plant.plantCode} is on more than one plant record. Each match is listed. The source is NHTSA's equipment plant list.`,
     });
   }
 

@@ -43,6 +43,13 @@ export const FULL_BRAND_MIN_LINES = 5;
 
 export const BANNED_BRAND_WORD = /\b(best|top-rated|top rated|recommend(?:ed|s|ing)?)\b/i;
 
+export const BRAND_PLANT_JUMP = "Plant codes for this brand";
+
+export function brandPlantJump(profile) {
+  if (!profile?.plants?.length) return null;
+  return { href: "#plant-codes", label: BRAND_PLANT_JUMP };
+}
+
 export const BRAND_PLANT_RULE =
   "A plant code is listed only when the registrant name, ignoring capitalization, punctuation, and a legal suffix such as Inc. or LLC, begins with the brand. A leading The is ignored. A name that also matches another brand is left off. Registrations include closed and historic codes. A plant registered to a name does not show where a given tire was made.";
 
@@ -308,7 +315,7 @@ function buildProfiles(brands, linesByBrand, plantsByBrand, recallsByKey, verifi
       treadwearCaption: `Treadwear bands for ${brand.name}. Each band is 100 wide. Shares use size rows with a usable treadwear number.`,
       gradesCaption: `Traction and temperature shares for ${brand.name}. Shares use every size row.`,
       plantsCaption: plants.length
-        ? `Plant codes whose registrant name begins with ${brand.name}. NHTSA's plant list was verified ${formatVerified(verifiedAt)} (UTC).`
+        ? `Plant codes for ${brand.name}. A code is listed when the registrant name begins with the brand. NHTSA's plant list was verified ${formatVerified(verifiedAt)} (UTC).`
         : "",
       recallsCaption: recalls.length
         ? `Tire-recall rows whose brand string matches ${brand.name}. The file was retrieved ${formatVerified(recallsRetrievedAt)} (UTC).`
@@ -371,6 +378,7 @@ export function brandPageCopy(profile, answers = []) {
     profile.summaryCaption,
     profile.treadwearCaption,
     profile.gradesCaption,
+    profile.plants.length ? BRAND_PLANT_JUMP : "",
     profile.plantsCaption,
     profile.recallsCaption,
     profile.plants.length ? BRAND_PLANT_RULE : "",

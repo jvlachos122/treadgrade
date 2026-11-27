@@ -9,6 +9,7 @@ import { formatNumber } from "../../lib/format.js";
 import { MAKER_COUNTRY_DEFS, MAKER_COUNTRY_MIN } from "../../lib/plant-groups.js";
 import { plantCaptions, plantHubFaqs, plantHubModel, plantHubProse, hubFaqLd } from "../../lib/hub-quality.js";
 import { dataset } from "../../lib/structured.js";
+import { PLANTS_QUERY_HINT } from "../../lib/plant-query.js";
 import { clampText } from "../../lib/text.js";
 
 const answers = plantsIndexAnswer(catalog);
@@ -57,7 +58,7 @@ const countryAnchors = groupedPlants.filter((row) => row.anchor);
     <SourceLine sources={sourceEntries(catalog.meta, ["plants"])} />
     <div class="filter-row">
       <label>
-        Code, name, or city
+        Code, brand, name, or city
         <input type="search" data-filter-q autocomplete="off" />
       </label>
       <label>
@@ -84,6 +85,7 @@ const countryAnchors = groupedPlants.filter((row) => row.anchor);
       </label>
     </div>
     <p class="status" data-filter-status-text aria-live="polite">{formatNumber(catalog.stats.plants)} plants.</p>
+    <p class="small muted">{PLANTS_QUERY_HINT}</p>
     <div data-lookup></div>
     <noscript>
       <p>Maker, country, and status filters run in the browser. Without JavaScript every plant row stays visible, grouped by country below.</p>

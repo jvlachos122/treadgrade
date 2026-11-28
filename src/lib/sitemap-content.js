@@ -26,6 +26,7 @@ import { treadwearMedian } from "./answers.js";
 import { tractionGradesReport } from "./traction-grades.js";
 import { oldToNewData } from "./dot-old-to-new.js";
 import { acrossBrandsData } from "./utqg-across-brands.js";
+import { temperatureGradesData } from "./temperature-grades.js";
 import { treadwearNumbersReport } from "./treadwear-numbers.js";
 import { treadwearTractionReport } from "./treadwear-vs-traction.js";
 import { utqgExemptReport } from "./utqg-exempt.js";
@@ -213,6 +214,7 @@ function guideRecord(path, ctx) {
         temperature: catalog.stats.temperature,
         wearBuckets: catalog.stats.wearBuckets,
         acrossBrands: acrossBrandsData(catalog),
+        temperatureGrades: temperatureGradesData(catalog),
       };
     case "/guides/dot-code/":
       return {

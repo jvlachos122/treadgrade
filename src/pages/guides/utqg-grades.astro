@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import Answer from "../../components/Answer.astro";
 import GearLinks from "../../components/GearLinks.astro";
+import Grade from "../../components/Grade.astro";
 import SourceLine from "../../components/SourceLine.astro";
 import { sourceEntries, utqgGuideAnswer } from "../../lib/answers.js";
 import { catalog } from "../../lib/catalog.js";
@@ -24,8 +25,36 @@ import {
   ecfrRetrievedLabel,
   tireReviewPublishedLabel,
 } from "../../lib/utqg-across-brands.js";
+import {
+  ECFR_TEMPERATURE_URL,
+  FIGURE_2_TEMPERATURE,
+  FIGURE_2_TEMPERATURE_WARNING,
+  GRADE_C_STANDARD_QUOTE,
+  GRADES_AB_ABOVE_MINIMUM_QUOTE,
+  INDOOR_WHEEL_QUOTE,
+  KNOWN_ERRORS_INVALID_HREF,
+  SPEED_STAGE_QUOTE,
+  TEMPERATURE_GRADES_ID,
+  TEMPERATURE_INTRO_QUOTE,
+  TEMPERATURE_LETTERS,
+  TEMPERATURE_RULES,
+  TEST_WHEEL_QUOTE,
+  TRACTION_GRADES_PATH,
+  TREADWEAR_NUMBERS_PATH,
+  TREADWEAR_VS_TRACTION_PATH,
+  cLineCaption,
+  distributionCaption,
+  ecfrRetrievedLabel as temperatureRetrievedLabel,
+  invalidCaption,
+  temperatureCountsParagraph,
+  temperatureGradesAnswer,
+  temperatureGradesReport,
+  temperatureQualityNote,
+  temperatureShare,
+  thresholdCaption,
+} from "../../lib/temperature-grades.js";
 
-const { traction, temperature, wearBuckets, rows } = catalog.stats;
+const { traction, wearBuckets, rows } = catalog.stats;
 const answers = utqgGuideAnswer(catalog);
 const description = clampText(answers.join(" "));
 const jsonLd = [
@@ -48,6 +77,15 @@ const acrossIntro = acrossBrandsIntro(across);
 const acrossCaption = acrossBrandsCaption(catalog.meta.verifiedAt);
 const acrossRetrieved = ecfrRetrievedLabel();
 const tireReviewDate = tireReviewPublishedLabel();
+const temperatureReport = temperatureGradesReport(catalog);
+const temperatureAnswers = temperatureGradesAnswer();
+const temperatureCounts = temperatureCountsParagraph(temperatureReport);
+const temperatureQuality = temperatureQualityNote(temperatureReport);
+const temperatureRetrieved = temperatureRetrievedLabel();
+const temperatureRulesCaption = thresholdCaption();
+const temperatureDistributionCaption = distributionCaption(temperatureReport);
+const temperatureCCaption = cLineCaption(temperatureReport);
+const temperatureInvalidCaption = invalidCaption(temperatureReport);
 const highWear = filterGradeRows(flattenGradeRows(catalog), {
   wearMin: "700",
   traction: ["AA", "A"],
@@ -120,14 +158,13 @@ const wearRows = [
     </p>
     <h3>Temperature</h3>
     <blockquote class="quote">
-      <p>
-        The temperature grades are A (the highest), B, and C, representing the tire's resistance to the generation of heat and its ability to dissipate heat when tested under controlled conditions on a specified indoor laboratory test wheel. Sustained high temperature can cause the material of the tire to degenerate and reduce tire life, and excessive temperature can lead to sudden tire failure. The grade C corresponds to a level of performance which all passenger car tires must meet under the Federal Motor Vehicle Safety Standard No. 109. Grades B and A represent higher levels of performance on the laboratory test wheel than the minimum required by law.
-      </p>
-      <p>
-        Warning: The temperature grade for this tire is established for a tire that is properly inflated and not overloaded. Excessive speed, underinflation, or excessive loading, either separately or in combination, can cause heat buildup and possible tire failure.
-      </p>
+      <p>{FIGURE_2_TEMPERATURE}</p>
+      <p id="underinflation">{FIGURE_2_TEMPERATURE_WARNING}</p>
     </blockquote>
-    <p id="underinflation">
+    <p>
+      That Figure 2 wording is the eCFR text retrieved {temperatureRetrieved}.
+      <a href={`#${TEMPERATURE_GRADES_ID}`}>Temperature grades A, B, and C</a>
+      quotes the indoor laboratory test wheel and the 500 rpm and 575 rpm stages.
       NHTSA's monthly pressure check, the placard pressure, and the spare are on
       <a href="/guides/tire-pressure-and-roadside-kit/">tire pressure and a roadside kit</a>.
     </p>
@@ -135,6 +172,8 @@ const wearRows = [
     <h2>How the rows in this site's file are distributed</h2>
     <p>
       These shares are of the {formatNumber(rows)} grade rows in NHTSA's list as this site last verified it. They are not shares of tires currently for sale, and they are not the "of current tires" figures NHTSA has published elsewhere.
+      Treadwear and traction are in the tables below. Temperature grade rows and the tire lines that carry each letter are in
+      <a href={`#${TEMPERATURE_GRADES_ID}`}>Temperature grades A, B, and C</a>.
     </p>
     <div class="table-wrap">
       <table>
@@ -182,29 +221,6 @@ const wearRows = [
         </tbody>
       </table>
     </div>
-    <div class="table-wrap">
-      <table>
-        <caption>Temperature rows</caption>
-        <thead>
-          <tr>
-            <th scope="col">Grade</th>
-            <th scope="col">Rows</th>
-            <th scope="col">Share</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            ["A", "B", "C", "other"].map((grade) => (
-              <tr>
-                <td>{grade === "other" ? "Outside A–C" : grade}</td>
-                <td class="num">{formatNumber(temperature[grade])}</td>
-                <td class="num">{percent(temperature[grade], rows)}</td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
     <p>
       In the NHTSA UTQG file verified {verified} (UTC), treadwear of at least 700 with traction AA or A and temperature A is {formatNumber(highWear.length)} grade rows on {formatNumber(tireLineCount(highWear))} tire lines.
     </p>
@@ -219,6 +235,191 @@ const wearRows = [
     <p>
       The same line can list more than one treadwear or traction grade across the size rows NHTSA published.
       <a href="/guides/treadwear-varies-by-size/">Why treadwear can differ by size</a>.
+    </p>
+    <h2 id={TEMPERATURE_GRADES_ID}>Temperature grades A, B and C explained</h2>
+    {temperatureAnswers.map((sentence) => <p>{sentence}</p>)}
+    <p>
+      Paragraph (d)(2)(iii) and paragraph (g) of
+      <a href={ECFR_TEMPERATURE_URL}>49 CFR 575.104</a>
+      (eCFR, retrieved {temperatureRetrieved}).
+      Figure 2 is the explanation shown to tire buyers. Where it says A is the highest, that is the regulation's ordering of the letters.
+    </p>
+    <blockquote class="quote">
+      <p>{INDOOR_WHEEL_QUOTE}</p>
+      <p>{GRADE_C_STANDARD_QUOTE}</p>
+      <p>{GRADES_AB_ABOVE_MINIMUM_QUOTE}</p>
+    </blockquote>
+    <blockquote class="quote">
+      <p>{TEMPERATURE_INTRO_QUOTE}</p>
+    </blockquote>
+    <blockquote class="quote">
+      <p>{TEST_WHEEL_QUOTE}</p>
+      <p>{SPEED_STAGE_QUOTE}</p>
+    </blockquote>
+    <p>
+      Paragraph (g)(9) is the speed sequence. The grade rules name the 500 rpm test stage and the 575 rpm test stage in that sequence. The paragraph letters in (d)(2)(iii) are not the grade letters.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>{temperatureRulesCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Grade</th>
+            <th scope="col">Paragraph</th>
+            <th scope="col">Rule printed in the section</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            TEMPERATURE_RULES.map((rule) => (
+              <tr>
+                <td><Grade value={rule.id} kind="temp" /></td>
+                <td>{rule.paragraph}</td>
+                <td>{rule.quote}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>{temperatureCounts}</p>
+    <div class="table-wrap">
+      <table>
+        <caption>{temperatureDistributionCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Grade</th>
+            <th scope="col">Grade rows</th>
+            <th scope="col">Share of grade rows</th>
+            <th scope="col">Tire lines</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            temperatureReport.grades.map((grade) => (
+              <tr>
+                <td>{grade.id === "outside" ? grade.label : <Grade value={grade.id} kind="temp" />}</td>
+                <td class="num">{formatNumber(grade.rows)}</td>
+                <td class="num">{temperatureShare(temperatureReport, grade)}</td>
+                <td class="num">{formatNumber(grade.lines)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>
+      {
+        TEMPERATURE_LETTERS.map((grade, index) => (
+          <>
+            {index ? " · " : ""}
+            <a href={ratingsTableHref({ temp: [grade] })}>Open temperature {grade} in the table</a>
+          </>
+        ))
+      }
+    </p>
+    {
+      temperatureReport.cLines.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{temperatureCCaption}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Brand</th>
+                <th scope="col">Tire line</th>
+                <th scope="col">Grade rows with C</th>
+                <th scope="col">Other temperature values</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                temperatureReport.cLines.map((line) => (
+                  <tr>
+                    <td>{line.brand}</td>
+                    <td>
+                      <a href={line.url}>{line.line}</a>
+                    </td>
+                    <td class="num">{formatNumber(line.cRows)}</td>
+                    <td>
+                      {
+                        line.others.length || line.invalid.length ? (
+                          <>
+                            {
+                              line.others.map((value, index) => (
+                                <>
+                                  {index ? ", " : ""}
+                                  <Grade value={value} kind="temp" />
+                                </>
+                              ))
+                            }
+                            {line.others.length && line.invalid.length ? ", " : ""}
+                            {
+                              line.invalid.map((value, index) => (
+                                <>
+                                  {index ? ", " : ""}
+                                  {`"${value}"`}
+                                </>
+                              ))
+                            }
+                          </>
+                        ) : (
+                          "C only"
+                        )
+                      }
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>This pull has no grade row with temperature C.</p>
+      )
+    }
+    <h3 id="temperature-data-quality">Data quality</h3>
+    <p>
+      {temperatureQuality}
+      {" "}
+      <a href={KNOWN_ERRORS_INVALID_HREF}>Values outside the usual grades</a>.
+    </p>
+    {
+      temperatureReport.invalidRows.length ? (
+        <div class="table-wrap">
+          <table>
+            <caption>{temperatureInvalidCaption}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Published temperature</th>
+                <th scope="col">Brand</th>
+                <th scope="col">Tire line</th>
+                <th scope="col">Grade rows</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                temperatureReport.invalidRows.map((row) => (
+                  <tr>
+                    <td>{`"${row.value}"`}</td>
+                    <td>{row.brand}</td>
+                    <td>
+                      <a href={row.url}>{row.line}</a>
+                    </td>
+                    <td class="num">{formatNumber(row.rows)}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      ) : null
+    }
+    <p>
+      <a href={TRACTION_GRADES_PATH}>Traction grades AA, A, B, and C</a>.
+      <a href={TREADWEAR_NUMBERS_PATH}>What treadwear numbers mean</a>.
+      <a href={TREADWEAR_VS_TRACTION_PATH}>Treadwear next to traction and temperature</a>.
+      <a href={RATINGS_PATH}>Ratings table</a>.
+      <a href={METHODOLOGY_PATH}>How the file is read</a>.
     </p>
     <h2 id={ACROSS_BRANDS_ID}>Can you compare UTQG grades across brands?</h2>
     {acrossAnswers.map((sentence) => <p>{sentence}</p>)}

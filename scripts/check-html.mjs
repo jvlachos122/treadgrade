@@ -40,6 +40,18 @@ import {
   tireReviewPublishedLabel,
 } from "../src/lib/utqg-across-brands.js";
 import {
+  BANNED_TEMPERATURE_WORD,
+  ECFR_TEMPERATURE_URL,
+  GRADE_C_STANDARD_QUOTE,
+  KNOWN_ERRORS_INVALID_HREF,
+  SPEED_STAGE_QUOTE,
+  TEMPERATURE_GRADES_ID,
+  TEST_WHEEL_QUOTE,
+  ecfrRetrievedLabel as temperatureRetrievedLabel,
+  temperatureGradesReport,
+  temperatureShare,
+} from "../src/lib/temperature-grades.js";
+import {
   BANNED_DOT_WORD,
   DOT_GUIDE_PATH,
   ECFR_TIN_URL,
@@ -406,6 +418,78 @@ for (const file of files) {
           if (cells[cell] !== value) errors.push(`${rel}: ${brand.slug} cell ${cell} ${cells[cell]} != ${value}`);
         });
       });
+    }
+    const temperatureStart = html.indexOf(`id="${TEMPERATURE_GRADES_ID}"`);
+    if (temperatureStart < 0) errors.push(`${rel}: missing #${TEMPERATURE_GRADES_ID}`);
+    else {
+      const temperatureNext = html.indexOf("<h2", temperatureStart + 1);
+      const temperatureSection = html.slice(temperatureStart, temperatureNext === -1 ? html.length : temperatureNext);
+      const temperatureText = visibleText(temperatureSection);
+      const temperatureBanned = temperatureText.match(BANNED_TEMPERATURE_WORD);
+      if (temperatureBanned) errors.push(`${rel}: banned word ${temperatureBanned[1]}`);
+      if (!temperatureText.includes(temperatureRetrievedLabel())) errors.push(`${rel}: missing temperature eCFR date`);
+      if (!temperatureSection.includes(ECFR_TEMPERATURE_URL)) errors.push(`${rel}: missing temperature eCFR URL`);
+      if (!temperatureText.includes(GRADE_C_STANDARD_QUOTE)) errors.push(`${rel}: missing Standard No. 109 sentence`);
+      if (!temperatureText.includes(TEST_WHEEL_QUOTE)) errors.push(`${rel}: missing test-wheel quote`);
+      if (!temperatureText.includes(SPEED_STAGE_QUOTE)) errors.push(`${rel}: missing speed-stage quote`);
+      if (temperatureText.includes("Federal Motor Vehicle Safety Standard")) {
+        errors.push(`${rel}: temperature quote inserts Vehicle`);
+      }
+      if (/Standard No\. 139|FMVSS\s*139|571\.139/.test(temperatureText)) {
+        errors.push(`${rel}: temperature section names Standard No. 139`);
+      }
+      for (const href of [
+        "/guides/traction-grades/",
+        "/guides/treadwear-numbers/",
+        TREADWEAR_VS_TRACTION_PATH,
+        RATINGS_PATH,
+        METHODOLOGY_PATH,
+        KNOWN_ERRORS_INVALID_HREF,
+      ]) {
+        if (!temperatureSection.includes(`href="${href}"`)) errors.push(`${rel}: temperature section missing ${href}`);
+      }
+      const temperatureReport = temperatureGradesReport(catalog);
+      const tables = [...temperatureSection.matchAll(/<table\b[\s\S]*?<\/table>/g)];
+      const captionOf = (table) => visibleText(table.match(/<caption\b[^>]*>([\s\S]*?)<\/caption>/)?.[1] || "");
+      const distribution = tables.find((table) => captionOf(table[0]).startsWith("Temperature grades in the NHTSA UTQG file"));
+      if (!distribution) errors.push(`${rel}: missing temperature distribution table`);
+      else {
+        const bodyRows = [...distribution[0].matchAll(/<tr\b[\s\S]*?<\/tr>/g)].slice(1);
+        if (bodyRows.length !== temperatureReport.grades.length) {
+          errors.push(`${rel}: ${bodyRows.length} temperature grade rows`);
+        }
+        temperatureReport.grades.forEach((grade, index) => {
+          const cells = [...(bodyRows[index]?.[0] || "").matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((cell) =>
+            visibleText(cell[1]).trim(),
+          );
+          const expected = [grade.label, formatNumber(grade.rows), temperatureShare(temperatureReport, grade), formatNumber(grade.lines)];
+          expected.forEach((value, cell) => {
+            if (cells[cell] !== value) errors.push(`${rel}: temperature ${grade.id} cell ${cell} ${cells[cell]} != ${value}`);
+          });
+        });
+      }
+      const cTable = tables.find((table) => captionOf(table[0]).includes("at least one temperature C"));
+      const cRows = cTable ? [...cTable[0].matchAll(/<tr\b[\s\S]*?<\/tr>/g)].slice(1) : [];
+      if (temperatureReport.cLines.length && cRows.length !== temperatureReport.cLines.length) {
+        errors.push(`${rel}: ${cRows.length} temperature C lines`);
+      }
+      temperatureReport.cLines.forEach((line, index) => {
+        const rowHtml = cRows[index]?.[0] || "";
+        if (!rowHtml.includes(`href="${line.url}"`)) errors.push(`${rel}: missing temperature C line ${line.url}`);
+        if (!visibleText(rowHtml).includes(formatNumber(line.cRows))) {
+          errors.push(`${rel}: temperature C count for ${line.url}`);
+        }
+        const otherText = visibleText(rowHtml).replace(/\s+,/g, ",");
+        if (!otherText.includes(line.otherText)) errors.push(`${rel}: other temperatures for ${line.url}`);
+      });
+      for (const row of temperatureReport.invalidRows) {
+        if (!temperatureSection.includes(`"${row.value}"`) && !temperatureText.includes(`"${row.value}"`)) {
+          errors.push(`${rel}: invalid temperature ${row.value} is not quoted`);
+        }
+        if (row.url && !temperatureSection.includes(`href="${row.url}"`)) {
+          errors.push(`${rel}: missing invalid temperature line ${row.url}`);
+        }
+      }
     }
   }
   if (path === DOT_GUIDE_PATH) {

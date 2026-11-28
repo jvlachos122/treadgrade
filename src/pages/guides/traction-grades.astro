@@ -42,6 +42,7 @@ import {
   unmappedNote,
   watchedCaption,
 } from "../../lib/traction-grades.js";
+import { TEMPERATURE_GRADES_HREF } from "../../lib/temperature-grades.js";
 
 const report = tractionGradesReport(ratingRows, catalog);
 const answers = tractionGradesAnswer(report);
@@ -85,6 +86,7 @@ const presetLinks = TRACTION_LETTERS.map((grade) => ({
     </p>
     <p>
       <a href="/guides/utqg-grades/#across-brands">How UTQG grades compare across brands</a>.
+      <a href={TEMPERATURE_GRADES_HREF}>Temperature grades A, B, and C</a>.
     </p>
 
     <h2 id="test">What the test measures</h2>
